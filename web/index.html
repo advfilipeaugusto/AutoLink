@@ -1,0 +1,45 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Auto Link</title><style>
+body{margin:0;font-family:system-ui,sans-serif;background:#f4f6f8}header{background:#0b5cff;color:#fff;padding:16px;font-size:20px;font-weight:700}
+main{padding:16px;max-width:520px;margin:auto}.q{display:block;width:100%;padding:14px;margin:8px 0;border:0;border-radius:10px;background:#fff;font-size:16px;text-align:left}
+#msgs{min-height:200px}.b{padding:10px;border-radius:12px;margin:4px 0;max-width:80%}.me{background:#0b5cff;color:#fff;margin-left:auto}.them{background:#fff}
+form{display:flex;gap:8px}input{flex:1;padding:12px;border-radius:8px;border:1px solid #ddd;font-size:16px}button.s{background:#0b5cff;color:#fff;border:0;border-radius:8px;padding:0 16px;font-weight:700}
+.muted{color:#777;font-size:13px}</style></head><body><header>Auto Link</header><main id="app">Carregando...</main>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, collection, addDoc, setDoc, updateDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+const cfg = await (await fetch('/__/firebase/init.json')).json(); // fornecido automaticamente pelo Firebase Hosting
+const db = getFirestore(initializeApp(cfg)); const auth = getAuth();
+const app = document.getElementById('app'); const carId = new URLSearchParams(location.search).get('c');
+const esc = t => t.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+await signInAnonymously(auth);
+const car = carId && await getDoc(doc(db, 'cars', carId));
+if (!car?.exists() || !car.data().active) { app.innerHTML = '<p>Este QR code não está ativo.</p>'; throw 0; }
+const key = 'chat_' + carId; let chatId = localStorage.getItem(key);
+const quick = ['🚗 Seu carro está bloqueando minha garagem','💡 O farol está aceso','🪟 O vidro está aberto','🚨 O alarme está disparando','🛞 O pneu está furado/murcho','⚠️ Vão rebocar / multar seu carro'];
+async function send(text) {
+  if (!chatId) {
+    const ref = doc(collection(db, 'chats')); chatId = ref.id;
+    await setDoc(ref, { carId, ownerId: car.data().ownerId, visitorId: auth.currentUser.uid, lastMsg: text, updatedAt: serverTimestamp() });
+    localStorage.setItem(key, chatId); showChat();
+  } else await updateDoc(doc(db, 'chats', chatId), { lastMsg: text, updatedAt: serverTimestamp() });
+  await addDoc(collection(db, 'chats', chatId, 'messages'), { text, from: 'visitor', at: serverTimestamp() });
+}
+function showChat() {
+  app.innerHTML = `<p class="muted">Conversa anônima com o dono do carro <b>${esc(car.data().name)}</b>.</p><div id="msgs"></div>
+  <form id="f"><input id="t" placeholder="Escreva uma mensagem..." maxlength="500"><button class="s">Enviar</button></form>`;
+  const box = document.getElementById('msgs');
+  onSnapshot(query(collection(db, 'chats', chatId, 'messages'), orderBy('at')), s => {
+    box.innerHTML = s.docs.map(d => { const m = d.data(); return `<div class="b ${m.from==='visitor'?'me':'them'}">${esc(m.text)}</div>`; }).join('');
+    scrollTo(0, document.body.scrollHeight);
+  });
+  document.getElementById('f').onsubmit = e => { e.preventDefault(); const t = document.getElementById('t'); if (t.value.trim()) send(t.value.trim()); t.value = ''; };
+}
+if (chatId) showChat(); else {
+  app.innerHTML = `<p>Avise o dono do <b>${esc(car.data().name)}</b>. Ele recebe na hora e você não precisa se identificar.</p>` +
+    quick.map(q => `<button class="q">${q}</button>`).join('') + `<p class="muted">Ou escreva:</p><form id="f"><input id="t" maxlength="500"><button class="s">Enviar</button></form>`;
+  app.querySelectorAll('.q').forEach(b => b.onclick = () => send(b.textContent));
+  document.getElementById('f').onsubmit = e => { e.preventDefault(); const v = document.getElementById('t').value.trim(); if (v) send(v); };
+}
+</script></body></html>

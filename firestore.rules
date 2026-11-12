@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function me() { return request.auth.uid; }
+    match /owners/{uid} { allow read, write: if me() == uid; }
+    match /cars/{carId} {
+      allow get: if request.auth != null;
+      allow list: if resource.data.ownerId == me();
+      allow create: if request.resource.data.ownerId == me();
+      allow update, delete: if resource.data.ownerId == me();
+    }
+    match /chats/{chatId} {
+      function part() { return me() == resource.data.ownerId || me() == resource.data.visitorId; }
+      allow get, list, update: if request.auth != null && part();
+      allow create: if request.resource.data.visitorId == me()
+        && get(/databases/$(db)/documents/cars/$(request.resource.data.carId)).data.ownerId == request.resource.data.ownerId
+        && get(/databases/$(db)/documents/cars/$(request.resource.data.carId)).data.active == true;
+      match /messages/{m} {
+        function chat() { return get(/databases/$(db)/documents/chats/$(chatId)).data; }
+        allow read: if me() == chat().ownerId || me() == chat().visitorId;
+        allow create: if request.resource.data.text is string && request.resource.data.text.size() <= 500 &&
+          ((me() == chat().ownerId && request.resource.data.from == 'owner') ||
+           (me() == chat().visitorId && request.resource.data.from == 'visitor'));
+      }
+    }
+  }
+}
