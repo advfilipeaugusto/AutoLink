@@ -73,8 +73,8 @@ function Car({ car, go }) {
   const [chats, setChats] = useState([]);
   const [active, setActive] = useState(car.active);
   const url = `${WEB_URL}?c=${car.id}`;
-  useEffect(() => onSnapshot(query(collection(db, 'chats'), where('carId', '==', car.id), orderBy('updatedAt', 'desc')),
-    snap => setChats(snap.docs.map(d => ({ id: d.id, ...d.data() })))), [car.id]);
+  useEffect(() => onSnapshot(query(collection(db, 'chats'), where('carId', '==', car.id), where('ownerId', '==', car.ownerId)),
+    snap => setChats(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0)))), [car.id]);
   const toggle = async v => { setActive(v); await updateDoc(doc(db, 'cars', car.id), { active: v }); };
   return (
     <View style={s.pad}>
