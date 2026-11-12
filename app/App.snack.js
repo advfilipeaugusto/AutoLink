@@ -1,40 +1,67 @@
-// Versão em arquivo único para colar no snack.expo.dev
+// Versão em arquivo único para colar no snack.expo.dev (sem a biblioteca do Firebase: usa a API web direto)
 import { useEffect, useState, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, SafeAreaView, Alert, Switch, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, SafeAreaView, Alert, Switch } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { initializeApp } from 'firebase/app';
-import { getAuth, initializeAuth, getReactNativePersistence, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, addDoc, doc, updateDoc, onSnapshot, query, where, orderBy, serverTimestamp, setDoc } from 'firebase/firestore';
-const firebaseConfig = {
-  apiKey: "AIzaSyBSGj1H273wiXM-VgpkytnC3kX6yQlt8_I",
-  authDomain: "autolink-1aa51.firebaseapp.com",
-  projectId: "autolink-1aa51",
-  storageBucket: "autolink-1aa51.firebasestorage.app",
-  messagingSenderId: "1041471435882",
-  appId: "1:1041471435882:web:ab5368455a0f80d41e4613",
-};
-// Endereço da página que abre ao escanear o QR (GitHub Pages)
-const WEB_URL = "https://advfilipeaugusto.github.io/AutoLink/web/";
 
-const fb = initializeApp(firebaseConfig);
-let auth; try { auth = initializeAuth(fb, { persistence: getReactNativePersistence(AsyncStorage) }); } catch (e) { auth = getAuth(fb); }
-const db = getFirestore(fb);
+const KEY = 'AIzaSyBSGj1H273wiXM-VgpkytnC3kX6yQlt8_I';
+const BASE = 'https://firestore.googleapis.com/v1/projects/autolink-1aa51/databases/(default)/documents';
+const WEB_URL = 'https://advfilipeaugusto.github.io/AutoLink/web/';
 
-async function registerPush() {} // notificações desativadas na versão de teste do Snack
+// ---------- Login anônimo ----------
+let session = null; // { uid, token, refresh, exp }
+async function login() {
+  const saved = await AsyncStorage.getItem('session');
+  let r;
+  if (saved) {
+    const s = JSON.parse(saved);
+    r = await (await fetch('https://securetoken.googleapis.com/v1/token?key=' + KEY, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'grant_type=refresh_token&refresh_token=' + s.refresh })).json();
+    if (r.id_token) session = { uid: r.user_id, token: r.id_token, refresh: r.refresh_token };
+  }
+  if (!session) {
+    r = await (await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + KEY, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"returnSecureToken":true}' })).json();
+    if (!r.idToken) throw new Error(JSON.stringify(r.error || r));
+    session = { uid: r.localId, token: r.idToken, refresh: r.refreshToken };
+  }
+  session.exp = Date.now() + 50 * 60 * 1000;
+  await AsyncStorage.setItem('session', JSON.stringify(session));
+  return session.uid;
+}
+
+// ---------- Banco de dados ----------
+const enc = v => typeof v === 'boolean' ? { booleanValue: v } : v instanceof Date ? { timestampValue: v.toISOString() } : { stringValue: String(v) };
+const dec = f => 'booleanValue' in f ? f.booleanValue : 'timestampValue' in f ? new Date(f.timestampValue) : f.stringValue;
+const fields = o => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, enc(v)]));
+const unpack = d => ({ id: d.name.split('/').pop(), ...Object.fromEntries(Object.entries(d.fields || {}).map(([k, v]) => [k, dec(v)])) });
+async function api(path, method = 'GET', body) {
+  if (Date.now() > session.exp) { session = null; await login(); }
+  const r = await fetch(BASE + path, { method, headers: { Authorization: 'Bearer ' + session.token, 'Content-Type': 'application/json' }, body: body && JSON.stringify(body) });
+  const j = await r.json(); if (!r.ok) throw new Error(JSON.stringify(j.error || j)); return j;
+}
+const add = async (col, data) => unpack(await api('/' + col, 'POST', { fields: fields(data) }));
+const update = (path, data) => api('/' + path + '?' + Object.keys(data).map(k => 'updateMask.fieldPaths=' + k).join('&'), 'PATCH', { fields: fields(data) });
+async function find(col, filters, order, parent = '') {
+  const where = { compositeFilter: { op: 'AND', filters: filters.map(([f, v]) => ({ fieldFilter: { field: { fieldPath: f }, op: 'EQUAL', value: enc(v) } })) } };
+  const q = { from: [{ collectionId: col }], ...(filters.length && { where }), ...(order && { orderBy: [{ field: { fieldPath: order }, direction: 'ASCENDING' }] }) };
+  const res = await api(parent + ':runQuery', 'POST', { structuredQuery: q });
+  return res.filter(x => x.document).map(x => unpack(x.document));
+}
+// Atualiza a tela a cada 3 segundos
+function usePoll(fn, deps) {
+  useEffect(() => { let on = true; const run = () => fn().then(v => on && v).catch(() => {}); run(); const t = setInterval(run, 3000); return () => { on = false; clearInterval(t); }; }, deps);
+}
 
 export default function App() {
-  const [uid, setUid] = useState(null);
+  const [uid, setUid] = useState(null); const [err, setErr] = useState(null);
   const [screen, setScreen] = useState({ name: 'home' });
-  useEffect(() => onAuthStateChanged(auth, u => {
-    if (u) { setUid(u.uid); registerPush(u.uid).catch(() => {}); } else signInAnonymously(auth);
-  }), []);
+  useEffect(() => { login().then(setUid).catch(e => setErr(e.message)); }, []);
+  if (err) return <Center><Text style={{ padding: 20 }}>Erro ao entrar: {err}</Text></Center>;
   if (!uid) return <Center><Text>Carregando...</Text></Center>;
   const go = (name, p = {}) => setScreen({ name, ...p });
   return (
     <SafeAreaView style={s.root}>
       <View style={s.header}>
-        {screen.name !== 'home' && <TouchableOpacity onPress={() => go('home')}><Text style={s.back}>‹ Voltar</Text></TouchableOpacity>}
+        {screen.name !== 'home' && <TouchableOpacity onPress={() => go(screen.name === 'chat' ? 'car' : 'home', { car: screen.car })}><Text style={s.back}>‹ Voltar</Text></TouchableOpacity>}
         <Text style={s.title}>Auto Link</Text>
       </View>
       {screen.name === 'home' && <Home uid={uid} go={go} />}
@@ -47,12 +74,11 @@ export default function App() {
 function Home({ uid, go }) {
   const [cars, setCars] = useState([]);
   const [name, setName] = useState(''); const [plate, setPlate] = useState('');
-  useEffect(() => onSnapshot(query(collection(db, 'cars'), where('ownerId', '==', uid)),
-    snap => setCars(snap.docs.map(d => ({ id: d.id, ...d.data() })))), [uid]);
-  const add = async () => {
+  usePoll(async () => setCars(await find('cars', [['ownerId', uid]])), [uid]);
+  const create = async () => {
     if (!name) return Alert.alert('Dê um nome ao carro');
-    await addDoc(collection(db, 'cars'), { ownerId: uid, name, plate: plate.toUpperCase(), active: true, createdAt: serverTimestamp() });
-    setName(''); setPlate('');
+    try { const c = await add('cars', { ownerId: uid, name, plate: plate.toUpperCase(), active: true, createdAt: new Date() }); setCars(x => [...x, c]); setName(''); setPlate(''); }
+    catch (e) { Alert.alert('Erro', e.message); }
   };
   return (
     <View style={s.pad}>
@@ -64,7 +90,7 @@ function Home({ uid, go }) {
       <Text style={s.h2}>Adicionar carro</Text>
       <TextInput style={s.input} placeholder="Nome (ex: Onix prata)" value={name} onChangeText={setName} />
       <TextInput style={s.input} placeholder="Placa (opcional)" value={plate} onChangeText={setPlate} />
-      <Btn label="Adicionar" onPress={add} />
+      <Btn label="Adicionar" onPress={create} />
     </View>
   );
 }
@@ -73,9 +99,8 @@ function Car({ car, go }) {
   const [chats, setChats] = useState([]);
   const [active, setActive] = useState(car.active);
   const url = `${WEB_URL}?c=${car.id}`;
-  useEffect(() => onSnapshot(query(collection(db, 'chats'), where('carId', '==', car.id), where('ownerId', '==', car.ownerId)),
-    snap => setChats(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0)))), [car.id]);
-  const toggle = async v => { setActive(v); await updateDoc(doc(db, 'cars', car.id), { active: v }); };
+  usePoll(async () => setChats((await find('chats', [['carId', car.id], ['ownerId', car.ownerId]])).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))), [car.id]);
+  const toggle = async v => { setActive(v); car.active = v; await update('cars/' + car.id, { active: v }); };
   return (
     <View style={s.pad}>
       <Text style={s.h2}>{car.name}</Text>
@@ -86,7 +111,7 @@ function Car({ car, go }) {
       <FlatList data={chats} keyExtractor={c => c.id} renderItem={({ item }) => (
         <TouchableOpacity style={s.card} onPress={() => go('chat', { car, chatId: item.id })}>
           <Text numberOfLines={1}>{item.lastMsg}</Text>
-          <Text style={s.muted}>{item.updatedAt?.toDate?.().toLocaleString('pt-BR')}</Text>
+          <Text style={s.muted}>{item.updatedAt?.toLocaleString?.('pt-BR')}</Text>
         </TouchableOpacity>)} ListEmptyComponent={<Text style={s.muted}>Nenhuma mensagem ainda.</Text>} />
     </View>
   );
@@ -94,13 +119,14 @@ function Car({ car, go }) {
 
 function Chat({ car, chatId }) {
   const [msgs, setMsgs] = useState([]); const [text, setText] = useState(''); const list = useRef();
-  useEffect(() => onSnapshot(query(collection(db, 'chats', chatId, 'messages'), orderBy('at')),
-    snap => setMsgs(snap.docs.map(d => ({ id: d.id, ...d.data() })))), [chatId]);
+  usePoll(async () => setMsgs(await find('messages', [], 'at', '/chats/' + chatId)), [chatId]);
   const send = async () => {
     if (!text.trim()) return;
     const t = text.trim(); setText('');
-    await addDoc(collection(db, 'chats', chatId, 'messages'), { text: t, from: 'owner', at: serverTimestamp() });
-    await updateDoc(doc(db, 'chats', chatId), { lastMsg: 'Você: ' + t, updatedAt: serverTimestamp() });
+    try {
+      const m = await add('chats/' + chatId + '/messages', { text: t, from: 'owner', at: new Date() }); setMsgs(x => [...x, m]);
+      await update('chats/' + chatId, { lastMsg: 'Você: ' + t, updatedAt: new Date() });
+    } catch (e) { Alert.alert('Erro', e.message); }
   };
   const quick = ['Já estou indo!', 'Me dá 5 minutos', 'Obrigado pelo aviso!'];
   return (
