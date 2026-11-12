@@ -2,8 +2,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, SafeAreaView, Alert, Switch, Platform } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeApp } from 'firebase/app';
 import { getAuth, initializeAuth, getReactNativePersistence, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
@@ -22,16 +20,8 @@ const WEB_URL = "https://advfilipeaugusto.github.io/AutoLink/web/";
 const fb = initializeApp(firebaseConfig);
 let auth; try { auth = initializeAuth(fb, { persistence: getReactNativePersistence(AsyncStorage) }); } catch (e) { auth = getAuth(fb); }
 const db = getFirestore(fb);
-Notifications.setNotificationHandler({ handleNotification: async () => ({ shouldShowAlert: true, shouldPlaySound: true, shouldSetBadge: false }) });
 
-async function registerPush(uid) {
-  if (!Device.isDevice) return;
-  const { status } = await Notifications.requestPermissionsAsync();
-  if (status !== 'granted') return;
-  if (Platform.OS === 'android') await Notifications.setNotificationChannelAsync('default', { name: 'default', importance: 5 });
-  const token = (await Notifications.getExpoPushTokenAsync()).data;
-  await setDoc(doc(db, 'owners', uid), { pushToken: token }, { merge: true });
-}
+async function registerPush() {} // notificações desativadas na versão de teste do Snack
 
 export default function App() {
   const [uid, setUid] = useState(null);
