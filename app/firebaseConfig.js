@@ -6,5 +6,5 @@ export const firebaseConfig = {
   messagingSenderId: "1041471435882",
   appId: "1:1041471435882:web:ab5368455a0f80d41e4613",
 };
-// Endereço da página que abre ao escanear o QR (Firebase Hosting)
-export const WEB_URL = `https://${firebaseConfig.projectId}.web.app`;
+// Endereço da página que abre ao escanear o QR (GitHub Pages)
+export const WEB_URL = "https://advfilipeaugusto.github.io/AutoLink/web/";

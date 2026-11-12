@@ -9,7 +9,7 @@ form{display:flex;gap:8px}input{flex:1;padding:12px;border-radius:8px;border:1px
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, collection, addDoc, setDoc, updateDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-const cfg = await (await fetch('/__/firebase/init.json')).json(); // fornecido automaticamente pelo Firebase Hosting
+const cfg = { apiKey: "AIzaSyBSGj1H273wiXM-VgpkytnC3kX6yQlt8_I", authDomain: "autolink-1aa51.firebaseapp.com", projectId: "autolink-1aa51", appId: "1:1041471435882:web:ab5368455a0f80d41e4613" };
 const db = getFirestore(initializeApp(cfg)); const auth = getAuth();
 const app = document.getElementById('app'); const carId = new URLSearchParams(location.search).get('c');
 const esc = t => t.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
