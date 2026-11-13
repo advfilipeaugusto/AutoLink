@@ -125,13 +125,23 @@ function Home(){
   const fab=document.createElement('button');fab.className='fab';fab.setAttribute('aria-label','Escanear QR code');
   fab.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.4" stroke-linecap="round"><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3M7 12h10"/></svg>';
   fab.onclick=startScan;m.appendChild(fab);const fl=document.createElement('div');fl.className='fabl';fl.textContent='Escanear';m.appendChild(fl);
-  $('#f').onsubmit=async e=>{e.preventDefault();try{const c=await add('cars',{ownerId:S.uid,name:$('#n').value.trim(),plate:pl.value,active:true,createdAt:new Date()});go(Car,c);}catch(err){alert('Erro: '+err.message);}};
+  $('#f').onsubmit=async e=>{e.preventDefault();const bt=$('#f .btn');if(bt.disabled)return;bt.disabled=true;bt.textContent='Adicionando...';
+    try{const c=await add('cars',{ownerId:S.uid,name:$('#n').value.trim(),plate:pl.value,active:true,createdAt:new Date()});go(Car,c);}
+    catch(err){alert('Erro: '+err.message);bt.disabled=false;bt.textContent='Adicionar';}};
 }
 
 function Car(car){
   m.innerHTML=`<h2>${esc(car.name)}</h2><div id="st"></div>
   <div class="row"><span>QR ativo (recebendo mensagens)</span><label class="sw"><input type="checkbox" id="act" ${car.active?'checked':''}><span></span></label></div>
-  <h2>Conversas</h2><div id="chats"><p class="muted">Carregando...</p></div>`;
+  <h2>Conversas</h2><div id="chats"><p class="muted">Carregando...</p></div>
+  <button class="link" id="del" style="color:#d32f2f;margin-top:30px">Apagar este carro</button>`;
+  $('#del').onclick=async()=>{
+    if(!confirm(`Apagar o carro "${car.name}"?`+(car.stickerCode?`\n\nO adesivo ${car.stickerCode} será desvinculado e poderá ser ativado de novo (com o PIN) em outro carro.`:'')+'\n\nNão dá para desfazer.'))return;
+    try{
+      if(car.stickerCode)await api('/stickers/'+car.stickerCode+'?updateMask.fieldPaths=carId&updateMask.fieldPaths=ownerId&updateMask.fieldPaths=activatedAt&updateMask.fieldPaths=activationPin','PATCH',{fields:{carId:{nullValue:null},ownerId:{nullValue:null},activatedAt:{nullValue:null},activationPin:{nullValue:null}}});
+      await api('/cars/'+car.id,'DELETE');
+      stack.length=0;go(Home);
+    }catch(err){alert('Erro ao apagar: '+err.message);}};
   $('#act').onchange=async e=>{car.active=e.target.checked;try{await update('cars/'+car.id,{active:car.active});}catch(err){alert(err.message);}};
   const st=$('#st');
   if(car.stickerCode){st.innerHTML=`<div class="card" style="text-align:center"><div class="muted">Adesivo ativo</div><div class="code">${esc(car.stickerCode)}</div></div>`;}
