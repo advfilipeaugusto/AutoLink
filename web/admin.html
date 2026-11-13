@@ -151,7 +151,11 @@ async function openTicket(t){tkBox.style.display='';tkT.textContent='Conversa co
   tkS.onclick=async()=>{const v=tkR.value.trim();if(!v)return;const now=new Date();
     try{await api('/tickets/'+t.id+'/messages','POST',{fields:{text:enc(v),from:enc('team'),at:enc(now)}});
       await api('/tickets/'+t.id+'?updateMask.fieldPaths=lastMsg&updateMask.fieldPaths=updatedAt&updateMask.fieldPaths=unreadUser&updateMask.fieldPaths=status','PATCH',{fields:{lastMsg:enc('Equipe: '+v),updatedAt:enc(now),unreadUser:{booleanValue:true},status:enc('answered')}});
-      tkR.value='';load();tickets();}catch(e){alert(e.message);}};
+      tkR.value='';load();tickets();
+      if(t.email&&confirm('Resposta enviada ✅\n\nQuer avisar o cliente por e-mail também?')){const sub=encodeURIComponent('AutoLink · Resposta da Central de ajuda'+(t.protocol?' · Protocolo '+t.protocol:''));
+        const body=encodeURIComponent('Olá!\n\nA equipe AutoLink respondeu sua mensagem na Central de ajuda'+(t.protocol?' (protocolo '+t.protocol+')':'')+':\n\n"'+v+'"\n\nAbra o app AutoLink → menu ☰ → Central de ajuda para continuar a conversa.\n\nEquipe AutoLink');
+        location.href='mailto:'+t.email+'?subject='+sub+'&body='+body;}
+    }catch(e){alert(e.message);}};
   tkC.onclick=async()=>{await api('/tickets/'+t.id+'?updateMask.fieldPaths=status&updateMask.fieldPaths=closedAt&updateMask.fieldPaths=closedBy','PATCH',{fields:{status:enc('closed'),closedAt:enc(new Date()),closedBy:enc('team')}});tkBox.style.display='none';tickets();};
   tkBox.scrollIntoView({behavior:'smooth'});}
 async function adsList(){const l=(await q('adRequests')).filter(a=>!a.deleted).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));BD.anuncios=l.filter(a=>a.status==='new').length;badges();

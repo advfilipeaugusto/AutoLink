@@ -119,11 +119,14 @@ input[type=date],input[type=time]{min-height:50px}
 .ppi button{position:absolute;top:-6px;right:-6px;width:24px;height:24px;border-radius:50%;border:0;background:#ef4444;color:#fff;font-size:12px;padding:0}
 .ppa{width:76px;height:76px;border-radius:12px;border:2px dashed var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--mut);cursor:pointer}.ppa span{font-size:22px}.ppa small{font-size:11px}
 .lb{position:fixed;inset:0;background:#000e;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px}.lb img{max-width:100%;max-height:80vh;border-radius:12px}.lb button{background:#fff;color:#111;border:0;border-radius:20px;padding:8px 16px;font-weight:700}
+.rdot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444;margin-left:auto;box-shadow:0 0 0 2px var(--card)}.rdot[hidden]{display:none}
+input[type=date],input[type=time]{display:block;width:100%;max-width:100%;min-width:0;-webkit-appearance:none;appearance:none;text-align:left}
+.card{max-width:100%;overflow-wrap:anywhere}
 </style></head><body>
-<header><button id="menu" aria-label="Menu" style="padding:4px 6px 4px 0"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button id="back" hidden aria-label="Voltar" style="font-size:34px;line-height:1;padding:0 8px 4px 2px;font-weight:400">‹</button><div class="brand"><div class="t">Auto<span>Link</span></div><img class="lc lcw" src="logo-car-white.png" alt=""><img class="lc lcb" src="logo-car.png" alt=""></div><span style="flex:1"></span><button id="famI" hidden aria-label="Carro da família" style="font-size:22px;padding:4px 6px;position:relative">👨‍👩‍👧</button><button id="srch" hidden aria-label="Buscar" style="color:var(--tx);padding:4px"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button><button id="bell" hidden aria-label="Notificações" style="position:relative;color:var(--tx);padding:4px"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4zM10 21h4"/></svg><span class="nb" id="bellN"></span></button><button id="out" hidden>Sair</button></header>
+<header><button id="menu" aria-label="Menu" style="padding:4px 6px 4px 0;position:relative"><span class="rdot" id="menuDot" hidden style="position:absolute;top:0;right:2px"></span><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button id="back" hidden aria-label="Voltar" style="font-size:34px;line-height:1;padding:0 8px 4px 2px;font-weight:400">‹</button><div class="brand"><div class="t">Auto<span>Link</span></div><img class="lc lcw" src="logo-car-white.png" alt=""><img class="lc lcb" src="logo-car.png" alt=""></div><span style="flex:1"></span><button id="famI" hidden aria-label="Carro da família" style="font-size:22px;padding:4px 6px;position:relative">👨‍👩‍👧</button><button id="srch" hidden aria-label="Buscar" style="color:var(--tx);padding:4px"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button><button id="bell" hidden aria-label="Notificações" style="position:relative;color:var(--tx);padding:4px"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4zM10 21h4"/></svg><span class="nb" id="bellN"></span></button><button id="out" hidden>Sair</button></header>
 <main id="m"></main>
 <nav id="tabs" hidden></nav>
-<div id="drawer" hidden><div class="dbg"></div><aside><div class="dh" style="align-items:flex-start;gap:12px"><div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px"><b>Auto<span style="color:var(--or)">Link</span></b><img class="lcd lcw" src="logo-car-white.png" alt=""><img class="lcd lcb" src="logo-car.png" alt=""><div id="dEmail" hidden></div></div><label class="av" id="dAv" aria-label="Foto do perfil"><input type="file" accept="image/*" id="dAvI" style="position:absolute;width:1px;height:1px;opacity:0"></label></div><div id="dName" style="padding:0 18px 14px;margin-top:-8px;font-size:18px;font-weight:800"></div><div id="dItems"></div><div class="muted" style="margin-top:auto;padding:16px">Versão 1.0 · beta</div></aside></div><div id="toast"></div>
+<div id="drawer" hidden><div class="dbg"></div><aside><div class="dh" style="align-items:flex-start;gap:12px"><div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px"><b>Auto<span style="color:var(--or)">Link</span></b><img class="lcd lcw" src="logo-car-white.png" alt=""><img class="lcd lcb" src="logo-car.png" alt=""><div id="dEmail" hidden></div></div><label class="av" id="dAv" aria-label="Foto do perfil"><input type="file" accept="image/*" id="dAvI" style="position:absolute;width:1px;height:1px;opacity:0"></label></div><div id="dName" style="padding:10px 18px 14px;font-size:18px;font-weight:800"></div><div id="dItems"></div><div class="muted" style="margin-top:auto;padding:16px">Versão 1.0 · beta</div></aside></div><div id="toast"></div>
 <div id="scan"><video playsinline muted></video><div class="frame"></div><div class="tx" id="scanTx">Aponte para o QR code do adesivo AutoLink</div><button class="close" id="scanX" aria-label="Fechar">✕</button></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 <script src="extras.js"></script>
@@ -401,17 +404,17 @@ function handleQR(text){try{const u=new URL(text);const here=new URL('./',locati
 function theme(t){if(t)try{localStorage.setItem('al_theme',t)}catch(e){};const cur=(()=>{try{return localStorage.getItem('al_theme')}catch(e){}})()||'dark';
   if(cur==='light')document.documentElement.dataset.theme='light';else delete document.documentElement.dataset.theme;
   document.querySelector('meta[name=theme-color]').content=cur==='light'?'#ffffff':'#0b0b0c';return cur;}
-function openMenu(){const d=document.getElementById('drawer');d.hidden=false;document.getElementById('dEmail').textContent=S?.email||'Não conectado';drawAvatar();
+function openMenu(){const d=document.getElementById('drawer');d.hidden=false;lockPage(true);document.getElementById('dEmail').textContent=S?.email||'Não conectado';drawAvatar();
   const cur=theme();const I=(k,i,l,x='')=>`<button class="di" data-k="${k}">${ic(i)}<span>${l}</span>${x}</button>`;
   document.getElementById('dItems').innerHTML=I('home','home','Início')+I('myqr','qr','Meu QR code')
    +I('plan','shield','Meu plano','<span class="pill">Grátis</span>')
    +I('ads','mega','Quero anunciar no AutoLink')+I('sell','store','Quero vender no AutoLink')+I('share','users','Indicar o AutoLink')
-   +I('manual','doc','Manual do AutoLink')+I('help','msg','Central de ajuda')+I('terms','doc','Termos e privacidade')
+   +I('manual','doc','Manual do AutoLink')+I('help','msg','Central de ajuda',HELP_UNREAD?'<span class="rdot"></span>':'')+I('terms','doc','Termos e privacidade')
    +I('config','wrench','Configurações')
    +`<div class="dacc">${S?`<div class="muted">Conectado como</div><b>${esc(S.email||'')}</b><button class="chip" id="dOut" style="margin-top:10px">Sair da conta</button>`:''}</div>`;
   d.querySelectorAll('.di').forEach(b=>b.onclick=()=>{const k=b.dataset.k;
     if(k==='theme'){theme(cur==='light'?'dark':'light');return openMenu();}
-    d.hidden=true;
+    d.hidden=true;lockPage(false);
     if(k==='config')return go(Settings);
     if(k==='myqr')return go(MyQR);
     if(k==='manual')return location.href='manual.html';
@@ -423,8 +426,9 @@ function openMenu(){const d=document.getElementById('drawer');d.hidden=false;doc
     if(k==='profile')return loadProfile().then(()=>go(ProfileForm,{}));
     if(k==='notif')return askNotif();
     if(k==='plan')go(Plan);if(k==='ads')go(Advertise);if(k==='sell')go(Advertise,'sell');if(k==='help')go(Help);});
-  const o=document.getElementById('dOut');if(o)o.onclick=()=>{d.hidden=true;out.onclick();};
-  d.querySelector('.dbg').onclick=()=>d.hidden=true;}
+  const o=document.getElementById('dOut');if(o)o.onclick=()=>{d.hidden=true;lockPage(false);out.onclick();};
+  d.querySelector('.dbg').onclick=()=>{d.hidden=true;lockPage(false);};}
+function lockPage(on){document.documentElement.style.overflow=document.body.style.overflow=on?'hidden':'';document.body.style.touchAction=on?'none':'';}
 function Plan(){
   m.innerHTML=`<h2>Meu plano</h2>
   <div class="hero"><div class="lbl">Plano atual</div><div class="nm">Grátis</div><div class="pl">Todas as funções de segurança · com anúncios</div></div>
@@ -464,7 +468,7 @@ function Ticket(t){
   ticketHead(t);
   let last='';const load=async()=>{const ms=await find('messages',[],'at','/tickets/'+t.id);const html=ms.map(x=>`<div class="b ${x.from==='user'?'me':'them'}">${x.from==='team'?'<b style="font-size:12px;color:var(--or)">Equipe AutoLink</b><br>':''}${esc(x.text)}</div>`).join('');
     if(html!==last){last=html;$('#msgs').innerHTML=html;scrollTo(0,document.body.scrollHeight);}
-    if(t.unreadUser){t.unreadUser=false;update('tickets/'+t.id,{unreadUser:false}).catch(()=>{});}
+    if(t.unreadUser){t.unreadUser=false;update('tickets/'+t.id,{unreadUser:false}).then(checkHelp).catch(()=>{});}
     const fresh=unpack(await api('/tickets/'+t.id));Object.assign(t,fresh);ticketHead(t);};
   $('#f').onsubmit=async e=>{e.preventDefault();const v=$('#t').value.trim();if(!v)return;$('#t').value='';
     try{const now=new Date();await add('tickets/'+t.id+'/messages',{text:v,from:'user',at:now});await update('tickets/'+t.id,{lastMsg:v,updatedAt:now,status:'open',unreadTeam:true});load();}catch(err){alert('Erro: '+err.message);}};

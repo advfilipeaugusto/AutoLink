@@ -555,31 +555,39 @@ async function joinFamily(code) {
 
 // ---------- Calendário do carro (rodízio, IPVA, licenciamento) ----------
 const RODIZIO = { 1: 'Segunda-feira', 2: 'Segunda-feira', 3: 'Terça-feira', 4: 'Terça-feira', 5: 'Quarta-feira', 6: 'Quarta-feira', 7: 'Quinta-feira', 8: 'Quinta-feira', 9: 'Sexta-feira', 0: 'Sexta-feira' };
+const UFS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 async function Calendar() {
   if (!PROFILE) await loadProfile();
-  const cars = (await allCars()).filter(c => !c.shared), uf = (PROFILE && PROFILE.uf || '').toUpperCase(), city = (PROFILE && PROFILE.city || '').toLowerCase();
-  m.innerHTML = `<h2>📅 Calendário do carro</h2><select id="cc" class="sel">${cars.map(c => `<option value="${c.id}">${esc(c.name)} ${c.plate ? '· ' + esc(c.plate) : ''}</option>`).join('') || '<option>Cadastre um carro</option>'}</select><div id="cal"></div>`;
+  const cars = (await allCars()).filter(c => !c.shared), city = (PROFILE && PROFILE.city || '').toLowerCase();
+  let uf = (PROFILE && PROFILE.uf || '').toUpperCase();
+  m.innerHTML = `<h2>📅 Calendário do carro</h2>
+   <div class="muted" style="margin-bottom:4px">Carro</div><select id="cc" class="sel">${cars.map(c => `<option value="${c.id}">${esc(c.name)} ${c.plate ? '· ' + esc(c.plate) : ''}</option>`).join('') || '<option>Cadastre um carro</option>'}</select>
+   <div class="muted" style="margin-bottom:4px">Estado onde o carro é registrado</div><select id="cuf" class="sel">${UFS.map(u => `<option ${u === uf ? 'selected' : ''}>${u}</option>`).join('')}</select>
+   <div id="cal"></div>`;
+  if (!uf) { uf = 'SP'; el('cuf').value = uf; }
   const draw = () => {
+    uf = el('cuf').value;
     const car = cars.find(c => c.id === el('cc').value); const box = el('cal'); if (!car) return box.innerHTML = '';
     const d = (String(car.plate || '').match(/\d(?=[^\d]*$)/) || [])[0];
     if (d === undefined) { box.innerHTML = '<div class="card">Cadastre a <b>placa</b> deste carro para ver o calendário.</div>'; return; }
     const sp = city.includes('são paulo') || city.includes('sao paulo');
+    const y = new Date().getFullYear();
     box.innerHTML = `<div class="card" style="text-align:center"><div class="muted">Final da placa</div><div class="code" style="font-size:40px">${d}</div></div>
-     <div class="card"><b>🚦 Rodízio (cidade de São Paulo)</b><div style="font-size:20px;font-weight:800;color:var(--or);margin:6px 0">${RODIZIO[d]}</div>
-      <div class="muted">Das 7h às 10h e das 17h às 20h, no centro expandido. ${sp ? '' : 'Só vale para quem circula na cidade de São Paulo.'}</div></div>
-     <div class="card"><b>🧾 IPVA e 📄 Licenciamento ${uf ? '(' + esc(uf) + ')' : ''}</b><p class="muted" style="margin:6px 0">As datas mudam todo ano e dependem do estado e do final da placa (${d}). Confira no site da Secretaria da Fazenda e do DETRAN do seu estado e cadastre os lembretes abaixo.</p>
-      <a class="chip" style="display:inline-block;text-decoration:none;margin:0 6px 8px 0" target="_blank" href="https://www.google.com/search?q=${encodeURIComponent('calendário IPVA ' + new Date().getFullYear() + ' ' + (uf || '') + ' placa final ' + d)}">🔎 Ver calendário do IPVA</a>
-      <a class="chip" style="display:inline-block;text-decoration:none;margin:0 0 8px" target="_blank" href="https://www.google.com/search?q=${encodeURIComponent('calendário licenciamento ' + new Date().getFullYear() + ' DETRAN ' + (uf || '') + ' placa final ' + d)}">🔎 Ver calendário do licenciamento</a>
-      <div class="muted" style="margin-top:6px">Vencimento do IPVA</div><input type="date" id="ci">
+     ${uf === 'SP' ? `<div class="card"><b>🚦 Rodízio (cidade de São Paulo)</b><div style="font-size:20px;font-weight:800;color:var(--or);margin:6px 0">${RODIZIO[d]}</div>
+      <div class="muted">Das 7h às 10h e das 17h às 20h, no centro expandido. ${sp ? '' : 'Só vale para quem circula na cidade de São Paulo.'}</div></div>` : ''}
+     <div class="card"><b>🧾 IPVA e 📄 Licenciamento (${esc(uf)})</b><p class="muted" style="margin:6px 0">As datas mudam todo ano e dependem do estado e do final da placa (${d}). Confira e cadastre os lembretes abaixo.</p>
+      <a class="chip" style="display:block;text-align:center;text-decoration:none;margin:0 0 8px" target="_blank" href="https://www.google.com/search?q=${encodeURIComponent('calendário IPVA ' + y + ' ' + uf + ' placa final ' + d)}">🔎 Ver calendário do IPVA ${esc(uf)}</a>
+      <a class="chip" style="display:block;text-align:center;text-decoration:none;margin:0 0 10px" target="_blank" href="https://www.google.com/search?q=${encodeURIComponent('calendário licenciamento ' + y + ' DETRAN ' + uf + ' placa final ' + d)}">🔎 Ver calendário do licenciamento ${esc(uf)}</a>
+      <div class="muted">Vencimento do IPVA</div><input type="date" id="ci">
       <div class="muted">Vencimento do licenciamento</div><input type="date" id="cl">
       <button class="btn" id="cs">Criar lembretes</button></div>`;
     el('cs').onclick = async () => {
       const L = [['IPVA', el('ci').value], ['Licenciamento', el('cl').value]].filter(x => x[1]); if (!L.length) return toast('Preencha pelo menos uma data');
-      try { for (const [k, v] of L) await add('owners/' + S.uid + '/maint', { carId: car.id, kind: k, note: 'Vencimento (calendário)', remind: new Date(v + 'T09:00:00'), createdAt: new Date() });
+      try { for (const [k, v] of L) await add('owners/' + S.uid + '/maint', { carId: car.id, kind: k + ' (' + uf + ')', note: 'Vencimento (calendário)', remind: new Date(v + 'T09:00:00'), createdAt: new Date() });
         toast('Lembretes criados ✅ Aparecem na tela inicial 15 dias antes.'); } catch (e) { alert('Erro: ' + e.message); }
     };
   };
-  el('cc').onchange = draw; draw();
+  el('cc').onchange = draw; el('cuf').onchange = draw; draw();
 }
 
 // ---------- Mercado (busca, filtros e compatibilidade) ----------
@@ -679,3 +687,8 @@ async function Search() {
       b.innerHTML = `<span style="font-size:22px">${e}</span><div style="flex:1;min-width:0"><b style="font-size:15px">${esc(t)}</b></div><span class="pill" style="margin:0">${k}</span>`; b.onclick = f; box.appendChild(b); }); };
   el('sq').oninput = run; run(); el('sq').focus();
 }
+
+// ---------- Ponto vermelho: resposta da equipe na Central de ajuda ----------
+let HELP_UNREAD = 0;
+async function checkHelp() { if (!S) return; try { const l = await find('tickets', [['userId', S.uid]]); HELP_UNREAD = l.filter(t => t.unreadUser && !t.deleted).length; } catch (e) {} const d = el('menuDot'); if (d) d.hidden = !HELP_UNREAD; }
+setInterval(checkHelp, 30000); setTimeout(checkHelp, 2500);
