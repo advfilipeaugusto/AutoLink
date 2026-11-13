@@ -7,7 +7,7 @@ form{display:flex;gap:8px}input{flex:1;padding:12px;border-radius:8px;border:1px
 .muted{color:#777;font-size:13px}</style></head><body><header><img src="logo.svg" alt=""><div>Auto<span>Link</span></div></header><main id="app">Carregando...</main>
 <script>
 const KEY='AIzaSyBSGj1H273wiXM-VgpkytnC3kX6yQlt8_I', BASE='https://firestore.googleapis.com/v1/projects/autolink-1aa51/databases/(default)/documents';
-const app=document.getElementById('app'), carId=new URLSearchParams(location.search).get('c');
+const app=document.getElementById('app'), qs=new URLSearchParams(location.search), stickerCode=(qs.get('s')||'').toUpperCase(); let carId=qs.get('c');
 const esc=t=>String(t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const enc=v=>typeof v==='boolean'?{booleanValue:v}:v instanceof Date?{timestampValue:v.toISOString()}:{stringValue:String(v)};
 const dec=f=>'booleanValue' in f?f.booleanValue:'timestampValue' in f?new Date(f.timestampValue):f.stringValue;
@@ -56,6 +56,12 @@ function showChat(){
 (async()=>{
   try{
     await login();
+    if(stickerCode){
+      let st=null; try{ st=unpack(await api('/stickers/'+stickerCode)); }catch(e){}
+      if(!st){ app.innerHTML='<p>Adesivo não encontrado.</p>'; return; }
+      if(!st.carId){ app.innerHTML=`<h2>Adesivo novo 🎉</h2><p>Este adesivo AutoLink ainda não foi ativado.</p><p><b>É seu?</b> Abra o app AutoLink, toque no seu carro e em <b>"Ativar adesivo"</b>, e digite o código:</p><p style="font-size:28px;font-weight:900;letter-spacing:2px;background:#111;color:#FF6B00;padding:12px;border-radius:12px;text-align:center">${esc(stickerCode)}</p>`; return; }
+      carId=st.carId;
+    }
     car=carId&&unpack(await api('/cars/'+carId));
   }catch(e){ car=null; }
   if(!car||!car.active){app.innerHTML='<p>Este QR code não está ativo.</p>';return;}

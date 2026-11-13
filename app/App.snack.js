@@ -100,6 +100,29 @@ function Home({ uid, go }) {
   );
 }
 
+function Sticker({ car }) {
+  const [code, setCode] = useState(''); const [linked, setLinked] = useState(car.stickerCode);
+  const activate = async () => {
+    const c = code.trim().toUpperCase(); if (!c) return;
+    try {
+      let st; try { st = unpack(await api('/stickers/' + c)); } catch (e) { return Alert.alert('Código não encontrado', 'Confira o código impresso no adesivo.'); }
+      if (st.carId) return Alert.alert('Adesivo já ativado', 'Este adesivo já está vinculado a um carro.');
+      await update('stickers/' + c, { carId: car.id, ownerId: car.ownerId, activatedAt: new Date() });
+      await update('cars/' + car.id, { stickerCode: c });
+      car.stickerCode = c; setLinked(c); Alert.alert('Adesivo ativado! ✅', 'Quem escanear o adesivo agora fala com você.');
+    } catch (e) { Alert.alert('Erro', e.message); }
+  };
+  if (linked) return <View style={[s.card, { alignItems: 'center' }]}><Text style={s.muted}>Adesivo ativo</Text><Text style={{ fontSize: 24, fontWeight: '900', letterSpacing: 2 }}>{linked}</Text></View>;
+  return (
+    <View style={s.card}>
+      <Text style={{ fontWeight: '700', marginBottom: 6 }}>Ativar adesivo AutoLink</Text>
+      <Text style={[s.muted, { marginBottom: 8 }]}>Digite o código impresso no seu adesivo (ex: AL-7K3P9X).</Text>
+      <TextInput style={s.input} placeholder="AL-XXXXXX" value={code} onChangeText={t => setCode(t.toUpperCase())} autoCapitalize="characters" autoCorrect={false} spellCheck={false} maxLength={9} />
+      <Btn label="Ativar adesivo" onPress={activate} />
+    </View>
+  );
+}
+
 function Car({ car, go }) {
   const [chats, setChats] = useState([]);
   const [active, setActive] = useState(car.active);
@@ -118,8 +141,7 @@ function Car({ car, go }) {
   return (
     <View style={s.pad}>
       <Text style={s.h2}>{car.name}</Text>
-      <View style={s.qr}><QRCode value={url} size={200} color="#111" /></View>
-      <Btn label="Ver adesivo para imprimir" onPress={() => Linking.openURL(`${WEB_URL}adesivo.html?c=${car.id}`)} />
+      <Sticker car={car} />
       <View style={s.row}><Text>QR ativo</Text><Switch value={active} onValueChange={toggle} /></View>
       {topic && <Btn label="🔔 Ativar notificações" onPress={enableNotif} />}
       <Text style={s.h2}>Conversas</Text>

@@ -1,0 +1,51 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AutoLink Admin</title><link rel="icon" href="logo.svg"><meta name="robots" content="noindex">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+body{margin:0;font-family:system-ui,Arial,sans-serif;background:#f5f5f5;color:#111}
+header{background:#111;color:#fff;padding:14px 16px;font-size:22px;font-weight:900}header span{color:#FF6B00}
+main{padding:16px;max-width:900px;margin:auto}.box{background:#fff;border-radius:14px;padding:16px;margin-bottom:14px}
+input{padding:12px;border:1px solid #ccc;border-radius:8px;font-size:16px;width:100%;box-sizing:border-box;margin:6px 0}
+button{background:#FF6B00;color:#111;border:0;border-radius:10px;padding:12px 18px;font-size:16px;font-weight:800;margin:6px 6px 0 0}
+.muted{color:#666;font-size:14px}code{background:#eee;padding:2px 6px;border-radius:4px}
+.sheet{display:flex;flex-wrap:wrap;gap:4mm;justify-content:center}
+.st{width:60mm;background:#111;border-radius:5mm;padding:4mm;color:#fff;text-align:center;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid}
+.st .b{font-size:7mm;font-weight:900;letter-spacing:-.3mm}.st .b span{color:#FF6B00}
+.st .t{font-size:3.2mm;font-weight:800;margin:1.5mm 0}.st .t b{color:#FF6B00}
+.st .q{background:#fff;border:1.2mm solid #FF6B00;border-radius:3mm;padding:2mm;display:inline-block}.st .q img,.st .q canvas{width:36mm!important;height:36mm!important;display:block}
+.st .c{font-size:3mm;color:#bbb;margin-top:1.5mm;letter-spacing:.3mm}.st .c b{color:#FF6B00}
+@media print{header,.box{display:none}main{padding:0;max-width:none}body{background:#fff}@page{size:A4;margin:8mm}}
+</style></head><body>
+<header>Auto<span>Link</span> · Painel da empresa</header><main id="m">Carregando...</main>
+<script>
+const KEY='AIzaSyBSGj1H273wiXM-VgpkytnC3kX6yQlt8_I',BASE='https://firestore.googleapis.com/v1/projects/autolink-1aa51/databases/(default)/documents',DOC='projects/autolink-1aa51/databases/(default)/documents';
+const SITE=location.origin+location.pathname.replace('admin.html','');
+const m=document.getElementById('m');let S=JSON.parse(sessionStorage.getItem('adm')||'null');
+const enc=v=>v instanceof Date?{timestampValue:v.toISOString()}:{stringValue:String(v)};
+async function api(path,method='GET',body){const r=await fetch(BASE+path,{method,headers:{Authorization:'Bearer '+S.token,'Content-Type':'application/json'},body:body&&JSON.stringify(body)});const j=await r.json();if(!r.ok)throw new Error(j.error?.message||JSON.stringify(j));return j;}
+function loginView(msg=''){m.innerHTML=`<div class="box"><h3>Entrar</h3><p class="muted">${msg}</p><input id="e" type="email" placeholder="E-mail"><input id="p" type="password" placeholder="Senha"><button id="go">Entrar</button></div>`;
+  go.onclick=async()=>{const r=await(await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key='+KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e.value,password:p.value,returnSecureToken:true})})).json();
+    if(!r.idToken)return loginView('E-mail ou senha incorretos.');S={uid:r.localId,token:r.idToken};sessionStorage.setItem('adm',JSON.stringify(S));main();};}
+async function isAdmin(){try{await api('/admins/'+S.uid);return true}catch(e){return false}}
+async function main(){
+  if(!S)return loginView();
+  if(!await isAdmin()){m.innerHTML=`<div class="box"><h3>Quase lá</h3><p>Sua conta ainda não é administradora. No Firebase, em <b>Firestore</b>, crie a coleção <code>admins</code> com um documento cujo ID é:</p><p><code style="font-size:18px">${S.uid}</code></p><p class="muted">(pode deixar sem campos, ou adicione nome: string). Depois recarregue esta página.</p><button onclick="sessionStorage.clear();location.reload()">Sair</button></div>`;return;}
+  m.innerHTML=`<div class="box"><h3>Gerar lote de adesivos</h3><p class="muted">Cada adesivo recebe um código único. O cliente ativa no app depois de colar no carro.</p>
+  <input id="n" type="number" value="12" min="1" max="200"><input id="lote" placeholder="Nome do lote (ex: Lote 1 - Nov/2026)">
+  <button id="gen">Gerar adesivos</button><button onclick="print()">Imprimir / PDF</button>
+  <h3 style="margin-top:20px">Reimprimir lote</h3><input id="rl" placeholder="Nome exato do lote"><button id="re">Carregar lote</button><p id="info" class="muted"></p></div><div class="sheet" id="sheet"></div>`;
+  gen.onclick=generate;re.onclick=reload;}
+const ALPHA='ABCDEFGHJKMNPQRSTUVWXYZ23456789';const code=()=>'AL-'+Array.from(crypto.getRandomValues(new Uint8Array(6)),b=>ALPHA[b%ALPHA.length]).join('');
+async function generate(){const n=Math.min(200,Math.max(1,+document.getElementById('n').value||0)),b=lote.value.trim()||('Lote '+new Date().toLocaleDateString('pt-BR'));
+  const codes=Array.from({length:n},code),now=new Date();
+  try{await api(':commit','POST',{writes:codes.map(c=>({update:{name:DOC+'/stickers/'+c,fields:{batch:enc(b),createdAt:enc(now)}},currentDocument:{exists:false}}))});}
+  catch(e){return alert('Erro ao gerar: '+e.message+'\nTente de novo.');}
+  info.textContent=`${n} adesivos gerados no lote "${b}". Clique em Imprimir.`;render(codes);}
+async function reload(){const r=await api(':runQuery','POST',{structuredQuery:{from:[{collectionId:'stickers'}],where:{fieldFilter:{field:{fieldPath:'batch'},op:'EQUAL',value:{stringValue:rl.value.trim()}}}}});
+  const docs=r.filter(x=>x.document);const codes=docs.map(x=>x.document.name.split('/').pop());const act=docs.filter(x=>x.document.fields.carId).length;
+  info.textContent=`${codes.length} adesivos no lote (${act} já ativados).`;render(codes);}
+function render(codes){sheet.innerHTML='';for(const c of codes){const d=document.createElement('div');d.className='st';
+  d.innerHTML=`<div class="b">Auto<span>Link</span></div><div class="t">Precisa falar com o<br><b>dono deste carro?</b></div><div class="q"></div><div class="c">Aponte a câmera do celular<br><b style="font-size:3.6mm;letter-spacing:.5mm">${c}</b></div>`;
+  sheet.appendChild(d);new QRCode(d.querySelector('.q'),{text:SITE+'?s='+c,width:300,height:300,colorDark:'#111',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});}}
+main();
+</script></body></html>

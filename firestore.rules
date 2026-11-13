@@ -5,6 +5,16 @@ service cloud.firestore {
     match /owners/{uid} { allow read, write: if me() == uid; }
     match /owners/{uid}/blocked/{vid} { allow read, write: if me() == uid; }
     match /reports/{r} { allow create: if request.resource.data.ownerId == me(); }
+    function isAdmin() { return request.auth != null && exists(/databases/$(db)/documents/admins/$(me())); }
+    match /admins/{uid} { allow get: if me() == uid; }
+    match /stickers/{code} {
+      allow get: if request.auth != null;
+      allow list, create, delete: if isAdmin();
+      allow update: if isAdmin() || (resource.data.get('carId', null) == null
+        && request.resource.data.ownerId == me()
+        && get(/databases/$(db)/documents/cars/$(request.resource.data.carId)).data.ownerId == me()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['carId', 'ownerId', 'activatedAt']));
+    }
     match /cars/{carId} {
       allow get: if request.auth != null;
       allow list: if resource.data.ownerId == me();
