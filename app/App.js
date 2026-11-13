@@ -66,7 +66,7 @@ function Home({ uid, go }) {
         </TouchableOpacity>)} ListEmptyComponent={<Text style={s.muted}>Nenhum carro ainda.</Text>} />
       <Text style={s.h2}>Adicionar carro</Text>
       <TextInput style={s.input} placeholder="Nome (ex: Onix prata)" value={name} onChangeText={setName} />
-      <TextInput style={s.input} placeholder="Placa (opcional)" value={plate} onChangeText={setPlate} />
+      <TextInput style={s.input} placeholder="Placa (opcional) ex: ABC1D23" value={plate} onChangeText={t => setPlate(t.toUpperCase().replace(/[^A-Z0-9]/g, ''))} autoCorrect={false} autoCapitalize="characters" spellCheck={false} autoComplete="off" maxLength={7} />
       <Btn label="Adicionar" onPress={add} />
     </View>
   );
