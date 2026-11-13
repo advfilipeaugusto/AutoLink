@@ -179,7 +179,7 @@ function toast(t){const e=document.getElementById('toast');e.textContent=t;e.cla
 const SOON='🚧 Funcionalidade em construção. Em breve!';
 function Soon(k){
   if(k==='mercado'){m.innerHTML=`<h2>Mercado</h2><p class="muted">Tudo para o seu carro em um só lugar.</p><div class="grid" style="margin-top:14px">
-   ${[['🔩','Peças'],['🚗','Compra e venda'],['🛡️','Seguros'],['🔑','Aluguel de carros'],['🔧','Oficinas'],['🧽','Lava-jato'],['🚛','Guincho 24h'],['🎧','Acessórios'],['📡','Rastreador GPS'],['⛽','Postos'],['⚡','Postos elétricos'],['🅿️','Estacionamentos'],['📋','Despachante'],['🔍','Perito automotivo'],['🎨','Funilaria e pintura'],['🔊','Som e película'],['✅','Vistoria']]
+   ${[['🔩','Peças'],['🚗','Compra e venda'],['🛡️','Seguros'],['🔑','Aluguel de carros'],['🔧','Oficinas'],['🧽','Lava-jato'],['🚛','Guincho 24h'],['🎧','Acessórios'],['📡','Rastreador GPS'],['⛽','Postos'],['⚡','Postos elétricos'],['🅿️','Estacionamentos'],['🤝','Parceiros'],['📋','Despachante'],['🔍','Perito automotivo'],['🎨','Funilaria e pintura'],['🔊','Som e película'],['✅','Vistoria']]
     .map(([e,l])=>`<button class="sc"><span class="ic" style="font-size:28px">${e}</span>${l}</button>`).join('')}</div>
    <div class="warn" style="text-align:center">🚧 O Mercado está em construção. Em breve!</div>`;
    m.querySelectorAll('.sc').forEach(b=>b.onclick=()=>toast('🚧 '+b.textContent.trim()+': em construção. Em breve!'));return;}
@@ -225,7 +225,7 @@ function Home(){
   <h2>Avisos sobre meu carro</h2><div id="alerts"><div class="card muted">Carregando...</div></div>
   <h2>Alertas na minha região</h2><div id="rmap"></div>
   <h2>Funcionalidades</h2><div class="grid g5">
-   ${[['alerta','siren','Criar alerta','#ef4444'],['acid','car','Acidente','#ef4444'],['away','bell','Ausência'],['qr','qr','Meu QR'],['hist','msg','Histórico'],['man','wrench','Manutenção'],['doc','doc','Documentos'],['perdi','car','Perdi meu carro','#f59e0b'],['emp','store','Empresa','#3b82f6'],['parc','shield','Parceiros','#22c55e']]
+   ${[['alerta','siren','Criar alerta','#ef4444'],['acid','car','Acidente','#ef4444'],['away','bell','Ausência'],['qr','qr','Meu QR'],['hist','msg','Histórico'],['man','wrench','Manutenção'],['doc','doc','Documentos'],['perdi','car','Perdi meu carro','#f59e0b'],['emp','store','Empresa','#3b82f6'],['repo','qr','Danifiquei / perdi QR','#f59e0b']]
      .map(([k,i,l,c])=>`<button class="sc" data-k="${k}"><span class="ic">${ic(i,c||'#FF6B00')}</span>${l}</button>`).join('')}</div>
   ${installTip()}`;
   let cars=[],idx=0;
@@ -235,6 +235,7 @@ function Home(){
     if(k==='acid')return go(Accident);if(k==='away')return go(Away);if(k==='man')return go(Maint);if(k==='doc')return go(Docs);
     if(k==='qr')return go(MyQR);
     if(k==='emp')return go(Company);
+    if(k==='repo')return go(Replace);
     toast(SOON);});
   const carSvg=`<svg class="car" viewBox="0 0 120 60" fill="none" stroke="#FF6B00" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 44H8c-2 0-3-1-3-3v-7c0-2 1-3 3-4l14-4 12-9c3-2 7-3 11-3h22c5 0 9 2 12 5l9 8 14 2c4 1 7 4 7 8v4c0 2-1 3-3 3h-6"/><path d="M38 44h40"/><circle cx="26" cy="44" r="8"/><circle cx="90" cy="44" r="8"/><path d="M36 26h50"/></svg>`;
   const drawHero=()=>{const h=document.getElementById('hero');if(!h)return;
@@ -323,7 +324,7 @@ function Car(car){
       if(s.disabled)return alert('Código não encontrado. Confira o código impresso no adesivo.');
       if(s.carId)return alert('Este adesivo já está vinculado a um carro.');
       try{await update('stickers/'+c,{carId:car.id,ownerId:S.uid,activatedAt:new Date(),activationPin:p});}catch(err){return alert('PIN incorreto. Confira o PIN no cartão de ativação.');}
-      await update('cars/'+car.id,{stickerCode:c});car.stickerCode=c;alert('Adesivo ativado! ✅ Quem escanear o adesivo agora fala com você.');go(Car,car,false);};}
+      await update('cars/'+car.id,{stickerCode:c,active:true});car.stickerCode=c;car.active=true;alert('Adesivo ativado! ✅ Quem escanear o adesivo agora fala com você.');go(Car,car,false);};}
   const list=async()=>{const chats=(await find('chats',[['carId',car.id],['ownerId',S.uid]])).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
     const box=$('#chats');if(!box)return;box.innerHTML=chats.length?'':'<p class="muted">Nenhuma mensagem ainda.</p>';
     for(const c of chats){const b=document.createElement('button');b.className='card';

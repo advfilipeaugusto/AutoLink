@@ -435,3 +435,40 @@ async function deleteAccount() {
     alert('Sua conta foi apagada.'); location.reload();
   } catch (e) { alert('Erro ao apagar: ' + e.message); }
 }
+
+// ---------- Reposição de adesivo (danificado / perdido) ----------
+const RREASON = { damaged: '🩹 Danificado / rasgado', faded: '🌫️ Desbotado / ilegível', lost: '❓ Perdi o adesivo', stolen: '🚨 Foi roubado / arrancado', newcar: '🚗 Troquei o vidro do carro' };
+async function Replace() {
+  m.innerHTML = `<h2>🔁 Danifiquei ou perdi meu QR</h2>
+  <div class="card"><b>Como funciona</b><p class="muted" style="margin:6px 0 0">1. Você pede um adesivo novo aqui.<br>2. A equipe AutoLink prepara e envia para o seu endereço.<br>3. O adesivo antigo é <b>desativado</b>.<br>4. Você ativa o novo com o <b>PIN do cartão novo</b>.</p></div>
+  <div class="muted" style="margin:12px 0 6px">Qual carro?</div><select id="rc" class="sel"></select>
+  <div class="muted" style="margin:4px 0 6px">O que aconteceu?</div>
+  <div class="types" style="grid-template-columns:1fr 1fr">${Object.entries(RREASON).map(([k, t]) => `<button data-r="${k}" style="font-size:13px;padding:12px 6px">${t}</button>`).join('')}</div>
+  <div class="warn" id="rw" style="display:none;margin:0 0 10px">🛡️ Por segurança, o QR deste carro será <b>pausado agora</b>. Ninguém consegue usar o adesivo antigo. Quando o novo chegar e for ativado, o QR volta a funcionar.</div>
+  <div class="card"><b style="font-size:15px">📦 Endereço de entrega</b><div class="muted" id="ra">Carregando...</div><button class="chip" id="rae" style="margin-top:8px">Alterar endereço</button></div>
+  <textarea id="rn" maxlength="200" placeholder="Observação (opcional)"></textarea>
+  <button class="btn" id="rs">Pedir adesivo novo</button>
+  <h2>Meus pedidos</h2><div id="rl"><p class="muted">Carregando...</p></div>`;
+  let reason = null;
+  const cars = (await find('cars', [['ownerId', S.uid]])).filter(c => c.stickerCode);
+  el('rc').innerHTML = cars.length ? cars.map(c => `<option value="${c.id}">${esc(c.name)} · ${esc(c.stickerCode)}</option>`).join('') : '<option value="">Nenhum carro com adesivo ativado</option>';
+  m.querySelectorAll('[data-r]').forEach(b => b.onclick = () => { reason = b.dataset.r; m.querySelectorAll('[data-r]').forEach(x => x.classList.toggle('on', x === b)); el('rw').style.display = reason === 'lost' || reason === 'stolen' ? 'block' : 'none'; });
+  if (!PROFILE) await loadProfile();
+  const p = PROFILE || {}, addr = [p.street, p.num, p.comp, p.district, p.city && p.city + '/' + p.uf, p.cep].filter(Boolean).join(', ');
+  el('ra').textContent = addr || 'Complete seu endereço em Meu perfil';
+  el('rae').onclick = () => go(ProfileForm, {});
+  el('rs').onclick = async () => {
+    const car = cars.find(c => c.id === el('rc').value); if (!car) return toast('Escolha o carro'); if (!reason) return toast('Diga o que aconteceu'); if (!addr) return toast('Complete seu endereço em Meu perfil');
+    const b = el('rs'); b.disabled = true; b.textContent = 'Enviando...';
+    try {
+      if (reason === 'lost' || reason === 'stolen') await update('cars/' + car.id, { active: false });
+      await add('replacements', { userId: S.uid, email: S.email || '', name: p.name || '', phone: p.phone || '', carId: car.id, carName: car.name, oldCode: car.stickerCode, reason, address: addr, note: el('rn').value.trim(), status: 'pending', createdAt: new Date() });
+      alert('Pedido enviado ✅\n\nA equipe AutoLink vai preparar seu adesivo novo e enviar para o endereço informado.' + (reason === 'lost' || reason === 'stolen' ? '\n\nO QR antigo foi pausado por segurança.' : ''));
+      go(Replace, null, false);
+    } catch (e) { alert('Erro: ' + e.message); b.disabled = false; b.textContent = 'Pedir adesivo novo'; }
+  };
+  const ST = { pending: '⏳ Em preparação', sent: '📦 Enviado', done: '✅ Concluído', rejected: '❌ Cancelado' };
+  try { const l = (await find('replacements', [['userId', S.uid]])).sort((a, b) => b.createdAt - a.createdAt); const box = el('rl'); if (!box) return;
+    box.innerHTML = l.length ? l.map(r => `<div class="card"><b>${ST[r.status] || r.status}</b> · ${esc(r.carName)}<div class="muted">${RREASON[r.reason] || ''} · ${r.createdAt ? r.createdAt.toLocaleDateString('pt-BR') : ''}</div>${r.newCode ? `<div class="muted">Novo adesivo: <b>${esc(r.newCode)}</b>. Ative com o PIN do cartão que veio junto: Garagem → carro → Ativar adesivo.</div>` : ''}</div>`).join('') : '<p class="muted">Nenhum pedido.</p>';
+  } catch (e) { const box = el('rl'); if (box) box.innerHTML = '<p class="muted">Nenhum pedido.</p>'; }
+}

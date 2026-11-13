@@ -13,6 +13,11 @@ service cloud.firestore {
       allow update: if me() == uid && request.resource.data.doc == resource.data.doc
         && request.resource.data.name == resource.data.name && request.resource.data.docType == resource.data.docType;
     }
+    match /replacements/{id} {
+      allow get, list: if request.auth != null && (resource.data.userId == me() || isAdmin());
+      allow create: if request.auth != null && request.resource.data.userId == me() && request.resource.data.status == 'pending';
+      allow update, delete: if isAdmin();
+    }
     match /accidents/{id} {
       allow get, list: if request.auth != null && (resource.data.authorId == me() || isAdmin());
       allow create: if request.auth != null && request.resource.data.authorId == me() && request.resource.data.status == 'pending'

@@ -66,6 +66,7 @@ async function main(){
   <button id="gen">Gerar adesivos</button><button onclick="print()">Imprimir / PDF</button>
   <p id="info" class="muted"></p></div>
   <div class="box" data-tab="alertas"><h3>🚨 Alertas regionais</h3><div id="alr" class="muted">Carregando...</div></div>
+  <div class="box" data-tab="repo"><h3>🔁 Reposição de adesivo</h3><div id="rps" class="muted">Carregando...</div></div>
   <div class="box" data-tab="lixo"><h3>🗂️ QRs desativados</h3><div id="trs" class="muted">Carregando...</div></div>
   <div class="box" data-tab="acidentes"><h3>🚑 Acidentes</h3><div id="acc" class="muted">Carregando...</div></div>
   <div class="box" data-tab="ajuda"><h3>💬 Central de ajuda</h3><div id="tks" class="muted">Carregando...</div></div>
@@ -75,18 +76,18 @@ async function main(){
   <div class="box" data-tab="adesivos"><h3>Histórico de lotes</h3><div id="hist" class="muted">Carregando...</div></div>
   <div class="box" data-tab="adesivos" id="detBox" style="display:none;position:relative"><button class="x" onclick="closeBatch()" title="Fechar" aria-label="Fechar">✕</button><h3 id="detT" style="padding-right:40px"></h3><div id="det"></div></div><div class="sheet" id="sheet"></div>`;
   gen.onclick=generate;history();home();refreshAll();setInterval(refreshAll,30000);}
-let TAB=null;const TABS=[['numeros','📊','Números','Usuários, adesivos e conversas'],['adesivos','🏷️','Adesivos','Gerar, imprimir e acompanhar lotes'],['alertas','🚨','Alertas','Aprovar alertas regionais'],['acidentes','🚑','Acidentes','Analisar e avisar a família'],['ajuda','💬','Central de ajuda','Responder clientes'],['lixo','🗂️','QRs desativados','Desfazer ou apagar de vez'],['anuncios','📣','Anunciantes e vendedores','Pedidos para anunciar ou vender']];
+let TAB=null;const TABS=[['numeros','📊','Números','Usuários, adesivos e conversas'],['adesivos','🏷️','Adesivos','Gerar, imprimir e acompanhar lotes'],['alertas','🚨','Alertas','Aprovar alertas regionais'],['acidentes','🚑','Acidentes','Analisar e avisar a família'],['ajuda','💬','Central de ajuda','Responder clientes'],['repo','🔁','Reposição de adesivo','Danificados e perdidos'],['lixo','🗂️','QRs desativados','Desfazer ou apagar de vez'],['anuncios','📣','Anunciantes e vendedores','Pedidos para anunciar ou vender']];
 function home(){TAB=null;hb.hidden=true;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.add('hide'));sheet.style.display='none';
   hub.hidden=false;hub.innerHTML=`<h2 style="margin:4px 0 14px">Olá! O que você quer fazer?</h2><div class="hubg">${TABS.map(([k,e,l,d])=>`<button data-k="${k}"><span class="e">${e}</span><b>${l}</b><small>${d}</small><span class="bd" id="bd-${k}"></span></button>`).join('')}</div>`;
   hub.querySelectorAll('button').forEach(b=>b.onclick=()=>tab(b.dataset.k));badges();scrollTo(0,0);}
 function tab(t){TAB=t;if(t==='numeros')numbers();hub.hidden=true;hb.hidden=false;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('hide',x.dataset.tab!==t));sheet.style.display=t==='adesivos'?'':'none';scrollTo(0,0);}
 let BD={};function badges(){for(const k in BD){const e=document.getElementById('bd-'+k);if(e)e.textContent=BD[k]?BD[k]:'';}
-  const n=(BD.acidentes||0)+(BD.alertas||0)+(BD.ajuda||0)+(BD.anuncios||0);const b=document.getElementById('bellN');if(b)b.textContent=n?n:'';}
+  const n=(BD.repo||0)+(BD.acidentes||0)+(BD.alertas||0)+(BD.ajuda||0)+(BD.anuncios||0);const b=document.getElementById('bellN');if(b)b.textContent=n?n:'';}
 function pend(){TAB=null;hb.hidden=false;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.add('hide'));sheet.style.display='none';hub.hidden=false;
-  const L=[['acidentes','🚑','acidente(s) para analisar'],['alertas','🚨','alerta(s) para aprovar'],['ajuda','💬','mensagem(ns) de clientes'],['anuncios','📣','pedido(s) de anúncio, venda ou empresa']].filter(([k])=>BD[k]);
+  const L=[['repo','🔁','pedido(s) de adesivo novo'],['acidentes','🚑','acidente(s) para analisar'],['alertas','🚨','alerta(s) para aprovar'],['ajuda','💬','mensagem(ns) de clientes'],['anuncios','📣','pedido(s) de anúncio, venda ou empresa']].filter(([k])=>BD[k]);
   hub.innerHTML=`<h2 style="margin:4px 0 14px">🔔 Pendências</h2>`+(L.length?`<div class="hubg">${L.map(([k,e,t])=>`<button data-k="${k}"><span class="e">${e}</span><b>${BD[k]} ${t}</b><small>Toque para abrir</small></button>`).join('')}</div>`:'<div class="box">✅ Nada pendente. Tudo em dia!</div>');
   hub.querySelectorAll('button[data-k]').forEach(b=>b.onclick=()=>tab(b.dataset.k));scrollTo(0,0);}
-function refreshAll(){accidents().catch(()=>{});alerts().catch(()=>{});tickets().catch(()=>{});adsList().catch(()=>{});}
+function refreshAll(){repos().catch(()=>{});accidents().catch(()=>{});alerts().catch(()=>{});tickets().catch(()=>{});adsList().catch(()=>{});}
 const pk=f=>Object.fromEntries(Object.entries(f||{}).map(([k,v])=>[k,'timestampValue' in v?new Date(v.timestampValue):'booleanValue' in v?v.booleanValue:v.stringValue]));
 const q=async(col,parent='',order)=>(await api(parent+':runQuery','POST',{structuredQuery:Object.assign({from:[{collectionId:col}]},order?{orderBy:[{field:{fieldPath:order},direction:'ASCENDING'}]}:{})})).filter(x=>x.document).map(x=>({id:x.document.name.split('/').pop(),...pk(x.document.fields)}));
 async function numbers(){kpi.innerHTML='Carregando...';
@@ -102,6 +103,24 @@ async function numbers(){kpi.innerHTML='Carregando...';
    ['🆘','Chamados de ajuda abertos',n(tk?.filter(t=>t.status!=='closed').length)],['📣','Pedidos de anúncio/venda',n(ads?.length)]];
   kpi.innerHTML=`<div class="kg">${K.map(([e,l,v])=>`<div class="kc"><div class="e">${e}</div><div class="v">${v}</div><div class="muted">${l}</div></div>`).join('')}</div>
    <p class="muted" style="margin-top:12px">Atualizado em ${new Date().toLocaleString('pt-BR')}. ${cars===null||chats===null?'⚠️ Alguns números precisam das regras novas do Firebase.':''}</p><button class="sm" onclick="numbers()">Atualizar</button>`;}
+const RR={damaged:'🩹 Danificado',faded:'🌫️ Desbotado',lost:'❓ Perdido',stolen:'🚨 Roubado',newcar:'🚗 Trocou o vidro'};
+async function repos(){const l=(await q('replacements')).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));BD.repo=l.filter(r=>r.status==='pending').length;badges();
+  const ST={pending:'⏳ Aguardando',sent:'📦 Enviado',done:'✅ Concluído',rejected:'❌ Cancelado'};
+  rps.innerHTML=l.length?`<p><b>${BD.repo}</b> aguardando</p><table><tr><th>Cliente</th><th>Pedido</th><th>Entrega</th><th></th></tr>${l.map(r=>`<tr><td><b>${esc(r.name||'—')}</b><div class="muted">${esc(r.phone||'')}<br>${esc(r.email||'')}</div></td>
+   <td>${ST[r.status]||r.status}<div>${RR[r.reason]||r.reason} · ${esc(r.carName)}</div><div class="muted">Antigo: ${esc(r.oldCode)}${r.newCode?' → Novo: <b>'+esc(r.newCode)+'</b>':''}<br>${r.createdAt?r.createdAt.toLocaleString('pt-BR'):''}${r.note?'<br>'+esc(r.note):''}</div></td>
+   <td class="muted">${esc(r.address)}</td><td class="trb">${r.status==='pending'?`<button class="sm" data-g="${r.id}">Gerar adesivo novo</button><button class="sm red" data-c="${r.id}">Cancelar</button>`:r.status==='sent'?`<button class="sm" data-p="${r.id}">Imprimir de novo</button><button class="sm gray" data-d="${r.id}">Concluído</button>`:''}</td></tr>`).join('')}</table>`:'Nenhum pedido de reposição.';
+  const f=id=>l.find(r=>r.id===id);
+  const setSt=async(id,st,extra={})=>{const flds=Object.assign({status:enc(st)},extra);await api('/replacements/'+id+'?'+Object.keys(flds).map(k=>'updateMask.fieldPaths='+k).join('&'),'PATCH',{fields:flds});repos();};
+  rps.querySelectorAll('[data-g]').forEach(b=>b.onclick=async()=>{const r=f(b.dataset.g);if(!confirm(`Gerar adesivo novo para ${r.name||'o cliente'}?\n\nO adesivo antigo ${r.oldCode} será desativado.`))return;
+    try{const c=code(),pin=String(100000+crypto.getRandomValues(new Uint32Array(1))[0]%900000),now=new Date();
+      await api(':commit','POST',{writes:[{update:{name:DOC+'/stickers/'+c,fields:{batch:enc('Reposição'),createdAt:enc(now)}},currentDocument:{exists:false}},{update:{name:DOC+'/stickerSecrets/'+c,fields:{pin:enc(pin)}}},
+        {update:{name:DOC+'/stickers/'+r.oldCode,fields:{disabled:{booleanValue:true},disabledAt:enc(now)}},updateMask:{fieldPaths:['disabled','disabledAt']}}]});
+      await api(':commit','POST',{writes:[{update:{name:DOC+'/cars/'+r.carId,fields:{}},updateMask:{fieldPaths:['stickerCode']},currentDocument:{exists:true}}]}).catch(()=>{});
+      await setSt(r.id,'sent',{newCode:enc(c),sentAt:enc(now)});history();tab('adesivos');render([c],{[c]:pin});info.textContent=`Adesivo ${c} gerado para ${r.name||'o cliente'}. Imprima e envie junto com o cartão de ativação.`;
+    }catch(e){alert('Erro: '+e.message);}});
+  rps.querySelectorAll('[data-p]').forEach(b=>b.onclick=async()=>{const r=f(b.dataset.p);let pin='';try{pin=(await api('/stickerSecrets/'+r.newCode)).fields.pin.stringValue}catch(e){}tab('adesivos');render([r.newCode],{[r.newCode]:pin});});
+  rps.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>setSt(b.dataset.d,'done'));
+  rps.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>confirm('Cancelar este pedido?')&&setSt(b.dataset.c,'rejected'));}
 async function accidents(){const l=(await q('accidents')).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));const pend=l.filter(a=>a.status==='pending');BD.acidentes=pend.length;badges();
   if(!l.length){acc.innerHTML='Nenhum registro de acidente.';return;}
   const prof={};await Promise.all([...new Set(l.map(a=>a.authorId))].map(async u=>{try{const r=await api('/profiles/'+u);prof[u]=pk(r.fields);}catch(e){}}));
