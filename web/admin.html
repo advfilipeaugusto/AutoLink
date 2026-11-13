@@ -21,6 +21,7 @@ textarea{width:100%;box-sizing:border-box;padding:12px;border:1px solid #ccc;bor
 .kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}.kc{background:#f7f7f8;border-radius:14px;padding:14px}.kc .e{font-size:22px}.kc .v{font-size:30px;font-weight:900;color:#111;margin:4px 0}.kc .v small{font-size:14px;color:#1a7f37}
 .acd{display:flex;gap:14px;flex-wrap:wrap;border-top:1px solid #eee;padding:14px 0}.acd img{width:200px;max-width:100%;border-radius:12px;object-fit:cover}
 a.wa{display:inline-block;background:#25d366;color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;margin:8px 6px 0 0;font-size:14px}
+.trb button{display:block;width:100%;margin:0 0 6px!important;white-space:nowrap}#bell{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;margin:0;padding:4px}#bell .bd:not(:empty){top:-4px;right:-6px}
 button.x{position:absolute;top:10px;right:10px;width:36px;height:36px;padding:0;margin:0;border-radius:50%;background:#eee;font-size:18px;line-height:36px}button.x:hover{background:#ddd}button.gray{background:#ddd}button.red{background:#d32f2f;color:#fff}button.sm{padding:6px 10px;font-size:13px;margin:0}code{background:#eee;padding:2px 6px;border-radius:4px}
 .sheet{display:flex;flex-wrap:wrap;gap:4mm;justify-content:center}
 .st{width:60mm;background:#111;border-radius:5mm;padding:4mm;color:#fff;text-align:center;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid}
@@ -33,7 +34,7 @@ button.x{position:absolute;top:10px;right:10px;width:36px;height:36px;padding:0;
 .card .b{font-weight:900;margin-bottom:1mm}.card .b span{color:#FF6B00}.card .pin{font-size:5mm;letter-spacing:1mm}.card .mut{color:#666;font-size:2.6mm;margin-top:1mm}
 @media print{header,#hub,.box{display:none!important}main{padding:0;max-width:none}body{background:#fff}@page{size:A4;margin:8mm}}
 </style></head><body>
-<header><button id="hb" hidden onclick="home()" aria-label="Voltar">‹</button><div class="lg"><small>Adm</small><div>Auto<span>Link</span></div><img src="logo-car-white.png" alt="" class="lgc"></div></header><div id="hub" hidden></div><main id="m">Carregando...</main>
+<header><button id="hb" hidden onclick="home()" aria-label="Voltar">‹</button><div class="lg"><small>Adm</small><div>Auto<span>Link</span></div><img src="logo-car-white.png" alt="" class="lgc"></div><button id="bell" onclick="pend()" aria-label="Pendências"><span style="font-size:24px">🔔</span><span class="bd" id="bellN"></span></button></header><div id="hub" hidden></div><main id="m">Carregando...</main>
 <script>
 const KEY='AIzaSyBSGj1H273wiXM-VgpkytnC3kX6yQlt8_I',BASE='https://firestore.googleapis.com/v1/projects/autolink-1aa51/databases/(default)/documents',DOC='projects/autolink-1aa51/databases/(default)/documents';
 const SITE=location.origin+location.pathname.replace('admin.html','');
@@ -65,6 +66,7 @@ async function main(){
   <button id="gen">Gerar adesivos</button><button onclick="print()">Imprimir / PDF</button>
   <p id="info" class="muted"></p></div>
   <div class="box" data-tab="alertas"><h3>🚨 Alertas regionais</h3><div id="alr" class="muted">Carregando...</div></div>
+  <div class="box" data-tab="lixo"><h3>🗂️ QRs desativados</h3><div id="trs" class="muted">Carregando...</div></div>
   <div class="box" data-tab="acidentes"><h3>🚑 Acidentes</h3><div id="acc" class="muted">Carregando...</div></div>
   <div class="box" data-tab="ajuda"><h3>💬 Central de ajuda</h3><div id="tks" class="muted">Carregando...</div></div>
   <div class="box" data-tab="ajuda" id="tkBox" style="display:none;position:relative"><button class="x" onclick="tkBox.style.display='none'" aria-label="Fechar">✕</button><h3 id="tkT"></h3><div id="tkM" class="thread"></div><textarea id="tkR" placeholder="Responder ao cliente..."></textarea><button id="tkS">Enviar resposta</button><button class="gray" id="tkC">Marcar como resolvido</button></div>
@@ -73,12 +75,17 @@ async function main(){
   <div class="box" data-tab="adesivos"><h3>Histórico de lotes</h3><div id="hist" class="muted">Carregando...</div></div>
   <div class="box" data-tab="adesivos" id="detBox" style="display:none;position:relative"><button class="x" onclick="closeBatch()" title="Fechar" aria-label="Fechar">✕</button><h3 id="detT" style="padding-right:40px"></h3><div id="det"></div></div><div class="sheet" id="sheet"></div>`;
   gen.onclick=generate;history();home();refreshAll();setInterval(refreshAll,30000);}
-let TAB=null;const TABS=[['numeros','📊','Números','Usuários, adesivos e conversas'],['adesivos','🏷️','Adesivos','Gerar, imprimir e acompanhar lotes'],['alertas','🚨','Alertas','Aprovar alertas regionais'],['acidentes','🚑','Acidentes','Analisar e avisar a família'],['ajuda','💬','Central de ajuda','Responder clientes'],['anuncios','📣','Anunciantes e vendedores','Pedidos para anunciar ou vender']];
+let TAB=null;const TABS=[['numeros','📊','Números','Usuários, adesivos e conversas'],['adesivos','🏷️','Adesivos','Gerar, imprimir e acompanhar lotes'],['alertas','🚨','Alertas','Aprovar alertas regionais'],['acidentes','🚑','Acidentes','Analisar e avisar a família'],['ajuda','💬','Central de ajuda','Responder clientes'],['lixo','🗂️','QRs desativados','Desfazer ou apagar de vez'],['anuncios','📣','Anunciantes e vendedores','Pedidos para anunciar ou vender']];
 function home(){TAB=null;hb.hidden=true;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.add('hide'));sheet.style.display='none';
   hub.hidden=false;hub.innerHTML=`<h2 style="margin:4px 0 14px">Olá! O que você quer fazer?</h2><div class="hubg">${TABS.map(([k,e,l,d])=>`<button data-k="${k}"><span class="e">${e}</span><b>${l}</b><small>${d}</small><span class="bd" id="bd-${k}"></span></button>`).join('')}</div>`;
   hub.querySelectorAll('button').forEach(b=>b.onclick=()=>tab(b.dataset.k));badges();scrollTo(0,0);}
 function tab(t){TAB=t;if(t==='numeros')numbers();hub.hidden=true;hb.hidden=false;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('hide',x.dataset.tab!==t));sheet.style.display=t==='adesivos'?'':'none';scrollTo(0,0);}
-let BD={};function badges(){for(const k in BD){const e=document.getElementById('bd-'+k);if(e)e.textContent=BD[k]?BD[k]:'';}}
+let BD={};function badges(){for(const k in BD){const e=document.getElementById('bd-'+k);if(e)e.textContent=BD[k]?BD[k]:'';}
+  const n=(BD.acidentes||0)+(BD.alertas||0)+(BD.ajuda||0)+(BD.anuncios||0);const b=document.getElementById('bellN');if(b)b.textContent=n?n:'';}
+function pend(){TAB=null;hb.hidden=false;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.add('hide'));sheet.style.display='none';hub.hidden=false;
+  const L=[['acidentes','🚑','acidente(s) para analisar'],['alertas','🚨','alerta(s) para aprovar'],['ajuda','💬','mensagem(ns) de clientes'],['anuncios','📣','pedido(s) de anúncio, venda ou empresa']].filter(([k])=>BD[k]);
+  hub.innerHTML=`<h2 style="margin:4px 0 14px">🔔 Pendências</h2>`+(L.length?`<div class="hubg">${L.map(([k,e,t])=>`<button data-k="${k}"><span class="e">${e}</span><b>${BD[k]} ${t}</b><small>Toque para abrir</small></button>`).join('')}</div>`:'<div class="box">✅ Nada pendente. Tudo em dia!</div>');
+  hub.querySelectorAll('button[data-k]').forEach(b=>b.onclick=()=>tab(b.dataset.k));scrollTo(0,0);}
 function refreshAll(){accidents().catch(()=>{});alerts().catch(()=>{});tickets().catch(()=>{});adsList().catch(()=>{});}
 const pk=f=>Object.fromEntries(Object.entries(f||{}).map(([k,v])=>[k,'timestampValue' in v?new Date(v.timestampValue):'booleanValue' in v?v.booleanValue:v.stringValue]));
 const q=async(col,parent='',order)=>(await api(parent+':runQuery','POST',{structuredQuery:Object.assign({from:[{collectionId:col}]},order?{orderBy:[{field:{fieldPath:order},direction:'ASCENDING'}]}:{})})).filter(x=>x.document).map(x=>({id:x.document.name.split('/').pop(),...pk(x.document.fields)}));
@@ -129,16 +136,16 @@ async function adsList(){const l=(await q('adRequests')).sort((a,b)=>(b.createdA
 let ALL=[];
 async function history(){
   const r=await api(':runQuery','POST',{structuredQuery:{from:[{collectionId:'stickers'}]}});
-  ALL=r.filter(x=>x.document).map(x=>{const f=x.document.fields;return{code:x.document.name.split('/').pop(),batch:f.batch?.stringValue||'(sem nome)',created:f.createdAt?new Date(f.createdAt.timestampValue):null,active:!!f.carId,carId:f.carId?.stringValue||null,activated:f.activatedAt?new Date(f.activatedAt.timestampValue):null}});
-  const g={};for(const x of ALL){(g[x.batch]??={name:x.batch,date:x.created,list:[]}).list.push(x);if(x.created&&(!g[x.batch].date||x.created<g[x.batch].date))g[x.batch].date=x.created;}
+  ALL=r.filter(x=>x.document).map(x=>{const f=x.document.fields;return{code:x.document.name.split('/').pop(),batch:f.batch?.stringValue||'(sem nome)',created:f.createdAt?new Date(f.createdAt.timestampValue):null,active:!!f.carId,carId:f.carId?.stringValue||null,disabled:!!f.disabled?.booleanValue,disabledAt:f.disabledAt?new Date(f.disabledAt.timestampValue):null,activated:f.activatedAt?new Date(f.activatedAt.timestampValue):null}});
+  const g={};for(const x of ALL.filter(y=>!y.disabled)){(g[x.batch]??={name:x.batch,date:x.created,list:[]}).list.push(x);if(x.created&&(!g[x.batch].date||x.created<g[x.batch].date))g[x.batch].date=x.created;}
   const rows=Object.values(g).sort((a,b)=>(b.date||0)-(a.date||0));
-  const tot=ALL.length,act=ALL.filter(x=>x.active).length;
+  const tot=ALL.filter(x=>!x.disabled).length,act=ALL.filter(x=>x.active&&!x.disabled).length;trash();
   hist.innerHTML=rows.length?`<p><b>${tot}</b> adesivos gerados · <b>${act}</b> ativados (${tot?Math.round(act/tot*100):0}%)</p><table>
    <tr><th>Lote</th><th>Data</th><th>Gerados</th><th>Ativados</th><th></th></tr>${rows.map((b,i)=>`<tr><td>${esc(b.name)}</td><td>${b.date?b.date.toLocaleDateString('pt-BR'):''}</td><td>${b.list.length}</td><td>${b.list.filter(x=>x.active).length}</td><td><button class="sm" data-i="${i}">Ver / imprimir</button></td></tr>`).join('')}</table>`:'Nenhum lote gerado ainda.';
   hist.querySelectorAll('button[data-i]').forEach(bt=>bt.onclick=()=>showBatch(rows[+bt.dataset.i]));}
 async function showBatch(b){
   detBox.style.display='';detT.textContent='Lote: '+b.name;
-  det.innerHTML=`<table><tr><th>Código</th><th>Situação</th><th>Ativado em</th><th></th></tr>${b.list.sort((x,y)=>x.code.localeCompare(y.code)).map(x=>`<tr><td><b>${x.code}</b></td><td>${x.active?'<span style="color:#1a7f37">● Ativado</span>':'<span style="color:#999">○ Disponível</span>'}</td><td>${x.activated?x.activated.toLocaleString('pt-BR'):''}</td><td><button class="sm red" data-del="${x.code}" title="Apagar este QR">🗑 Apagar</button></td></tr>`).join('')}</table><button onclick="print()">Imprimir este lote</button><button class="gray" id="renB">Renomear</button><button class="red" id="delB">Apagar lote</button>`;
+  det.innerHTML=`<table><tr><th>Código</th><th>Situação</th><th>Ativado em</th><th></th></tr>${b.list.sort((x,y)=>x.code.localeCompare(y.code)).map(x=>`<tr><td><b>${x.code}</b></td><td>${x.active?'<span style="color:#1a7f37">● Ativado</span>':'<span style="color:#999">○ Disponível</span>'}</td><td>${x.activated?x.activated.toLocaleString('pt-BR'):''}</td><td><button class="sm red" data-del="${x.code}" title="Apagar este QR">⛔ Desativar</button></td></tr>`).join('')}</table><button onclick="print()">Imprimir este lote</button><button class="gray" id="renB">Renomear</button><button class="red" id="delB">Apagar lote</button>`;
   delB.onclick=()=>deleteBatch(b);renB.onclick=()=>renameBatch(b);
   det.querySelectorAll('[data-del]').forEach(bt=>bt.onclick=()=>deleteOne(b,b.list.find(x=>x.code===bt.dataset.del)));
   const pins={};await Promise.all(b.list.map(async x=>{try{pins[x.code]=(await api('/stickerSecrets/'+x.code)).fields.pin.stringValue}catch(e){}}));
@@ -151,22 +158,36 @@ async function renameBatch(b){
     b.name=n;detT.textContent='Lote: '+n;info.textContent=`Lote renomeado para "${n}".`;history();
   }catch(e){alert('Erro ao renomear: '+e.message);}}
 async function deleteOne(b,x){
-  if(!confirm(`Apagar o QR ${x.code}?`+(x.active?'\n\n⚠️ Este adesivo JÁ FOI ATIVADO por um cliente. Ele vai parar de funcionar no carro dele.':'')+'\n\nO adesivo impresso para de funcionar. Não dá para desfazer.'))return;
-  if(!await askPass('Apagar QR '+x.code))return;
-  try{const w=[{delete:DOC+'/stickers/'+x.code},{delete:DOC+'/stickerSecrets/'+x.code}];
-    if(x.carId)w.push({update:{name:DOC+'/cars/'+x.carId,fields:{}},updateMask:{fieldPaths:['stickerCode']},currentDocument:{exists:true}});
-    await api(':commit','POST',{writes:w}).catch(async e=>{if(x.carId)await api(':commit','POST',{writes:w.slice(0,2)});else throw e;});
-    b.list=b.list.filter(y=>y!==x);info.textContent=`QR ${x.code} apagado.`;b.list.length?showBatch(b):closeBatch();history();
-  }catch(e){alert('Erro ao apagar: '+e.message);}}
+  if(!confirm(`Desativar o QR ${x.code}?`+(x.active?'\n\n⚠️ Este adesivo JÁ FOI ATIVADO por um cliente. Ele vai parar de funcionar no carro dele.':'')+'\n\nEle vai para "QRs desativados", onde você pode desfazer ou apagar de vez.'))return;
+  if(!await askPass('Desativar QR '+x.code))return;
+  try{await softDel([x]);info.textContent=`QR ${x.code} desativado.`;b.list=b.list.filter(y=>y!==x);b.list.length?showBatch(b):closeBatch();history();}catch(e){alert('Erro: '+e.message);}}
+async function softDel(list,on=true){for(let i=0;i<list.length;i+=400){const part=list.slice(i,i+400);
+  await api(':commit','POST',{writes:part.map(x=>({update:{name:DOC+'/stickers/'+x.code,fields:on?{disabled:{booleanValue:true},disabledAt:enc(new Date())}:{disabled:{booleanValue:false}}},updateMask:{fieldPaths:on?['disabled','disabledAt']:['disabled']}}))});}}
+async function hardDel(x){const w=[{delete:DOC+'/stickers/'+x.code},{delete:DOC+'/stickerSecrets/'+x.code}];
+  if(x.carId)w.push({update:{name:DOC+'/cars/'+x.carId,fields:{}},updateMask:{fieldPaths:['stickerCode']},currentDocument:{exists:true}});
+  await api(':commit','POST',{writes:w}).catch(async e=>{if(x.carId)await api(':commit','POST',{writes:w.slice(0,2)});else throw e;});}
+async function trash(){const box=document.getElementById('trs');const l=ALL.filter(x=>x.disabled).sort((a,b)=>(b.disabledAt||0)-(a.disabledAt||0));
+  BD.lixo=l.length;badges();
+  box.innerHTML=l.length?`<p class="muted">${l.length} QR(s) desativado(s). Eles não funcionam enquanto estiverem aqui.</p><table><tr><th>Código</th><th>Lote</th><th>Desativado em</th><th></th></tr>${l.map(x=>`<tr><td><b>${x.code}</b>${x.active?'<div class="muted">já ativado</div>':''}</td><td>${esc(x.batch)}</td><td>${x.disabledAt?x.disabledAt.toLocaleString('pt-BR'):''}</td>
+   <td class="trb"><button class="sm" data-u="${x.code}">↩️ Desfazer</button> <button class="sm red" data-k="${x.code}">Apagar de vez</button></td></tr>`).join('')}</table>
+   <button class="gray" id="tru">↩️ Restaurar todos</button> <button class="red" id="trk">Apagar todos de vez</button>`:'Nenhum QR desativado.';
+  const f=c=>l.find(x=>x.code===c);
+  box.querySelectorAll('[data-u]').forEach(b=>b.onclick=async()=>{await softDel([f(b.dataset.u)],false);await history();trash();});
+  box.querySelectorAll('[data-k]').forEach(b=>b.onclick=async()=>{if(!confirm('Apagar o QR '+b.dataset.k+' DE VEZ? Não dá para desfazer.'))return;if(!await askPass('Apagar de vez'))return;
+    try{await hardDel(f(b.dataset.k));await history();trash();}catch(e){alert(e.message);}});
+  const u=document.getElementById('tru'),k=document.getElementById('trk');
+  if(u)u.onclick=async()=>{await softDel(l,false);await history();trash();};
+  if(k)k.onclick=async()=>{if(!confirm(`Apagar ${l.length} QR(s) DE VEZ? Não dá para desfazer.`))return;if(!await askPass('Apagar todos de vez'))return;
+    for(const x of l)await hardDel(x).catch(()=>{});await history();trash();};}
 async function deleteBatch(b){
   const free=b.list.filter(x=>!x.active),act=b.list.length-free.length;
   if(!free.length)return alert('Todos os adesivos deste lote já foram ativados por clientes. Eles não podem ser apagados.');
   const aviso=act?`\n\n${act} adesivo(s) já ativado(s) por clientes serão MANTIDOS, para não quebrar o adesivo deles.`:'';
-  if(!confirm(`Apagar ${free.length} adesivo(s) não ativado(s) do lote "${b.name}"?${aviso}\n\nOs adesivos impressos deste lote vão parar de funcionar. Não dá para desfazer.`))return;
+  if(!confirm(`Apagar ${free.length} adesivo(s) não ativado(s) do lote "${b.name}"?${aviso}\n\nEles vão para "QRs desativados", onde você pode desfazer ou apagar de vez.`))return;
   if(!await askPass('Apagar lote'))return;
   try{for(let i=0;i<free.length;i+=200){const part=free.slice(i,i+200);
-    await api(':commit','POST',{writes:part.flatMap(x=>[{delete:DOC+'/stickers/'+x.code},{delete:DOC+'/stickerSecrets/'+x.code}])});}
-    closeBatch();info.textContent=`${free.length} adesivo(s) apagado(s) do lote "${b.name}".`;history();
+    await softDel(part);}
+    closeBatch();info.textContent=`${free.length} adesivo(s) do lote "${b.name}" foram para QRs desativados.`;history();
   }catch(e){alert('Erro ao apagar: '+e.message);}}
 const AT={incendio:'🔥 Incêndio',enchente:'🌊 Enchente',acidente:'💥 Acidente',bloqueio:'🚧 Via bloqueada',roubo:'🚨 Roubo / assalto',outro:'⚠️ Outro'};
 async function alerts(){

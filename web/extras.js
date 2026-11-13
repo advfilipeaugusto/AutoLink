@@ -89,7 +89,7 @@ function startNotifier() {
   notifTimer = setInterval(async () => {
     if (!S) return;
     try {
-      const chats = await find('chats', [['ownerId', S.uid]]);
+      const chats = await find('chats', [['ownerId', S.uid]]); setUnread(chats);
       const fresh = chats.filter(c => c.updatedAt && +c.updatedAt > since && !String(c.lastMsg || '').startsWith('Você:') && !c.blocked);
       if (fresh.length) {
         since = Date.now(); const t = fresh[0].lastMsg || 'Nova mensagem sobre seu carro';
@@ -305,15 +305,15 @@ async function regionMap() {
     if (st && st.state === 'granted') { const p = await gps(); const l = await find('alerts', [['status', 'approved']]);
       n = l.filter(a => !(a.expiresAt && +a.expiresAt < Date.now()) && dist(p.lat, p.lng, +a.lat, +a.lng) <= 5000).length; near = true; } } catch (e) {}
   box.innerHTML = `<div class="card rm" style="padding:0;overflow:hidden">
-   <svg viewBox="0 0 400 170" style="display:block;width:100%;height:auto">
-    <rect width="400" height="170" fill="var(--card2)"/>
-    <g stroke="var(--line)" stroke-width="10" fill="none"><path d="M-10 60 L410 40"/><path d="M-10 130 L410 120"/><path d="M90 -10 L120 180"/><path d="M260 -10 L300 180"/></g>
-    <g stroke="var(--line)" stroke-width="4" fill="none" opacity=".7"><path d="M-10 95 L410 82"/><path d="M180 -10 L200 180"/><path d="M340 -10 L360 180"/><path d="M30 -10 L50 180"/></g>
-    <path d="M300 10 q30 20 60 10 q20 -5 40 5 v-25 h-100z" fill="#3b82f633"/>
-    <circle cx="200" cy="88" r="46" fill="#FF6B0018" stroke="#FF6B0066" stroke-dasharray="4 4"/>
-    <circle cx="200" cy="88" r="8" fill="#FF6B00"/><circle cx="200" cy="88" r="14" fill="none" stroke="#FF6B00" stroke-width="2" opacity=".6"/>
+   <svg viewBox="0 0 400 110" style="display:block;width:100%;height:auto">
+    <rect width="400" height="110" fill="var(--card2)"/>
+    <g stroke="var(--line)" stroke-width="5" fill="none"><path d="M-10 40 L410 26"/><path d="M-10 88 L410 80"/><path d="M90 -10 L110 120"/><path d="M260 -10 L285 120"/></g>
+    <g stroke="var(--line)" stroke-width="2" fill="none" opacity=".7"><path d="M-10 62 L410 54"/><path d="M180 -10 L192 120"/><path d="M340 -10 L352 120"/><path d="M30 -10 L42 120"/></g>
+    <path d="M300 8 q30 14 60 6 q20 -4 40 4 v-18 h-100z" fill="#3b82f633"/>
+    <circle cx="200" cy="56" r="32" fill="#FF6B0018" stroke="#FF6B0066" stroke-dasharray="4 4"/>
+    <circle cx="200" cy="56" r="6" fill="#FF6B00"/><circle cx="200" cy="56" r="11" fill="none" stroke="#FF6B00" stroke-width="2" opacity=".6"/>
    </svg>
-   <div style="padding:12px 16px;display:flex;align-items:center;gap:10px"><span style="font-size:22px">${n ? '⚠️' : '✅'}</span><div><b style="font-size:15px">${n ? n + ' alerta(s) na sua região' : 'Zero alertas na sua região'}</b>
+   <div style="padding:9px 14px;display:flex;align-items:center;gap:10px"><span style="font-size:20px">${n ? '⚠️' : '✅'}</span><div><b style="font-size:15px">${n ? n + ' alerta(s) na sua região' : 'Zero alertas na sua região'}</b>
     <div class="muted">${near ? 'Num raio de 5 km de você.' : 'Mapa em construção. Permita a localização ao criar um alerta para ver os da sua região.'}</div></div></div></div>`;
 }
 
@@ -330,4 +330,27 @@ function Company() {
    <button class="btn" id="cq" style="margin-top:8px">Quero o AutoLink na minha empresa</button>`;
   m.querySelectorAll('.cf').forEach(b => b.onclick = () => b.dataset.ok ? go(Garage) : toast('🚧 ' + b.querySelector('b').textContent + ': em construção. Em breve!'));
   el('cq').onclick = () => go(Advertise, 'company');
+}
+
+// ---------- Não lidas (sino + contador por carro) ----------
+let UNREAD = {}, UNREAD_LIST = [];
+function isUnread(c) { return !c.blocked && c.updatedAt && !String(c.lastMsg || '').startsWith('Você:') && (!c.seenAt || +c.updatedAt > +c.seenAt); }
+function setUnread(chats) {
+  UNREAD = {}; UNREAD_LIST = chats.filter(isUnread);
+  for (const c of UNREAD_LIST) UNREAD[c.carId] = (UNREAD[c.carId] || 0) + 1;
+  const n = UNREAD_LIST.length, b = el('bellN'); if (b) { b.textContent = n > 9 ? '9+' : n; b.classList.toggle('on', n > 0); }
+}
+async function refreshUnread() { try { setUnread(await find('chats', [['ownerId', S.uid]])); } catch (e) {} }
+async function Notifs() {
+  m.innerHTML = `<h2>🔔 Notificações</h2><div id="nl"><p class="muted">Carregando...</p></div>`;
+  const [cars, chats] = await Promise.all([find('cars', [['ownerId', S.uid]]), find('chats', [['ownerId', S.uid]])]);
+  setUnread(chats); const box = el('nl'); if (!box) return;
+  const items = [];
+  for (const c of UNREAD_LIST.sort((a, b) => b.updatedAt - a.updatedAt)) { const car = cars.find(x => x.id === c.carId); if (car) items.push({ ic: '💬', t: esc(c.lastMsg), s: esc(car.name) + ' · ' + c.updatedAt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }), go: () => { stack.length = 0; stack.push([Home]); go(Chat, { car, chatId: c.id }); } }); }
+  const exp = cars.find(c => c.awayText && c.awayUntil && +c.awayUntil <= Date.now() && +c.awayUntil > 0);
+  if (exp) items.push({ ic: '⏰', t: 'Sua mensagem de ausência terminou', s: 'Toque para renovar', go: () => go(Away) });
+  try { const acc = await find('accidents', [['authorId', S.uid]]); for (const a of acc.filter(a => a.status === 'contacted' && a.reviewedAt && Date.now() - a.reviewedAt < 7 * 864e5)) items.push({ ic: '🚑', t: 'Sua família foi avisada sobre o acidente', s: a.reviewedAt.toLocaleString('pt-BR'), go: () => go(Accident) }); } catch (e) {}
+  try { const tk = await find('tickets', [['userId', S.uid]]); for (const t of tk.filter(t => t.unreadUser)) items.push({ ic: '🆘', t: 'A equipe respondeu sua dúvida', s: esc(t.lastMsg), go: () => go(Ticket, t) }); } catch (e) {}
+  box.innerHTML = items.length ? '' : '<div class="card alert"><span class="ic">✅</span><div>Nenhuma notificação nova.<div class="muted">Tudo certo!</div></div></div>';
+  for (const it of items) { const b = document.createElement('button'); b.className = 'card alert'; b.innerHTML = `<span class="ic or" style="font-size:20px">${it.ic}</span><div style="min-width:0"><b style="font-size:15px">${it.t}</b><div class="muted">${it.s}</div></div>`; b.onclick = it.go; box.appendChild(b); }
 }
