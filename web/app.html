@@ -233,8 +233,8 @@ function Home(){
   <h2>Avisos sobre meu carro</h2><div id="alerts"><div class="card muted">Carregando...</div></div>
   <h2>Alertas na minha região</h2><div id="rmap"></div>
   <h2>Funcionalidades</h2><div class="grid g5">
-   ${[['alerta','siren','Criar alerta','#ef4444'],['acid','crash','Acidente','#ef4444'],['away','bell','Ausência'],['hist','clock','Histórico'],['man','wrench','Manutenção'],['doc','doc','Documentos'],['perdi','carsearch','Perdi meu carro','#f59e0b'],['emp','building','Empresa','#3b82f6'],['cal','calendar','Calendário','#f59e0b'],['uber','taxi','Motorista de app','#22c55e'],['park','pin','Onde estacionei','#f59e0b'],['sos','sos','SOS família','#ef4444']]
-     .map(([k,i,l,c])=>`<button class="sc" data-k="${k}"><span class="ic">${ic(i,c||'#FF6B00')}</span>${l}</button>`).join('')}</div>
+   ${[['alerta','siren','Criar alerta','#ef4444'],['acid','img:ic-crash.png','Acidente'],['away','bell','Ausência'],['hist','clock','Histórico'],['man','wrench','Manutenção'],['doc','doc','Documentos'],['perdi','carsearch','Perdi meu carro','#f59e0b'],['emp','building','Empresa','#3b82f6'],['cal','calendar','Calendário','#f59e0b'],['uber','taxi','Motorista de app','#22c55e'],['fam','img:ic-fam.png','Família'],['park','pin','Onde estacionei','#f59e0b'],['sos','sos','SOS família','#ef4444']]
+     .map(([k,i,l,c])=>`<button class="sc" data-k="${k}"><span class="ic">${i.startsWith('img:')?`<img src="${i.slice(4)}" alt="" style="width:30px;height:30px;object-fit:contain">`:ic(i,c||'#FF6B00')}</span>${l}</button>`).join('')}</div>
   ${installTip()}`;
   let cars=[],idx=0;
   m.querySelectorAll('.sc').forEach(b=>b.onclick=()=>{const k=b.dataset.k;
@@ -244,6 +244,7 @@ function Home(){
     if(k==='qr')return go(MyQR);
     if(k==='emp')return go(Company);
     if(k==='cal')return go(Calendar);
+    if(k==='fam')return go(Family);
     if(k==='fam')return go(Family);if(k==='park')return go(Parked);if(k==='sos')return go(Sos);if(k==='help')return go(Help);if(k==='manual')return location.href='manual.html';
     if(k==='uber')return toast('🚧 Motorista de app: em construção. Em breve!');
     toast(SOON);});
