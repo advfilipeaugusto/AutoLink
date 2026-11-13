@@ -8,6 +8,11 @@ main{padding:16px;max-width:900px;margin:auto}.box{background:#fff;border-radius
 input{padding:12px;border:1px solid #ccc;border-radius:8px;font-size:16px;width:100%;box-sizing:border-box;margin:6px 0}
 button{background:#FF6B00;color:#111;border:0;border-radius:10px;padding:12px 18px;font-size:16px;font-weight:800;margin:6px 6px 0 0}
 .muted{color:#666;font-size:14px}table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0;color:#111}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid #eee}th{color:#666;font-weight:600}.hide{display:none!important}
+#hub{padding:16px;max-width:900px;margin:auto}.hubg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.hubg button{position:relative;margin:0;background:#fff;color:#111;border:1px solid #eee;border-radius:18px;padding:22px 18px;text-align:left;display:flex;flex-direction:column;gap:6px;box-shadow:0 2px 10px #0000000d;font-weight:400}
+.hubg button:hover{border-color:#FF6B00}.hubg .e{font-size:34px}.hubg b{font-size:18px}.hubg small{color:#777;font-size:13px}.hubg .bd:not(:empty){top:12px;right:12px;font-size:13px;padding:2px 8px}
+header{display:flex;align-items:center;gap:10px}header img{width:38px;height:38px;border-radius:10px}.lg{line-height:1}.lg small{display:block;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#FF6B00;font-weight:800;margin-bottom:2px}
+#hb{background:none;color:#FF6B00;font-size:30px;padding:0 6px 0 0;margin:0;font-weight:400}
 #tabs{display:flex;gap:6px;overflow-x:auto;background:#111;padding:0 12px 10px;position:sticky;top:0;z-index:5}#tabs button{background:#222;color:#ddd;margin:0;padding:10px 14px;font-size:14px;white-space:nowrap;position:relative}#tabs button.on{background:#FF6B00;color:#111}
 .bd:not(:empty){position:absolute;top:-6px;right:-6px;background:#e11d48;color:#fff;border-radius:10px;font-size:11px;padding:1px 6px}
 textarea{width:100%;box-sizing:border-box;padding:12px;border:1px solid #ccc;border-radius:8px;font:inherit;font-size:15px;min-height:80px;margin-top:8px}
@@ -22,9 +27,9 @@ button.x{position:absolute;top:10px;right:10px;width:36px;height:36px;padding:0;
 
 .pb{width:100%;break-before:page;text-align:center}.card{width:60mm;border:.4mm dashed #999;border-radius:3mm;padding:3mm;box-sizing:border-box;font-size:3.4mm;break-inside:avoid;background:#fff}
 .card .b{font-weight:900;margin-bottom:1mm}.card .b span{color:#FF6B00}.card .pin{font-size:5mm;letter-spacing:1mm}.card .mut{color:#666;font-size:2.6mm;margin-top:1mm}
-@media print{header,#tabs,.box{display:none!important}main{padding:0;max-width:none}body{background:#fff}@page{size:A4;margin:8mm}}
+@media print{header,#hub,.box{display:none!important}main{padding:0;max-width:none}body{background:#fff}@page{size:A4;margin:8mm}}
 </style></head><body>
-<header>Auto<span>Link</span> · Gestão</header><nav id="tabs" hidden></nav><main id="m">Carregando...</main>
+<header><button id="hb" hidden onclick="home()">‹</button><img src="logo.svg" alt=""><div class="lg"><small>Adm</small><div>Auto<span>Link</span></div></div></header><div id="hub" hidden></div><main id="m">Carregando...</main>
 <script>
 const KEY='AIzaSyBSGj1H273wiXM-VgpkytnC3kX6yQlt8_I',BASE='https://firestore.googleapis.com/v1/projects/autolink-1aa51/databases/(default)/documents',DOC='projects/autolink-1aa51/databases/(default)/documents';
 const SITE=location.origin+location.pathname.replace('admin.html','');
@@ -48,12 +53,12 @@ async function main(){
   <div class="box" data-tab="anuncios"><h3>📣 Pedidos de anunciantes</h3><div id="ads" class="muted">Carregando...</div></div>
   <div class="box" data-tab="adesivos"><h3>Histórico de lotes</h3><div id="hist" class="muted">Carregando...</div></div>
   <div class="box" data-tab="adesivos" id="detBox" style="display:none;position:relative"><button class="x" onclick="closeBatch()" title="Fechar" aria-label="Fechar">✕</button><h3 id="detT" style="padding-right:40px"></h3><div id="det"></div></div><div class="sheet" id="sheet"></div>`;
-  gen.onclick=generate;history();tab('adesivos');refreshAll();setInterval(refreshAll,30000);}
-let TAB='adesivos';const TABS=[['adesivos','🏷️ Adesivos'],['alertas','🚨 Alertas'],['ajuda','💬 Ajuda'],['anuncios','📣 Anúncios']];
-function tab(t){TAB=t;const n=document.getElementById('tabs');n.hidden=false;
-  n.innerHTML=TABS.map(([k,l])=>`<button data-k="${k}" class="${k===t?'on':''}">${l}<span class="bd" id="bd-${k}"></span></button>`).join('');
-  n.querySelectorAll('button').forEach(b=>b.onclick=()=>tab(b.dataset.k));
-  document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('hide',x.dataset.tab!==t));sheet.style.display=t==='adesivos'?'':'none';badges();}
+  gen.onclick=generate;history();home();refreshAll();setInterval(refreshAll,30000);}
+let TAB=null;const TABS=[['adesivos','🏷️','Adesivos','Gerar, imprimir e acompanhar lotes'],['alertas','🚨','Alertas','Aprovar alertas regionais'],['ajuda','💬','Central de ajuda','Responder clientes'],['anuncios','📣','Anunciantes','Pedidos para anunciar']];
+function home(){TAB=null;hb.hidden=true;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.add('hide'));sheet.style.display='none';
+  hub.hidden=false;hub.innerHTML=`<h2 style="margin:4px 0 14px">Olá! O que você quer fazer?</h2><div class="hubg">${TABS.map(([k,e,l,d])=>`<button data-k="${k}"><span class="e">${e}</span><b>${l}</b><small>${d}</small><span class="bd" id="bd-${k}"></span></button>`).join('')}</div>`;
+  hub.querySelectorAll('button').forEach(b=>b.onclick=()=>tab(b.dataset.k));badges();scrollTo(0,0);}
+function tab(t){TAB=t;hub.hidden=true;hb.hidden=false;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('hide',x.dataset.tab!==t));sheet.style.display=t==='adesivos'?'':'none';scrollTo(0,0);}
 let BD={};function badges(){for(const k in BD){const e=document.getElementById('bd-'+k);if(e)e.textContent=BD[k]?BD[k]:'';}}
 function refreshAll(){alerts().catch(()=>{});tickets().catch(()=>{});adsList().catch(()=>{});}
 const pk=f=>Object.fromEntries(Object.entries(f||{}).map(([k,v])=>[k,'timestampValue' in v?new Date(v.timestampValue):'booleanValue' in v?v.booleanValue:v.stringValue]));
