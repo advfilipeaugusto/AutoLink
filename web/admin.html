@@ -7,7 +7,7 @@ header{background:#111;color:#fff;padding:14px 16px;font-size:22px;font-weight:9
 main{padding:16px;max-width:900px;margin:auto}.box{background:#fff;border-radius:14px;padding:16px;margin-bottom:14px}
 input{padding:12px;border:1px solid #ccc;border-radius:8px;font-size:16px;width:100%;box-sizing:border-box;margin:6px 0}
 button{background:#FF6B00;color:#111;border:0;border-radius:10px;padding:12px 18px;font-size:16px;font-weight:800;margin:6px 6px 0 0}
-.muted{color:#666;font-size:14px}table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0;color:#111}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid #eee}th{color:#666;font-weight:600}button.sm{padding:6px 10px;font-size:13px;margin:0}code{background:#eee;padding:2px 6px;border-radius:4px}
+.muted{color:#666;font-size:14px}table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0;color:#111}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid #eee}th{color:#666;font-weight:600}button.gray{background:#ddd}button.red{background:#d32f2f;color:#fff}button.sm{padding:6px 10px;font-size:13px;margin:0}code{background:#eee;padding:2px 6px;border-radius:4px}
 .sheet{display:flex;flex-wrap:wrap;gap:4mm;justify-content:center}
 .st{width:60mm;background:#111;border-radius:5mm;padding:4mm;color:#fff;text-align:center;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid}
 .st .b{font-size:7mm;font-weight:900;letter-spacing:-.3mm}.st .b span{color:#FF6B00}
@@ -52,9 +52,20 @@ async function history(){
   hist.querySelectorAll('button[data-i]').forEach(bt=>bt.onclick=()=>showBatch(rows[+bt.dataset.i]));}
 async function showBatch(b){
   detBox.style.display='';detT.textContent='Lote: '+b.name;
-  det.innerHTML=`<table><tr><th>Código</th><th>Situação</th><th>Ativado em</th></tr>${b.list.sort((x,y)=>x.code.localeCompare(y.code)).map(x=>`<tr><td><b>${x.code}</b></td><td>${x.active?'<span style="color:#1a7f37">● Ativado</span>':'<span style="color:#999">○ Disponível</span>'}</td><td>${x.activated?x.activated.toLocaleString('pt-BR'):''}</td></tr>`).join('')}</table><button onclick="print()">Imprimir este lote</button>`;
+  det.innerHTML=`<table><tr><th>Código</th><th>Situação</th><th>Ativado em</th></tr>${b.list.sort((x,y)=>x.code.localeCompare(y.code)).map(x=>`<tr><td><b>${x.code}</b></td><td>${x.active?'<span style="color:#1a7f37">● Ativado</span>':'<span style="color:#999">○ Disponível</span>'}</td><td>${x.activated?x.activated.toLocaleString('pt-BR'):''}</td></tr>`).join('')}</table><button onclick="print()">Imprimir este lote</button><button class="gray" onclick="closeBatch()">Fechar</button><button class="red" id="delB">Apagar lote</button>`;
+  delB.onclick=()=>deleteBatch(b);
   const pins={};await Promise.all(b.list.map(async x=>{try{pins[x.code]=(await api('/stickerSecrets/'+x.code)).fields.pin.stringValue}catch(e){}}));
   render(b.list.map(x=>x.code),pins);detBox.scrollIntoView({behavior:'smooth'});}
+function closeBatch(){detBox.style.display='none';sheet.innerHTML='';scrollTo({top:0,behavior:'smooth'});}
+async function deleteBatch(b){
+  const free=b.list.filter(x=>!x.active),act=b.list.length-free.length;
+  if(!free.length)return alert('Todos os adesivos deste lote já foram ativados por clientes. Eles não podem ser apagados.');
+  const aviso=act?`\n\n${act} adesivo(s) já ativado(s) por clientes serão MANTIDOS, para não quebrar o adesivo deles.`:'';
+  if(!confirm(`Apagar ${free.length} adesivo(s) não ativado(s) do lote "${b.name}"?${aviso}\n\nOs adesivos impressos deste lote vão parar de funcionar. Não dá para desfazer.`))return;
+  try{for(let i=0;i<free.length;i+=200){const part=free.slice(i,i+200);
+    await api(':commit','POST',{writes:part.flatMap(x=>[{delete:DOC+'/stickers/'+x.code},{delete:DOC+'/stickerSecrets/'+x.code}])});}
+    closeBatch();info.textContent=`${free.length} adesivo(s) apagado(s) do lote "${b.name}".`;history();
+  }catch(e){alert('Erro ao apagar: '+e.message);}}
 const esc=t=>String(t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const ALPHA='ABCDEFGHJKMNPQRSTUVWXYZ23456789';const code=()=>'AL-'+Array.from(crypto.getRandomValues(new Uint8Array(6)),b=>ALPHA[b%ALPHA.length]).join('');
 async function generate(){const n=Math.min(200,Math.max(1,+document.getElementById('n').value||0)),b=lote.value.trim()||('Lote '+new Date().toLocaleDateString('pt-BR'));
