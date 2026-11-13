@@ -26,6 +26,20 @@ service cloud.firestore {
         && request.resource.data.desc is string && request.resource.data.desc.size() <= 300;
       allow update, delete: if isAdmin();
     }
+    match /adRequests/{id} {
+      allow create: if request.auth != null && request.resource.data.userId == me();
+      allow read, update, delete: if isAdmin();
+    }
+    match /tickets/{id} {
+      allow get, list: if request.auth != null && (resource.data.userId == me() || isAdmin());
+      allow create: if request.auth != null && request.resource.data.userId == me();
+      allow update: if isAdmin() || (resource.data.userId == me() && request.resource.data.userId == me());
+      match /messages/{m} {
+        allow read: if isAdmin() || get(/databases/$(db)/documents/tickets/$(id)).data.userId == me();
+        allow create: if (isAdmin() && request.resource.data.from == 'team')
+          || (get(/databases/$(db)/documents/tickets/$(id)).data.userId == me() && request.resource.data.from == 'user');
+      }
+    }
     match /cars/{carId} {
       allow get: if request.auth != null;
       allow list: if resource.data.ownerId == me();

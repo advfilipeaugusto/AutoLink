@@ -88,6 +88,9 @@ textarea{width:100%;padding:14px;border-radius:12px;border:1px solid var(--line)
 :root[data-theme=light] header{background:rgba(255,255,255,.85);border-bottom-color:#0000000d}
 :root[data-theme=light] #tabs{background:rgba(255,255,255,.92)}:root[data-theme=light] .composer{background:rgba(244,244,246,.92)}
 :root[data-theme=light] #toast{background:#111;color:#fff}:root[data-theme=light] .them{background:#e9e9ee}
+.pill{margin-left:auto;font-size:11px;font-weight:800;background:#ff6b0022;color:var(--or);border-radius:20px;padding:3px 9px}
+.dacc{margin:14px 18px 0;padding:14px;border-radius:14px;background:var(--bg);border:1px solid var(--line)}.dacc b{display:block;font-size:14px;word-break:break-all}.dacc .chip{display:block}
+.faq summary{list-style:none;cursor:pointer}.faq summary::-webkit-details-marker{display:none}.faq summary:after{content:'+';float:right;color:var(--or);font-weight:800}.faq[open] summary:after{content:'–'}
 </style></head><body>
 <header><button id="menu" aria-label="Menu" style="padding:4px 6px 4px 0"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button id="back" hidden>‹ Voltar</button><img src="logo.svg" alt=""><div class="t">Auto<span>Link</span></div><button id="out" hidden>Sair</button></header>
 <main id="m"></main>
@@ -181,7 +184,7 @@ function Home(){
   m.innerHTML=`<div id="danger"></div><div id="hero"><div class="hero"><div class="muted">Carregando...</div></div></div>
   <h2>Avisos sobre meu carro</h2><div id="alerts"><div class="card muted">Carregando...</div></div>
   <h2>Atalhos</h2><div class="grid">
-   ${[['alerta','siren','Criar alerta','#ef4444'],['qr','qr','Meu QR'],['man','wrench','Manutenção'],['doc','doc','Documentos'],['mapa','pin','Mapa','#3b82f6'],['parc','shield','Parceiros','#22c55e']]
+   ${[['alerta','siren','Criar alerta','#ef4444'],['qr','qr','Meu QR'],['man','wrench','Manutenção'],['doc','doc','Documentos'],['perdi','car','Perdi meu carro','#f59e0b'],['mapa','pin','Mapa','#3b82f6'],['parc','shield','Parceiros','#22c55e']]
      .map(([k,i,l,c])=>`<button class="sc" data-k="${k}"><span class="ic">${ic(i,c||'#FF6B00')}</span>${l}</button>`).join('')}</div>
   <div class="ad"><span class="alert"><span class="ic or">${ic('mega','#FF6B00')}</span></span><div><b>Anuncie aqui</b><div class="muted">Alcance milhares de motoristas · Em breve</div></div><span class="tag">AD</span></div>
   ${installTip()}`;
@@ -319,16 +322,61 @@ function handleQR(text){try{const u=new URL(text);const here=new URL('./',locati
 function theme(t){if(t)try{localStorage.setItem('al_theme',t)}catch(e){};const cur=(()=>{try{return localStorage.getItem('al_theme')}catch(e){}})()||'dark';
   if(cur==='light')document.documentElement.dataset.theme='light';else delete document.documentElement.dataset.theme;
   document.querySelector('meta[name=theme-color]').content=cur==='light'?'#ffffff':'#0b0b0c';return cur;}
-function openMenu(){const d=document.getElementById('drawer');d.hidden=false;document.getElementById('dEmail').textContent=S?.email||'';
-  const cur=theme();const I=(k,i,l,x='')=>`<button class="di" data-k="${k}">${ic(i)}${l}${x}</button>`;
-  document.getElementById('dItems').innerHTML=I('theme','doc','Tema',`<span class="tg"><i class="${cur==='light'?'on':''}">☀️ Claro</i><i class="${cur==='dark'?'on':''}">🌙 Escuro</i></span>`)
-   +(S?I('home','home','Início')+I('garage','car','Minha garagem')+I('alerta','siren','Criar alerta regional')+I('install','qr','Instalar na tela inicial')+I('out','users','Sair da conta'):'');
+function openMenu(){const d=document.getElementById('drawer');d.hidden=false;document.getElementById('dEmail').textContent=S?.email||'Não conectado';
+  const cur=theme();const I=(k,i,l,x='')=>`<button class="di" data-k="${k}">${ic(i)}<span>${l}</span>${x}</button>`;
+  document.getElementById('dItems').innerHTML=I('theme','doc','Tema',`<span class="tg"><i class="${cur==='light'?'on':''}">☀️</i><i class="${cur==='dark'?'on':''}">🌙</i></span>`)
+   +I('notif','bell','Notificações')+I('config','wrench','Configurações')+I('plan','shield','Meu plano','<span class="pill">Grátis</span>')
+   +I('ads','mega','Quero anunciar no AutoLink')+I('help','msg','Central de ajuda')
+   +`<div class="dacc">${S?`<div class="muted">Conectado como</div><b>${esc(S.email||'')}</b><button class="chip" id="dOut" style="margin-top:10px">Sair da conta</button>`:''}</div>`;
   d.querySelectorAll('.di').forEach(b=>b.onclick=()=>{const k=b.dataset.k;
     if(k==='theme'){theme(cur==='light'?'dark':'light');return openMenu();}
-    d.hidden=true;if(k==='home')go(Home);if(k==='garage')go(Garage);if(k==='alerta')go(NewAlert);
-    if(k==='install')alert(/iphone|ipad/i.test(navigator.userAgent)?'No Safari: toque em Compartilhar (quadrado com seta ↑) e depois em "Adicionar à Tela de Início".':'No Chrome: toque nos 3 pontinhos ⋮ e depois em "Instalar app".');
-    if(k==='out')out.onclick();});
+    d.hidden=true;
+    if(k==='notif'||k==='config')return toast(SOON);
+    if(!S)return;
+    if(k==='plan')go(Plan);if(k==='ads')go(Advertise);if(k==='help')go(Help);});
+  const o=document.getElementById('dOut');if(o)o.onclick=()=>{d.hidden=true;out.onclick();};
   d.querySelector('.dbg').onclick=()=>d.hidden=true;}
+function Plan(){
+  m.innerHTML=`<h2>Meu plano</h2>
+  <div class="hero"><div class="lbl">Plano atual</div><div class="nm">Grátis</div><div class="pl">Todas as funções de segurança · com anúncios</div></div>
+  <h2>AutoLink Premium</h2><div class="card"><b>Sem anúncios</b><p class="muted">Use o AutoLink sem nenhum anúncio, além de vantagens exclusivas que estão por vir.</p>
+  <button class="btn" id="pp">Quero o Premium</button></div>`;
+  $('#pp').onclick=()=>toast('🚧 Plano Premium em construção. Em breve!');}
+function Advertise(){
+  m.innerHTML=`<h2>Anuncie no AutoLink</h2><p class="muted">Apareça para motoristas da sua região: oficinas, autopeças, lava-jatos, seguros e muito mais. Preencha e nossa equipe entra em contato.</p>
+  <form id="f"><input id="n" placeholder="Seu nome ou empresa" required maxlength="80"><input id="w" placeholder="WhatsApp (com DDD)" inputmode="tel" required maxlength="20">
+  <input id="c" placeholder="Cidade" maxlength="60"><input id="seg" placeholder="Ramo (ex: oficina, autopeças)" maxlength="60">
+  <textarea id="t" placeholder="Conte o que você quer anunciar" maxlength="500"></textarea><button class="btn" id="go">Enviar</button></form>`;
+  $('#f').onsubmit=async e=>{e.preventDefault();const b=$('#go');b.disabled=true;b.textContent='Enviando...';
+    try{await add('adRequests',{userId:S.uid,email:S.email||'',name:$('#n').value.trim(),whatsapp:$('#w').value.trim(),city:$('#c').value.trim(),segment:$('#seg').value.trim(),text:$('#t').value.trim(),status:'new',createdAt:new Date()});
+      alert('Recebemos seu pedido! ✅ Nossa equipe vai entrar em contato pelo WhatsApp.');stack.pop();go(Home);}
+    catch(err){alert('Erro: '+err.message);b.disabled=false;b.textContent='Enviar';}};}
+const FAQ=[['Como funciona o adesivo?','Você cola o adesivo AutoLink no carro. Quem precisar falar com você escaneia o QR e manda mensagem, sem ver seu nome ou telefone.'],
+ ['Como ativo meu adesivo?','Em Garagem, toque no carro e em "Ativar adesivo". Digite o código e o PIN do cartão de ativação que veio na embalagem.'],
+ ['Perdi o cartão com o PIN','Fale com a equipe aqui na Central de ajuda informando o código do adesivo.'],
+ ['Alguém está me incomodando','Abra a conversa e toque em Bloquear ou Denunciar. A pessoa não consegue mais te mandar mensagens.'],
+ ['Vendi meu carro','Apague o carro em Garagem. O adesivo fica livre para o novo dono ativar com o PIN.'],
+ ['Como funcionam os alertas da região?','Qualquer motorista pode enviar um alerta (incêndio, enchente...). Após análise da equipe, ele aparece para quem estiver a até 300 m.']];
+function Help(){
+  m.innerHTML=`<h2>Central de ajuda</h2>${FAQ.map(([q,a])=>`<details class="card faq"><summary><b style="font-size:15px">${q}</b></summary><p class="muted" style="margin:8px 0 0;font-size:14px">${a}</p></details>`).join('')}
+  <h2>Falar com a equipe</h2><div id="tk"><p class="muted">Carregando...</p></div><button class="btn" id="nt">+ Nova mensagem</button>`;
+  $('#nt').onclick=async()=>{const t=prompt('Escreva sua dúvida ou problema:');if(!t||!t.trim())return;
+    try{const now=new Date();const tk=await add('tickets',{userId:S.uid,email:S.email||'',status:'open',lastMsg:t.trim(),updatedAt:now,createdAt:now,unreadUser:false});
+      await add('tickets/'+tk.id+'/messages',{text:t.trim(),from:'user',at:now});go(Ticket,tk);}catch(e){alert('Erro: '+e.message);}};
+  const load=async()=>{const l=(await find('tickets',[['userId',S.uid]])).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));const box=$('#tk');if(!box)return;
+    box.innerHTML=l.length?'':'<p class="muted">Nenhuma conversa com a equipe ainda.</p>';
+    for(const t of l){const b=document.createElement('button');b.className='card';
+      b.innerHTML=`<div style="display:flex;gap:8px;align-items:center"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.unreadUser?'🟠 ':''}${esc(t.lastMsg)}</span><span class="pill">${t.status==='closed'?'Resolvido':'Aberto'}</span></div><div class="muted">${t.updatedAt?t.updatedAt.toLocaleString('pt-BR'):''}</div>`;
+      b.onclick=()=>go(Ticket,t);box.appendChild(b);}};
+  poll(()=>load().catch(()=>{}),10000);}
+function Ticket(t){
+  m.innerHTML=`<h2>Equipe AutoLink</h2><div id="msgs"></div><div class="composer"><form class="in" id="f"><input id="t" placeholder="Escreva..." maxlength="1000" autocomplete="off"><button class="btn">Enviar</button></form></div>`;
+  let last='';const load=async()=>{const ms=await find('messages',[],'at','/tickets/'+t.id);const html=ms.map(x=>`<div class="b ${x.from==='user'?'me':'them'}">${x.from==='team'?'<b style="font-size:12px;color:var(--or)">Equipe AutoLink</b><br>':''}${esc(x.text)}</div>`).join('');
+    if(html!==last){last=html;$('#msgs').innerHTML=html;scrollTo(0,document.body.scrollHeight);}
+    if(t.unreadUser){t.unreadUser=false;update('tickets/'+t.id,{unreadUser:false}).catch(()=>{});}};
+  $('#f').onsubmit=async e=>{e.preventDefault();const v=$('#t').value.trim();if(!v)return;$('#t').value='';
+    try{const now=new Date();await add('tickets/'+t.id+'/messages',{text:v,from:'user',at:now});await update('tickets/'+t.id,{lastMsg:v,updatedAt:now,status:'open',unreadTeam:true});load();}catch(err){alert('Erro: '+err.message);}};
+  poll(()=>load().catch(()=>{}),4000);}
 document.getElementById('menu').onclick=openMenu;
 
 // ---------- Alertas regionais ----------

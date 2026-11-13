@@ -7,7 +7,12 @@ header{background:#111;color:#fff;padding:14px 16px;font-size:22px;font-weight:9
 main{padding:16px;max-width:900px;margin:auto}.box{background:#fff;border-radius:14px;padding:16px;margin-bottom:14px}
 input{padding:12px;border:1px solid #ccc;border-radius:8px;font-size:16px;width:100%;box-sizing:border-box;margin:6px 0}
 button{background:#FF6B00;color:#111;border:0;border-radius:10px;padding:12px 18px;font-size:16px;font-weight:800;margin:6px 6px 0 0}
-.muted{color:#666;font-size:14px}table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0;color:#111}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid #eee}th{color:#666;font-weight:600}button.x{position:absolute;top:10px;right:10px;width:36px;height:36px;padding:0;margin:0;border-radius:50%;background:#eee;font-size:18px;line-height:36px}button.x:hover{background:#ddd}button.gray{background:#ddd}button.red{background:#d32f2f;color:#fff}button.sm{padding:6px 10px;font-size:13px;margin:0}code{background:#eee;padding:2px 6px;border-radius:4px}
+.muted{color:#666;font-size:14px}table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0;color:#111}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid #eee}th{color:#666;font-weight:600}.hide{display:none!important}
+#tabs{display:flex;gap:6px;overflow-x:auto;background:#111;padding:0 12px 10px;position:sticky;top:0;z-index:5}#tabs button{background:#222;color:#ddd;margin:0;padding:10px 14px;font-size:14px;white-space:nowrap;position:relative}#tabs button.on{background:#FF6B00;color:#111}
+.bd:not(:empty){position:absolute;top:-6px;right:-6px;background:#e11d48;color:#fff;border-radius:10px;font-size:11px;padding:1px 6px}
+textarea{width:100%;box-sizing:border-box;padding:12px;border:1px solid #ccc;border-radius:8px;font:inherit;font-size:15px;min-height:80px;margin-top:8px}
+.thread{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto}.msg{padding:10px 12px;border-radius:12px;max-width:80%}.msg.us{background:#eee}.msg.tm{background:#FFE1CC;align-self:flex-end}
+button.x{position:absolute;top:10px;right:10px;width:36px;height:36px;padding:0;margin:0;border-radius:50%;background:#eee;font-size:18px;line-height:36px}button.x:hover{background:#ddd}button.gray{background:#ddd}button.red{background:#d32f2f;color:#fff}button.sm{padding:6px 10px;font-size:13px;margin:0}code{background:#eee;padding:2px 6px;border-radius:4px}
 .sheet{display:flex;flex-wrap:wrap;gap:4mm;justify-content:center}
 .st{width:60mm;background:#111;border-radius:5mm;padding:4mm;color:#fff;text-align:center;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid}
 .st .b{font-size:7mm;font-weight:900;letter-spacing:-.3mm}.st .b span{color:#FF6B00}
@@ -17,9 +22,9 @@ button{background:#FF6B00;color:#111;border:0;border-radius:10px;padding:12px 18
 
 .pb{width:100%;break-before:page;text-align:center}.card{width:60mm;border:.4mm dashed #999;border-radius:3mm;padding:3mm;box-sizing:border-box;font-size:3.4mm;break-inside:avoid;background:#fff}
 .card .b{font-weight:900;margin-bottom:1mm}.card .b span{color:#FF6B00}.card .pin{font-size:5mm;letter-spacing:1mm}.card .mut{color:#666;font-size:2.6mm;margin-top:1mm}
-@media print{header,.box{display:none}main{padding:0;max-width:none}body{background:#fff}@page{size:A4;margin:8mm}}
+@media print{header,#tabs,.box{display:none!important}main{padding:0;max-width:none}body{background:#fff}@page{size:A4;margin:8mm}}
 </style></head><body>
-<header>Auto<span>Link</span> · Painel da empresa</header><main id="m">Carregando...</main>
+<header>Auto<span>Link</span> · Gestão</header><nav id="tabs" hidden></nav><main id="m">Carregando...</main>
 <script>
 const KEY='AIzaSyBSGj1H273wiXM-VgpkytnC3kX6yQlt8_I',BASE='https://firestore.googleapis.com/v1/projects/autolink-1aa51/databases/(default)/documents',DOC='projects/autolink-1aa51/databases/(default)/documents';
 const SITE=location.origin+location.pathname.replace('admin.html','');
@@ -33,14 +38,43 @@ async function isAdmin(){try{await api('/admins/'+S.uid);return true}catch(e){re
 async function main(){
   if(!S)return loginView();
   if(!await isAdmin()){m.innerHTML=`<div class="box"><h3>Quase lá</h3><p>Sua conta ainda não é administradora. No Firebase, em <b>Firestore</b>, crie a coleção <code>admins</code> com um documento cujo ID é:</p><p><code style="font-size:18px">${S.uid}</code></p><p class="muted">(pode deixar sem campos, ou adicione nome: string). Depois recarregue esta página.</p><button onclick="sessionStorage.clear();location.reload()">Sair</button></div>`;return;}
-  m.innerHTML=`<div class="box"><h3>Gerar lote de adesivos</h3><p class="muted">Cada adesivo recebe um código único. O cliente ativa no app depois de colar no carro.</p>
+  m.innerHTML=`<div class="box" data-tab="adesivos"><h3>Gerar lote de adesivos</h3><p class="muted">Cada adesivo recebe um código único. O cliente ativa no app depois de colar no carro.</p>
   <input id="n" type="number" value="12" min="1" max="200"><input id="lote" placeholder="Nome do lote (ex: Lote 1 - Nov/2026)">
   <button id="gen">Gerar adesivos</button><button onclick="print()">Imprimir / PDF</button>
   <p id="info" class="muted"></p></div>
-  <div class="box"><h3>🚨 Alertas regionais</h3><div id="alr" class="muted">Carregando...</div></div>
-  <div class="box"><h3>Histórico de lotes</h3><div id="hist" class="muted">Carregando...</div></div>
-  <div class="box" id="detBox" style="display:none;position:relative"><button class="x" onclick="closeBatch()" title="Fechar" aria-label="Fechar">✕</button><h3 id="detT" style="padding-right:40px"></h3><div id="det"></div></div><div class="sheet" id="sheet"></div>`;
-  gen.onclick=generate;history();alerts();setInterval(alerts,30000);}
+  <div class="box" data-tab="alertas"><h3>🚨 Alertas regionais</h3><div id="alr" class="muted">Carregando...</div></div>
+  <div class="box" data-tab="ajuda"><h3>💬 Central de ajuda</h3><div id="tks" class="muted">Carregando...</div></div>
+  <div class="box" data-tab="ajuda" id="tkBox" style="display:none;position:relative"><button class="x" onclick="tkBox.style.display='none'" aria-label="Fechar">✕</button><h3 id="tkT"></h3><div id="tkM" class="thread"></div><textarea id="tkR" placeholder="Responder ao cliente..."></textarea><button id="tkS">Enviar resposta</button><button class="gray" id="tkC">Marcar como resolvido</button></div>
+  <div class="box" data-tab="anuncios"><h3>📣 Pedidos de anunciantes</h3><div id="ads" class="muted">Carregando...</div></div>
+  <div class="box" data-tab="adesivos"><h3>Histórico de lotes</h3><div id="hist" class="muted">Carregando...</div></div>
+  <div class="box" data-tab="adesivos" id="detBox" style="display:none;position:relative"><button class="x" onclick="closeBatch()" title="Fechar" aria-label="Fechar">✕</button><h3 id="detT" style="padding-right:40px"></h3><div id="det"></div></div><div class="sheet" id="sheet"></div>`;
+  gen.onclick=generate;history();tab('adesivos');refreshAll();setInterval(refreshAll,30000);}
+let TAB='adesivos';const TABS=[['adesivos','🏷️ Adesivos'],['alertas','🚨 Alertas'],['ajuda','💬 Ajuda'],['anuncios','📣 Anúncios']];
+function tab(t){TAB=t;const n=document.getElementById('tabs');n.hidden=false;
+  n.innerHTML=TABS.map(([k,l])=>`<button data-k="${k}" class="${k===t?'on':''}">${l}<span class="bd" id="bd-${k}"></span></button>`).join('');
+  n.querySelectorAll('button').forEach(b=>b.onclick=()=>tab(b.dataset.k));
+  document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('hide',x.dataset.tab!==t));sheet.style.display=t==='adesivos'?'':'none';badges();}
+let BD={};function badges(){for(const k in BD){const e=document.getElementById('bd-'+k);if(e)e.textContent=BD[k]?BD[k]:'';}}
+function refreshAll(){alerts().catch(()=>{});tickets().catch(()=>{});adsList().catch(()=>{});}
+const pk=f=>Object.fromEntries(Object.entries(f||{}).map(([k,v])=>[k,'timestampValue' in v?new Date(v.timestampValue):'booleanValue' in v?v.booleanValue:v.stringValue]));
+const q=async(col,parent='',order)=>(await api(parent+':runQuery','POST',{structuredQuery:Object.assign({from:[{collectionId:col}]},order?{orderBy:[{field:{fieldPath:order},direction:'ASCENDING'}]}:{})})).filter(x=>x.document).map(x=>({id:x.document.name.split('/').pop(),...pk(x.document.fields)}));
+async function tickets(){const l=(await q('tickets')).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));const open=l.filter(t=>t.status!=='closed');BD.ajuda=l.filter(t=>t.unreadTeam).length;badges();
+  tks.innerHTML=l.length?`<p><b>${open.length}</b> em aberto</p><table><tr><th>Cliente</th><th>Última mensagem</th><th>Situação</th><th></th></tr>${l.map(t=>`<tr><td>${esc(t.email||'—')}</td><td>${t.unreadTeam?'🟠 ':''}${esc(t.lastMsg)}<div class="muted">${t.updatedAt?t.updatedAt.toLocaleString('pt-BR'):''}</div></td><td>${t.status==='closed'?'✅ Resolvido':'Aberto'}</td><td><button class="sm" data-t="${t.id}">Abrir</button></td></tr>`).join('')}</table>`:'Nenhuma mensagem de clientes ainda.';
+  tks.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>openTicket(l.find(x=>x.id===b.dataset.t)));}
+async function openTicket(t){tkBox.style.display='';tkT.textContent='Conversa com '+(t.email||'cliente');
+  const load=async()=>{const ms=await q('messages','/tickets/'+t.id,'at');tkM.innerHTML=ms.map(x=>`<div class="msg ${x.from==='team'?'tm':'us'}">${esc(x.text)}<div class="muted">${x.at?x.at.toLocaleString('pt-BR'):''}</div></div>`).join('');};
+  await load();if(t.unreadTeam)await api('/tickets/'+t.id+'?updateMask.fieldPaths=unreadTeam','PATCH',{fields:{unreadTeam:{booleanValue:false}}});
+  tkS.onclick=async()=>{const v=tkR.value.trim();if(!v)return;const now=new Date();
+    try{await api('/tickets/'+t.id+'/messages','POST',{fields:{text:enc(v),from:enc('team'),at:enc(now)}});
+      await api('/tickets/'+t.id+'?updateMask.fieldPaths=lastMsg&updateMask.fieldPaths=updatedAt&updateMask.fieldPaths=unreadUser&updateMask.fieldPaths=status','PATCH',{fields:{lastMsg:enc('Equipe: '+v),updatedAt:enc(now),unreadUser:{booleanValue:true},status:enc('answered')}});
+      tkR.value='';load();tickets();}catch(e){alert(e.message);}};
+  tkC.onclick=async()=>{await api('/tickets/'+t.id+'?updateMask.fieldPaths=status','PATCH',{fields:{status:enc('closed')}});tkBox.style.display='none';tickets();};
+  tkBox.scrollIntoView({behavior:'smooth'});}
+async function adsList(){const l=(await q('adRequests')).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));BD.anuncios=l.filter(a=>a.status==='new').length;badges();
+  ads.innerHTML=l.length?`<table><tr><th>Quem</th><th>Contato</th><th>Pedido</th><th></th></tr>${l.map(a=>`<tr><td><b>${esc(a.name)}</b><div class="muted">${esc(a.segment||'')} · ${esc(a.city||'')}</div></td>
+   <td><a target="_blank" href="https://wa.me/55${esc((a.whatsapp||'').replace(/\D/g,''))}">${esc(a.whatsapp)}</a><div class="muted">${esc(a.email||'')}</div></td><td>${esc(a.text||'')}<div class="muted">${a.createdAt?a.createdAt.toLocaleString('pt-BR'):''}</div></td>
+   <td>${a.status==='new'?`<button class="sm" data-c="${a.id}">Marcar contatado</button>`:'✅ Contatado'}</td></tr>`).join('')}</table>`:'Nenhum pedido ainda.';
+  ads.querySelectorAll('[data-c]').forEach(b=>b.onclick=async()=>{await api('/adRequests/'+b.dataset.c+'?updateMask.fieldPaths=status','PATCH',{fields:{status:enc('contacted')}});adsList();});}
 let ALL=[];
 async function history(){
   const r=await api(':runQuery','POST',{structuredQuery:{from:[{collectionId:'stickers'}]}});
@@ -78,7 +112,7 @@ async function alerts(){
   const r=await api(':runQuery','POST',{structuredQuery:{from:[{collectionId:'alerts'}]}});
   const now=Date.now();const all=r.filter(x=>x.document).map(x=>{const f=x.document.fields,g=k=>f[k]?.stringValue,t=k=>f[k]?new Date(f[k].timestampValue):null;
     return{id:x.document.name.split('/').pop(),type:g('type'),desc:g('desc'),lat:g('lat'),lng:g('lng'),status:g('status'),created:t('createdAt'),exp:t('expiresAt')}}).sort((a,b)=>(b.created||0)-(a.created||0));
-  const pend=all.filter(a=>a.status==='pending'),live=all.filter(a=>a.status==='approved'&&!(a.exp&&a.exp<now));
+  const pend=all.filter(a=>a.status==='pending');BD.alertas=pend.length;badges();const _=0,live=all.filter(a=>a.status==='approved'&&!(a.exp&&a.exp<now));
   const row=(a,btns)=>`<tr><td><b>${AT[a.type]||a.type}</b><div class="muted">${esc(a.desc||'(sem descrição)')}</div><div class="muted">${a.created?a.created.toLocaleString('pt-BR'):''}</div></td>
     <td><a href="https://www.google.com/maps?q=${+a.lat},${+a.lng}" target="_blank">📍 Ver no mapa</a></td><td style="white-space:nowrap">${btns}</td></tr>`;
   alr.innerHTML=`<p><b>${pend.length}</b> aguardando análise · <b>${live.length}</b> no ar</p>`+
