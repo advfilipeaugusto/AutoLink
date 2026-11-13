@@ -52,11 +52,17 @@ async function history(){
   hist.querySelectorAll('button[data-i]').forEach(bt=>bt.onclick=()=>showBatch(rows[+bt.dataset.i]));}
 async function showBatch(b){
   detBox.style.display='';detT.textContent='Lote: '+b.name;
-  det.innerHTML=`<table><tr><th>Código</th><th>Situação</th><th>Ativado em</th></tr>${b.list.sort((x,y)=>x.code.localeCompare(y.code)).map(x=>`<tr><td><b>${x.code}</b></td><td>${x.active?'<span style="color:#1a7f37">● Ativado</span>':'<span style="color:#999">○ Disponível</span>'}</td><td>${x.activated?x.activated.toLocaleString('pt-BR'):''}</td></tr>`).join('')}</table><button onclick="print()">Imprimir este lote</button><button class="gray" onclick="closeBatch()">Fechar</button><button class="red" id="delB">Apagar lote</button>`;
-  delB.onclick=()=>deleteBatch(b);
+  det.innerHTML=`<table><tr><th>Código</th><th>Situação</th><th>Ativado em</th></tr>${b.list.sort((x,y)=>x.code.localeCompare(y.code)).map(x=>`<tr><td><b>${x.code}</b></td><td>${x.active?'<span style="color:#1a7f37">● Ativado</span>':'<span style="color:#999">○ Disponível</span>'}</td><td>${x.activated?x.activated.toLocaleString('pt-BR'):''}</td></tr>`).join('')}</table><button onclick="print()">Imprimir este lote</button><button class="gray" onclick="closeBatch()">Fechar</button><button class="gray" id="renB">Renomear</button><button class="red" id="delB">Apagar lote</button>`;
+  delB.onclick=()=>deleteBatch(b);renB.onclick=()=>renameBatch(b);
   const pins={};await Promise.all(b.list.map(async x=>{try{pins[x.code]=(await api('/stickerSecrets/'+x.code)).fields.pin.stringValue}catch(e){}}));
   render(b.list.map(x=>x.code),pins);detBox.scrollIntoView({behavior:'smooth'});}
 function closeBatch(){detBox.style.display='none';sheet.innerHTML='';scrollTo({top:0,behavior:'smooth'});}
+async function renameBatch(b){
+  const n=(prompt('Novo nome do lote:',b.name)||'').trim();if(!n||n===b.name)return;
+  try{for(let i=0;i<b.list.length;i+=400){const part=b.list.slice(i,i+400);
+    await api(':commit','POST',{writes:part.map(x=>({update:{name:DOC+'/stickers/'+x.code,fields:{batch:{stringValue:n}}},updateMask:{fieldPaths:['batch']}}))});}
+    b.name=n;detT.textContent='Lote: '+n;info.textContent=`Lote renomeado para "${n}".`;history();
+  }catch(e){alert('Erro ao renomear: '+e.message);}}
 async function deleteBatch(b){
   const free=b.list.filter(x=>!x.active),act=b.list.length-free.length;
   if(!free.length)return alert('Todos os adesivos deste lote já foram ativados por clientes. Eles não podem ser apagados.');
