@@ -692,3 +692,28 @@ async function Search() {
 let HELP_UNREAD = 0;
 async function checkHelp() { if (!S) return; try { const l = await find('tickets', [['userId', S.uid]]); HELP_UNREAD = l.filter(t => t.unreadUser && !t.deleted).length; } catch (e) {} const d = el('menuDot'); if (d) d.hidden = !HELP_UNREAD; }
 setInterval(checkHelp, 30000); setTimeout(checkHelp, 2500);
+
+// ---------- Motorista de app (Uber, 99, inDrive) ----------
+async function AppDriver() {
+  const cars = (await allCars()).filter(c => !c.shared);
+  m.innerHTML = `<h2>🚕 Motorista de app</h2><p class="muted">Para quem dirige Uber, 99, inDrive ou faz entregas.</p>
+   <div class="card"><b>Como funciona</b><ul style="margin:6px 0 0;padding-left:18px;color:var(--mut);font-size:14px;line-height:1.6">
+    <li>Cole um adesivo AutoLink <b>dentro do carro</b> (atrás do banco do passageiro ou no vidro traseiro, por dentro).</li>
+    <li><b>Passageiro esqueceu algo?</b> Ele escaneia e fala com você sem precisar do seu telefone.</li>
+    <li>Mensagens prontas para passageiros: "Esqueci um objeto no seu carro", "Esqueci meu celular", "Obrigado pela corrida".</li>
+    <li>Ative também o <b>"Como estou dirigindo?"</b> para receber elogios e notas.</li>
+    <li>Seu número continua <b>protegido</b>: o filtro do AutoLink bloqueia pedidos de telefone e mensagens desrespeitosas.</li></ul></div>
+   <h2>Ativar nos meus carros</h2><div id="adl">${cars.length ? '' : '<p class="muted">Cadastre um carro na Garagem primeiro.</p>'}</div>
+   <div class="card"><b>💡 Dicas para motoristas de app</b><ul style="margin:6px 0 0;padding-left:18px;color:var(--mut);font-size:14px;line-height:1.6">
+    <li>Use a <b>Mensagem de ausência</b> quando estiver dirigindo: "Estou em corrida, respondo ao terminar".</li>
+    <li>Registre trocas de óleo e revisões em <b>Manutenção</b>: carro de app roda muito.</li>
+    <li>Guarde CNH, CRLV e seguro em <b>Documentos</b> para fiscalização.</li></ul></div>`;
+  const box = el('adl');
+  for (const c of cars) { const r = document.createElement('div'); r.className = 'card';
+    r.innerHTML = `<b>${esc(c.name)}</b> <span class="muted">${esc(c.plate || '')}</span>
+     <div class="row"><span>🚕 Modo motorista de app</span><label class="sw"><input type="checkbox" data-a ${c.appDriver ? 'checked' : ''}><span></span></label></div>
+     <div class="row"><span>⭐ Como estou dirigindo?</span><label class="sw"><input type="checkbox" data-f ${c.fleet ? 'checked' : ''}><span></span></label></div>`;
+    r.querySelector('[data-a]').onchange = e => update('cars/' + c.id, { appDriver: e.target.checked }).then(() => toast(e.target.checked ? 'Modo motorista de app ativado ✅' : 'Desativado')).catch(err => alert(err.message));
+    r.querySelector('[data-f]').onchange = e => update('cars/' + c.id, { fleet: e.target.checked }).then(() => toast(e.target.checked ? 'Avaliações ativadas ✅' : 'Desativado')).catch(err => alert(err.message));
+    box.appendChild(r); }
+}

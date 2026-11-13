@@ -70,6 +70,8 @@ async function main(){
   <p id="info" class="muted"></p></div>
   <div class="box" data-tab="alertas"><h3>🚨 Alertas regionais</h3><div id="alr" class="muted">Carregando...</div></div>
   <div class="box" data-tab="repo"><h3>🔁 Reposição de adesivo</h3><div id="rps" class="muted">Carregando...</div></div>
+  <div class="box" data-tab="mod"><h3>🛡️ Mensagens bloqueadas pelo filtro</h3><div id="mblk" class="muted">Carregando...</div></div>
+  <div class="box" data-tab="mod"><h3>💬 Conversas recentes</h3><div id="mchat" class="muted">Carregando...</div></div>
   <div class="box" data-tab="bin"><h3>🗑️ Lixeira</h3><div id="bin" class="muted">Carregando...</div></div>
   <div class="box" data-tab="lixo"><h3>🗂️ QRs desativados</h3><div id="trs" class="muted">Carregando...</div></div>
   <div class="box" data-tab="acidentes"><h3>🚑 Acidentes</h3><div id="acc" class="muted">Carregando...</div></div>
@@ -80,11 +82,11 @@ async function main(){
   <div class="box" data-tab="adesivos"><h3>Histórico de lotes</h3><div id="hist" class="muted">Carregando...</div></div>
   <div class="box" data-tab="adesivos" id="detBox" style="display:none;position:relative"><button class="x" onclick="closeBatch()" title="Fechar" aria-label="Fechar">✕</button><h3 id="detT" style="padding-right:40px"></h3><div id="det"></div></div><div class="sheet" id="sheet"></div>`;
   gen.onclick=generate;history();home();refreshAll();setInterval(refreshAll,30000);}
-let TAB=null;const TABS=[['numeros','📊','Números','Usuários, adesivos e conversas'],['adesivos','🏷️','Adesivos','Gerar, imprimir e acompanhar lotes'],['alertas','🚨','Alertas','Aprovar alertas regionais'],['acidentes','🚑','Acidentes','Analisar e avisar a família'],['ajuda','💬','Central de ajuda','Responder clientes'],['repo','🔁','Reposição de adesivo','Danificados e perdidos'],['lixo','🗂️','QRs desativados','Desfazer ou apagar de vez'],['bin','🗑️','Lixeira','Resgatar itens apagados'],['anuncios','📣','Anunciantes e vendedores','Pedidos para anunciar ou vender']];
+let TAB=null;const TABS=[['numeros','📊','Números','Usuários, adesivos e conversas'],['adesivos','🏷️','Adesivos','Gerar, imprimir e acompanhar lotes'],['alertas','🚨','Alertas','Aprovar alertas regionais'],['acidentes','🚑','Acidentes','Analisar e avisar a família'],['ajuda','💬','Central de ajuda','Responder clientes'],['mod','🛡️','Moderação','Mensagens bloqueadas e conversas'],['repo','🔁','Reposição de adesivo','Danificados e perdidos'],['lixo','🗂️','QRs desativados','Desfazer ou apagar de vez'],['bin','🗑️','Lixeira','Resgatar itens apagados'],['anuncios','📣','Anunciantes e vendedores','Pedidos para anunciar ou vender']];
 function home(){TAB=null;hb.hidden=true;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.add('hide'));sheet.style.display='none';
   hub.hidden=false;hub.innerHTML=`<h2 style="margin:4px 0 14px">Olá! O que você quer fazer?</h2><div class="hubg">${TABS.map(([k,e,l,d])=>`<button data-k="${k}"><span class="e">${e}</span><b>${l}</b><small>${d}</small><span class="bd" id="bd-${k}"></span></button>`).join('')}</div>`;
   hub.querySelectorAll('button').forEach(b=>b.onclick=()=>tab(b.dataset.k));badges();scrollTo(0,0);}
-function tab(t){TAB=t;if(t==='bin')bin();if(t==='numeros')numbers();hub.hidden=true;hb.hidden=false;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('hide',x.dataset.tab!==t));sheet.style.display=t==='adesivos'?'':'none';scrollTo(0,0);}
+function tab(t){TAB=t;if(t==='mod')moderation();if(t==='bin')bin();if(t==='numeros')numbers();hub.hidden=true;hb.hidden=false;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('hide',x.dataset.tab!==t));sheet.style.display=t==='adesivos'?'':'none';scrollTo(0,0);}
 let BD={};function badges(){for(const k in BD){const e=document.getElementById('bd-'+k);if(e)e.textContent=BD[k]?BD[k]:'';}
   const n=(BD.repo||0)+(BD.acidentes||0)+(BD.alertas||0)+(BD.ajuda||0)+(BD.anuncios||0);const b=document.getElementById('bellN');if(b)b.textContent=n?n:'';}
 function pend(){TAB=null;hb.hidden=false;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.add('hide'));sheet.style.display='none';hub.hidden=false;
@@ -261,6 +263,25 @@ function bindThumbs(root){root.querySelectorAll('.th img').forEach(i=>i.onclick=
 // ---------- Lixeira geral ----------
 const esc=t=>String(t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const ALPHA='ABCDEFGHJKMNPQRSTUVWXYZ23456789';const code=()=>'AL-'+Array.from(crypto.getRandomValues(new Uint8Array(6)),b=>ALPHA[b%ALPHA.length]).join('');
+const PROF={};async function prof(u){if(!u)return{};if(PROF[u])return PROF[u];try{PROF[u]=pk((await api('/profiles/'+u)).fields);}catch(e){PROF[u]={};}return PROF[u];}
+const who=p=>p&&p.name?esc(p.name)+(p.phone?' · '+esc(p.phone):''):'—';
+async function moderation(){
+  const RS={telefone:'📞 Telefone',contato:'🔗 Contato/link',palavra:'🤬 Palavra ofensiva'};
+  const bl=(await q('blockedMsgs').catch(()=>[])).sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,100);
+  for(const x of bl){await prof(x.by);await prof(x.ownerId);}
+  mblk.innerHTML=bl.length?`<p class="muted">${bl.length} tentativa(s) bloqueada(s).</p><table><tr><th>Quem enviou</th><th>Para</th><th>Mensagem</th></tr>${bl.map(x=>`<tr>
+    <td>${x.from==='owner'?'Dono do carro: '+who(PROF[x.by]):PROF[x.by]&&PROF[x.by].name?who(PROF[x.by])+' <span class="muted">(identificado)</span>':'Visitante anônimo<div class="muted">id '+esc(String(x.by).slice(0,8))+'</div>'}</td>
+    <td>${x.from==='owner'?'Visitante do '+esc(x.carName||''):who(PROF[x.ownerId])+'<div class="muted">'+esc(x.carName||'')+'</div>'}</td>
+    <td>"${esc(x.text)}"<div class="muted">${RS[x.reason]||x.reason} · ${x.at?x.at.toLocaleString('pt-BR'):''}</div></td></tr>`).join('')}</table>`:'Nenhuma mensagem bloqueada até agora. ✅';
+  const ch=(await q('chats').catch(()=>[])).filter(c=>c.updatedAt).sort((a,b)=>b.updatedAt-a.updatedAt).slice(0,50);
+  for(const c of ch){await prof(c.ownerId);if(c.visitorVerified)await prof(c.visitorId);}
+  mchat.innerHTML=ch.length?`<table><tr><th>Dono (recebeu)</th><th>Quem escaneou</th><th>Última mensagem</th><th></th></tr>${ch.map(c=>`<tr><td>${who(PROF[c.ownerId])}</td>
+    <td>${c.visitorVerified?who(PROF[c.visitorId])+' ✅':'Anônimo'}${c.blocked?' <span class="muted">🚫 bloqueado</span>':''}</td><td>${esc(c.lastMsg||'')}<div class="muted">${c.updatedAt.toLocaleString('pt-BR')}</div></td>
+    <td><button class="sm" data-cv="${c.id}">Ver</button></td></tr>`).join('')}</table>`:'Nenhuma conversa ainda.';
+  mchat.querySelectorAll('[data-cv]').forEach(b=>b.onclick=async()=>{const c=ch.find(x=>x.id===b.dataset.cv);const ms=await q('messages','/chats/'+c.id,'at');
+    const d=document.createElement('div');d.className='pw';d.innerHTML=`<div class="pwb" style="max-width:480px;max-height:85vh;overflow:auto"><h3>Conversa</h3><p class="muted">Dono: ${who(PROF[c.ownerId])}<br>Visitante: ${c.visitorVerified?who(PROF[c.visitorId]):'anônimo'}</p>
+      <div class="thread">${ms.map(m=>`<div class="msg ${m.from==='owner'?'tm':'us'}"><b style="font-size:12px">${m.from==='owner'?'Dono':'Visitante'}</b><br>${esc(m.text)}<div class="muted">${m.at?m.at.toLocaleString('pt-BR'):''}</div></div>`).join('')||'<p class="muted">Sem mensagens.</p>'}</div><button class="gray" style="width:100%;margin-top:10px">Fechar</button></div>`;
+    d.querySelector('button').onclick=()=>d.remove();document.body.appendChild(d);});}
 const TR_NAMES={alerts:'🚨 Alerta',accidents:'🚑 Acidente',tickets:'💬 Ajuda',adRequests:'📣 Pedido',replacements:'🔁 Reposição'};
 async function toTrash(col,id){if(!confirm('Mover para a lixeira? Você pode resgatar depois.'))return;
   await api('/'+col+'/'+id+'?updateMask.fieldPaths=deleted&updateMask.fieldPaths=deletedAt','PATCH',{fields:{deleted:{booleanValue:true},deletedAt:enc(new Date())}});refreshAll();}

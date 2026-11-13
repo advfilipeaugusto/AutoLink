@@ -2,6 +2,18 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{db}/documents {
     function me() { return request.auth.uid; }
+    // Filtro de mensagens: bloqueia telefone, links e palavras ofensivas (o app mostra "Mensagem bloqueada")
+    function okText(t) {
+      let l = t.lower();
+      return !l.matches('.*[0-9]{4,5}[ .-]?[0-9]{4}.*')
+        && !l.matches('.*(https?:|www[.]|instagram).*')
+        && !l.matches('.*\\b(gostos|tes[aã]o|safad|pelad|nudes?|seu n[uú]mero|teu n[uú]mero|seu zap|seu whats|puta|puto|porra|caralho|buceta|boceta|foder|fode|vadia|vagabund|piranha|arrombad|viado|corno|idiota|imbecil|merda|desgra[cç]a|fdp|filho da puta|vai tomar no|vtnc|vou te matar).*');
+    }
+    function chatOpen(c) { return c.get('updatedAt', request.time) > request.time - duration.value(2, 'h'); }
+    match /blockedMsgs/{id} {
+      allow create: if request.auth != null && request.resource.data.by == me();
+      allow read, update, delete: if isAdmin();
+    }
     match /owners/{uid} { allow read, write: if me() == uid; }
     match /owners/{uid}/{rest=**} { allow read, write: if me() == uid; }
     match /profiles/{uid} {
@@ -89,7 +101,7 @@ service cloud.firestore {
       function part() { return me() == resource.data.ownerId || me() == resource.data.visitorId; }
       allow get, list: if request.auth != null && (part() || isAdmin() || isMember(resource.data.carId));
       allow update: if request.auth != null && (me() == resource.data.ownerId || isMember(resource.data.carId) ||
-        (me() == resource.data.visitorId && resource.data.get('blocked', false) == false &&
+        (me() == resource.data.visitorId && resource.data.get('blocked', false) == false && chatOpen(resource.data) &&
          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastMsg', 'updatedAt'])));
       allow create: if request.resource.data.visitorId == me()
         && get(/databases/$(db)/documents/cars/$(request.resource.data.carId)).data.ownerId == request.resource.data.ownerId
@@ -98,8 +110,8 @@ service cloud.firestore {
         && (request.resource.data.get('visitorVerified', false) == false || exists(/databases/$(db)/documents/profiles/$(me())));
       match /messages/{m} {
         function chat() { return get(/databases/$(db)/documents/chats/$(chatId)).data; }
-        allow read: if me() == chat().ownerId || me() == chat().visitorId || isMember(chat().carId);
-        allow create: if request.resource.data.text is string && request.resource.data.text.size() <= 500 &&
+        allow read: if me() == chat().ownerId || me() == chat().visitorId || isMember(chat().carId) || isAdmin();
+        allow create: if request.resource.data.text is string && request.resource.data.text.size() <= 500 && okText(request.resource.data.text) && chatOpen(chat()) &&
           ((( me() == chat().ownerId || isMember(chat().carId)) && request.resource.data.from == 'owner') ||
            (me() == chat().visitorId && request.resource.data.from == 'visitor' && chat().get('blocked', false) == false));
       }
