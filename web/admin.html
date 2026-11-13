@@ -17,6 +17,7 @@ header{display:flex;align-items:center;gap:10px}header img.lgc{height:30px;width
 .bd:not(:empty){position:absolute;top:-6px;right:-6px;background:#e11d48;color:#fff;border-radius:10px;font-size:11px;padding:1px 6px}
 textarea{width:100%;box-sizing:border-box;padding:12px;border:1px solid #ccc;border-radius:8px;font:inherit;font-size:15px;min-height:80px;margin-top:8px}
 .thread{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto}.msg{padding:10px 12px;border-radius:12px;max-width:80%}.msg.us{background:#eee}.msg.tm{background:#FFE1CC;align-self:flex-end}
+#det td:first-child,#det td:last-child{white-space:nowrap}.pw{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}.pwb{background:#fff;border-radius:16px;padding:20px;width:100%;max-width:360px}.pwb button{width:100%;margin:6px 0 0}.err{color:#c00}
 button.x{position:absolute;top:10px;right:10px;width:36px;height:36px;padding:0;margin:0;border-radius:50%;background:#eee;font-size:18px;line-height:36px}button.x:hover{background:#ddd}button.gray{background:#ddd}button.red{background:#d32f2f;color:#fff}button.sm{padding:6px 10px;font-size:13px;margin:0}code{background:#eee;padding:2px 6px;border-radius:4px}
 .sheet{display:flex;flex-wrap:wrap;gap:4mm;justify-content:center}
 .st{width:60mm;background:#111;border-radius:5mm;padding:4mm;color:#fff;text-align:center;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid}
@@ -36,9 +37,22 @@ const SITE=location.origin+location.pathname.replace('admin.html','');
 const m=document.getElementById('m');let S=JSON.parse(sessionStorage.getItem('adm')||'null');
 const enc=v=>v instanceof Date?{timestampValue:v.toISOString()}:{stringValue:String(v)};
 async function api(path,method='GET',body){const r=await fetch(BASE+path,{method,headers:{Authorization:'Bearer '+S.token,'Content-Type':'application/json'},body:body&&JSON.stringify(body)});const j=await r.json();if(!r.ok)throw new Error(j.error?.message||JSON.stringify(j));return j;}
-function loginView(msg=''){m.innerHTML=`<div class="box"><h3>Entrar</h3><p class="muted">${msg}</p><input id="e" type="email" placeholder="E-mail"><input id="p" type="password" placeholder="Senha"><button id="go">Entrar</button></div>`;
+function loginView(msg=''){m.innerHTML=`<div class="box"><h3>Entrar</h3><p class="muted">${msg}</p><input id="e" type="email" placeholder="E-mail"><input id="p" type="password" placeholder="Senha"><button id="go">Entrar</button><button class="gray" id="fg">Esqueci minha senha</button></div>`;
+  fg.onclick=()=>forgot(e.value);
   go.onclick=async()=>{const r=await(await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key='+KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e.value,password:p.value,returnSecureToken:true})})).json();
-    if(!r.idToken)return loginView('E-mail ou senha incorretos.');S={uid:r.localId,token:r.idToken};sessionStorage.setItem('adm',JSON.stringify(S));main();};}
+    if(!r.idToken)return loginView('E-mail ou senha incorretos.');S={uid:r.localId,token:r.idToken,email:e.value.trim()};sessionStorage.setItem('adm',JSON.stringify(S));main();};}
+async function forgot(pre){const em=(prompt('Digite o e-mail da sua conta de administrador:',pre||S?.email||'')||'').trim();if(!em)return;
+  await fetch('https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key='+KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({requestType:'PASSWORD_RESET',email:em})});
+  alert('Se este e-mail tiver conta, chegará um link para criar uma nova senha. Confira também o spam.');}
+// Pede a senha antes de ações perigosas
+function askPass(title){return new Promise(ok=>{const d=document.createElement('div');d.className='pw';
+  d.innerHTML=`<div class="pwb"><h3>🔒 ${title}</h3><p class="muted">Confirme sua senha de administrador.</p><input type="password" id="pwI" placeholder="Senha" autocomplete="current-password"><p class="muted err" id="pwE"></p><button id="pwOk">Confirmar</button><button class="gray" id="pwNo">Cancelar</button><button class="gray" id="pwFg" style="background:none;color:#FF6B00">Esqueci minha senha</button></div>`;
+  document.body.appendChild(d);const I=d.querySelector('#pwI');I.focus();const end=v=>{d.remove();ok(v);};
+  d.querySelector('#pwNo').onclick=()=>end(false);d.querySelector('#pwFg').onclick=()=>{end(false);forgot();};
+  const go=async()=>{if(!S.email){end(false);alert('Saia e entre de novo para confirmar sua senha.');sessionStorage.clear();return location.reload();}
+    const r=await(await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key='+KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:S.email,password:I.value,returnSecureToken:true})})).json();
+    if(!r.idToken){d.querySelector('#pwE').textContent='Senha incorreta.';I.value='';I.focus();return;}S.token=r.idToken;sessionStorage.setItem('adm',JSON.stringify(S));end(true);};
+  d.querySelector('#pwOk').onclick=go;I.onkeydown=e=>{if(e.key==='Enter')go();};});}
 async function isAdmin(){try{await api('/admins/'+S.uid);return true}catch(e){return false}}
 async function main(){
   if(!S)return loginView();
@@ -83,7 +97,7 @@ async function adsList(){const l=(await q('adRequests')).sort((a,b)=>(b.createdA
 let ALL=[];
 async function history(){
   const r=await api(':runQuery','POST',{structuredQuery:{from:[{collectionId:'stickers'}]}});
-  ALL=r.filter(x=>x.document).map(x=>{const f=x.document.fields;return{code:x.document.name.split('/').pop(),batch:f.batch?.stringValue||'(sem nome)',created:f.createdAt?new Date(f.createdAt.timestampValue):null,active:!!f.carId,activated:f.activatedAt?new Date(f.activatedAt.timestampValue):null}});
+  ALL=r.filter(x=>x.document).map(x=>{const f=x.document.fields;return{code:x.document.name.split('/').pop(),batch:f.batch?.stringValue||'(sem nome)',created:f.createdAt?new Date(f.createdAt.timestampValue):null,active:!!f.carId,carId:f.carId?.stringValue||null,activated:f.activatedAt?new Date(f.activatedAt.timestampValue):null}});
   const g={};for(const x of ALL){(g[x.batch]??={name:x.batch,date:x.created,list:[]}).list.push(x);if(x.created&&(!g[x.batch].date||x.created<g[x.batch].date))g[x.batch].date=x.created;}
   const rows=Object.values(g).sort((a,b)=>(b.date||0)-(a.date||0));
   const tot=ALL.length,act=ALL.filter(x=>x.active).length;
@@ -92,8 +106,9 @@ async function history(){
   hist.querySelectorAll('button[data-i]').forEach(bt=>bt.onclick=()=>showBatch(rows[+bt.dataset.i]));}
 async function showBatch(b){
   detBox.style.display='';detT.textContent='Lote: '+b.name;
-  det.innerHTML=`<table><tr><th>Código</th><th>Situação</th><th>Ativado em</th></tr>${b.list.sort((x,y)=>x.code.localeCompare(y.code)).map(x=>`<tr><td><b>${x.code}</b></td><td>${x.active?'<span style="color:#1a7f37">● Ativado</span>':'<span style="color:#999">○ Disponível</span>'}</td><td>${x.activated?x.activated.toLocaleString('pt-BR'):''}</td></tr>`).join('')}</table><button onclick="print()">Imprimir este lote</button><button class="gray" id="renB">Renomear</button><button class="red" id="delB">Apagar lote</button>`;
+  det.innerHTML=`<table><tr><th>Código</th><th>Situação</th><th>Ativado em</th><th></th></tr>${b.list.sort((x,y)=>x.code.localeCompare(y.code)).map(x=>`<tr><td><b>${x.code}</b></td><td>${x.active?'<span style="color:#1a7f37">● Ativado</span>':'<span style="color:#999">○ Disponível</span>'}</td><td>${x.activated?x.activated.toLocaleString('pt-BR'):''}</td><td><button class="sm red" data-del="${x.code}" title="Apagar este QR">🗑 Apagar</button></td></tr>`).join('')}</table><button onclick="print()">Imprimir este lote</button><button class="gray" id="renB">Renomear</button><button class="red" id="delB">Apagar lote</button>`;
   delB.onclick=()=>deleteBatch(b);renB.onclick=()=>renameBatch(b);
+  det.querySelectorAll('[data-del]').forEach(bt=>bt.onclick=()=>deleteOne(b,b.list.find(x=>x.code===bt.dataset.del)));
   const pins={};await Promise.all(b.list.map(async x=>{try{pins[x.code]=(await api('/stickerSecrets/'+x.code)).fields.pin.stringValue}catch(e){}}));
   render(b.list.map(x=>x.code),pins);detBox.scrollIntoView({behavior:'smooth'});}
 function closeBatch(){detBox.style.display='none';sheet.innerHTML='';scrollTo({top:0,behavior:'smooth'});}
@@ -103,11 +118,20 @@ async function renameBatch(b){
     await api(':commit','POST',{writes:part.map(x=>({update:{name:DOC+'/stickers/'+x.code,fields:{batch:{stringValue:n}}},updateMask:{fieldPaths:['batch']}}))});}
     b.name=n;detT.textContent='Lote: '+n;info.textContent=`Lote renomeado para "${n}".`;history();
   }catch(e){alert('Erro ao renomear: '+e.message);}}
+async function deleteOne(b,x){
+  if(!confirm(`Apagar o QR ${x.code}?`+(x.active?'\n\n⚠️ Este adesivo JÁ FOI ATIVADO por um cliente. Ele vai parar de funcionar no carro dele.':'')+'\n\nO adesivo impresso para de funcionar. Não dá para desfazer.'))return;
+  if(!await askPass('Apagar QR '+x.code))return;
+  try{const w=[{delete:DOC+'/stickers/'+x.code},{delete:DOC+'/stickerSecrets/'+x.code}];
+    if(x.carId)w.push({update:{name:DOC+'/cars/'+x.carId,fields:{}},updateMask:{fieldPaths:['stickerCode']},currentDocument:{exists:true}});
+    await api(':commit','POST',{writes:w}).catch(async e=>{if(x.carId)await api(':commit','POST',{writes:w.slice(0,2)});else throw e;});
+    b.list=b.list.filter(y=>y!==x);info.textContent=`QR ${x.code} apagado.`;b.list.length?showBatch(b):closeBatch();history();
+  }catch(e){alert('Erro ao apagar: '+e.message);}}
 async function deleteBatch(b){
   const free=b.list.filter(x=>!x.active),act=b.list.length-free.length;
   if(!free.length)return alert('Todos os adesivos deste lote já foram ativados por clientes. Eles não podem ser apagados.');
   const aviso=act?`\n\n${act} adesivo(s) já ativado(s) por clientes serão MANTIDOS, para não quebrar o adesivo deles.`:'';
   if(!confirm(`Apagar ${free.length} adesivo(s) não ativado(s) do lote "${b.name}"?${aviso}\n\nOs adesivos impressos deste lote vão parar de funcionar. Não dá para desfazer.`))return;
+  if(!await askPass('Apagar lote'))return;
   try{for(let i=0;i<free.length;i+=200){const part=free.slice(i,i+200);
     await api(':commit','POST',{writes:part.flatMap(x=>[{delete:DOC+'/stickers/'+x.code},{delete:DOC+'/stickerSecrets/'+x.code}])});}
     closeBatch();info.textContent=`${free.length} adesivo(s) apagado(s) do lote "${b.name}".`;history();
