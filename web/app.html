@@ -242,7 +242,7 @@ function Home(){
     if(k==='qr')return go(MyQR);
     if(k==='emp')return go(Company);
     if(k==='cal')return go(Calendar);
-    if(k==='uber')return go(AppDriver);
+    if(k==='uber')return toast('🚧 Motorista de app: em construção. Em breve!');
     toast(SOON);});
   const carSvg=`<svg class="car" viewBox="0 0 120 60" fill="none" stroke="#FF6B00" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 44H8c-2 0-3-1-3-3v-7c0-2 1-3 3-4l14-4 12-9c3-2 7-3 11-3h22c5 0 9 2 12 5l9 8 14 2c4 1 7 4 7 8v4c0 2-1 3-3 3h-6"/><path d="M38 44h40"/><circle cx="26" cy="44" r="8"/><circle cx="90" cy="44" r="8"/><path d="M36 26h50"/></svg>`;
   const drawHero=()=>{const h=document.getElementById('hero');if(!h)return;
@@ -343,20 +343,20 @@ function Car(car){
   const list=async()=>{const chats=(await find('chats',[['carId',car.id],['ownerId',car.ownerId]])).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
     const box=$('#chats');if(!box)return;box.innerHTML=chats.length?'':'<p class="muted">Nenhuma mensagem ainda.</p>';
     for(const c of chats){const b=document.createElement('button');b.className='card';
-      b.innerHTML=`<div>${c.blocked?'🚫 ':''}${esc(c.lastMsg)}${alChatOpen(c)?'':' <span class="pill" style="margin-left:6px;background:#3a3a40;color:var(--mut)">encerrada</span>'}</div><div class="muted">${c.updatedAt?c.updatedAt.toLocaleString('pt-BR'):''}</div>`;
+      b.innerHTML=`<div>${c.blocked?'🚫 ':''}${esc(c.lastMsg)}${alChatOpen(c)?'':' <span class="pill" style="margin-left:6px;background:#3a3a40;color:var(--mut)">visitante sem tempo</span>'}</div><div class="muted">${c.updatedAt?c.updatedAt.toLocaleString('pt-BR'):''}</div>`;
       b.onclick=()=>go(Chat,{car,chatId:c.id});box.appendChild(b);}};
   poll(()=>list().catch(()=>{}));
 }
 
 function Chat({car,chatId}){
   let chat=null;
-  m.innerHTML=`<div class="row"><h2 style="margin:0">${esc(car.name)}</h2><div id="acts"></div></div><div id="bl"></div><div id="msgs"></div>
+  m.innerHTML=`<div class="row"><h2 style="margin:0">${esc(car.name)}</h2><div id="acts"></div></div><div id="bl"></div><p class="muted" id="ttlN" style="margin:0 0 6px"></p><div id="msgs"></div>
   <div class="composer"><div class="q">${['Já estou indo!','Me dá 5 minutos','Obrigado pelo aviso!'].map(q=>`<button class="chip">${q}</button>`).join('')}</div>
   <form class="in" id="f"><input id="t" placeholder="Responder..." maxlength="500" autocomplete="off"><button class="btn">Enviar</button></form></div>`;
   const box=$('#msgs');let last='';
   const load=async()=>{
     chat=unpack(await api('/chats/'+chatId));
-    const comp=document.querySelector('.composer');if(comp&&!alChatOpen(chat)){comp.innerHTML='<div class="muted" style="text-align:center;padding:8px">🔒 Conversa encerrada (2 horas sem mensagens).<br>Se a pessoa precisar, ela escaneia o adesivo de novo.</div>';}
+    const tn=document.getElementById('ttlN');if(tn)tn.innerHTML=alChatOpen(chat)?`⏳ Quem escaneou pode escrever por mais <b>${alLeft(chat)} min</b>.`:'⏱️ O tempo de 20 min de quem escaneou acabou: ela não pode mais escrever, mas vê suas respostas.';
     if(!chat.seenAt||(chat.updatedAt&&+chat.updatedAt>+chat.seenAt))update('chats/'+chatId,{seenAt:new Date()}).catch(()=>{});
     if(car.ownerId!==S.uid){$('#acts').innerHTML='';}else $('#acts').innerHTML=chat.blocked?'<button class="chip" id="ub">🔓 Desbloquear</button>':'<button class="chip" id="bk">🚫 Bloquear</button> <button class="chip" id="rp">⚠️ Denunciar</button>';
     if(chat.blocked&&$('#ub'))$('#ub').onclick=async()=>{if(!confirm('Desbloquear? Essa pessoa poderá te mandar mensagens de novo.'))return;
@@ -375,7 +375,6 @@ function Chat({car,chatId}){
     const reason={1:'ofensa',2:'spam',3:'outro'}[String(r||'').trim()];if(!reason)return;
     try{await add('reports',{ownerId:S.uid,carId:car.id,chatId,visitorId:chat.visitorId,reason,at:new Date()});await block(true);alert('Denúncia enviada. A pessoa também foi bloqueada.');}catch(err){alert('Erro: '+err.message);}};
   const send=async t=>{t=t.trim();if(!t)return;
-    if(!alChatOpen(chat))return alert('Esta conversa foi encerrada (2 horas sem mensagens). Se a pessoa precisar, ela escaneia o adesivo de novo.');
     const bad=alCheck(t);if(bad){alert(alBlockedMsg(bad));add('blockedMsgs',{by:S.uid,byVerified:'dono',ownerId:car.ownerId,carId:car.id,carName:car.name,text:t,reason:bad,from:'owner',at:new Date()}).catch(()=>{});return;}
     $('#t').value='';
     try{await add('chats/'+chatId+'/messages',{text:t,from:'owner',at:new Date()});await update('chats/'+chatId,{lastMsg:'Você: '+t,updatedAt:new Date()});load();}catch(err){alert('Erro: '+err.message);}};

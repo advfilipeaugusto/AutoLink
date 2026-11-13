@@ -1,5 +1,5 @@
 // AutoLink · filtro de mensagens (o mesmo bloqueio também existe nas regras do Firebase)
-const CHAT_TTL_H = 2; // conversa fecha 2 horas depois da última mensagem
+const CHAT_MIN = 20; // quem escaneou pode escrever por 20 minutos a partir da primeira mensagem
 const AL_BAD = [
   // assédio / conteúdo sexual
   'gostos', 'delicia', 'tesao', 'tesuda', 'safad', 'pelad', 'nude', 'manda foto', 'manda uma foto', 'sexo', 'transar', 'gatinha', 'linda demais', 'bunda', 'peito', 'rabuda',
@@ -24,4 +24,6 @@ function alBlockedMsg(reason) {
     ? '🚫 Mensagem bloqueada.\n\nPor segurança, não é permitido enviar telefone, e-mail, redes sociais ou links pelo AutoLink.'
     : '🚫 Mensagem bloqueada.\n\nSua mensagem tem palavras não permitidas. Use outras palavras e seja respeitoso.';
 }
-function alChatOpen(chat) { const t = chat && (chat.updatedAt || chat.createdAt); return !t || (Date.now() - +t) < CHAT_TTL_H * 3600e3; }
+function alStart(chat) { return chat && (chat.createdAt || chat.updatedAt); }
+function alChatOpen(chat) { const t = alStart(chat); return !t || (Date.now() - +t) < CHAT_MIN * 60e3; }
+function alLeft(chat) { const t = alStart(chat); return t ? Math.max(0, Math.ceil((CHAT_MIN * 60e3 - (Date.now() - +t)) / 60e3)) : CHAT_MIN; }

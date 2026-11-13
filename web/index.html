@@ -45,7 +45,7 @@ async function send(text){
   try{
     const now=new Date();
     if(!chatId){
-      const c=unpack(await api('/chats','POST',{fields:fields(Object.assign({carId,ownerId:car.ownerId,visitorId:S.uid,lastMsg:text,updatedAt:now},VER?{visitorVerified:true}:{}))}));
+      const c=unpack(await api('/chats','POST',{fields:fields(Object.assign({carId,ownerId:car.ownerId,visitorId:S.uid,lastMsg:text,updatedAt:now,createdAt:now},VER?{visitorVerified:true}:{}))}));
       chatId=c.id; localStorage.setItem(CK+carId,chatId); showChat();
     } else await api('/chats/'+chatId+'?updateMask.fieldPaths=lastMsg&updateMask.fieldPaths=updatedAt','PATCH',{fields:fields({lastMsg:text,updatedAt:now})});
     await api('/chats/'+chatId+'/messages','POST',{fields:fields({text,from:'visitor',at:now})});
@@ -60,7 +60,9 @@ async function load(){
   const res=await api('/chats/'+chatId+':runQuery','POST',{structuredQuery:{from:[{collectionId:'messages'}],orderBy:[{field:{fieldPath:'at'},direction:'ASCENDING'}]}});
   const ms=res.filter(x=>x.document).map(x=>unpack(x.document));
   let ch={};try{ch=unpack(await api('/chats/'+chatId));}catch(e){}
-  if(ch.updatedAt&&!alChatOpen(ch)){const f=document.getElementById('f');if(f)f.outerHTML='<div style="background:#f2f2f2;border-radius:12px;padding:12px;text-align:center;font-size:14px">🔒 Conversa encerrada (2 horas sem mensagens).<br><button class="s" style="margin-top:8px;padding:10px 14px" onclick="localStorage.removeItem(CK+carId);location.reload()">Começar nova conversa</button></div>';}
+  const tb=document.getElementById('ttl');
+  if(ch.updatedAt&&!alChatOpen(ch)){const f=document.getElementById('f');if(f)f.outerHTML='<div style="background:#f2f2f2;border-radius:12px;padding:12px;text-align:center;font-size:14px">⏱️ <b>Seu tempo de 20 minutos acabou.</b><br>Você não pode mais enviar mensagens nesta conversa. O dono do carro continua vendo suas mensagens e ainda pode te responder aqui.<br><button class="s" style="margin-top:8px;padding:10px 14px" onclick="localStorage.removeItem(CK+carId);location.reload()">Começar nova conversa</button></div>';if(tb)tb.remove();}
+  else if(tb)tb.innerHTML=`⏳ Você ainda pode escrever por <b>${alLeft(ch)} min</b>.`;
   const lastV=[...ms].reverse().find(m=>m.from==='visitor');
   let html=ms.map(m=>`<div class="b ${m.from==='visitor'?'me':'them'}">${esc(m.text)}</div>`).join('');
   if(lastV&&ch.seenAt&&+ch.seenAt>=+lastV.at)html+='<div class="seen">✓✓ Visto pelo dono</div>';
@@ -75,7 +77,7 @@ function awayBanner(){let b=document.getElementById('awb');const on=car&&car.awa
   b.innerHTML=`<div style="background:#111;color:#fff;border-left:5px solid #FF6B00;border-radius:12px;padding:12px 14px;margin-bottom:12px">🤖 <b>O dono está ausente</b><br>${esc(car.awayText)}<br><small style="opacity:.75">Até ${car.awayUntil.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}. Você ainda pode mandar mensagem.</small></div>`;}
 function form(){ document.getElementById('f').onsubmit=e=>{e.preventDefault();const t=document.getElementById('t');const v=t.value.trim();if(v){send(v);t.value='';}}; }
 function showChat(){
-  app.innerHTML=`<p class="muted">Conversa anônima com o dono do carro <b>${esc(car.name)}</b>. As respostas aparecem aqui.</p><div id="msgs"></div>
+  app.innerHTML=`<p class="muted">Conversa anônima com o dono do carro <b>${esc(car.name)}</b>. As respostas aparecem aqui.</p><div id="msgs"></div><p class="muted" id="ttl" style="text-align:center"></p>
   <form id="f"><input id="t" placeholder="Escreva uma mensagem..." maxlength="500"><button class="s">Enviar</button></form>`;
   form(); clearInterval(timer); timer=setInterval(()=>load().catch(()=>{}),3000);
 }
@@ -93,11 +95,10 @@ function showChat(){
   if(!car||!car.active){app.innerHTML='<p>Este QR code não está ativo.</p>';return;}
   chatId=localStorage.getItem(CK+carId);
   if(chatId){let ch=null;try{ch=unpack(await api('/chats/'+chatId));}catch(e){}
-    if(ch&&!alChatOpen(ch)){localStorage.removeItem(CK+carId);chatId=null;app.insertAdjacentHTML('beforebegin','');window._closedNote=1;}
-    else{showChat();load().catch(()=>{});return;}}
+    showChat();load().catch(()=>{});return;}
   if(car.fleet)rateBox();
-  app.innerHTML=(window._closedNote?'<div style="background:#fff3e8;border:1px solid #FF6B00;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:14px">🔒 Sua conversa anterior foi encerrada (2 horas sem mensagens). Envie uma nova mensagem abaixo.</div>':'')+(car.fleet?'<div id="rate"></div>':'')+`<p>Avise o dono do <b>${esc(car.name)}</b>. Ele recebe na hora e você não precisa se identificar.</p>`+
-    (car.appDriver?quickApp:[]).concat(quick).map(q=>`<button class="q">${q}</button>`).join('')+`<p class="muted">Ou escreva:</p><form id="f"><input id="t" maxlength="500"><button class="s">Enviar</button></form>`;
+  app.innerHTML=(car.fleet?'<div id="rate"></div>':'')+`<p>Avise o dono do <b>${esc(car.name)}</b>. Ele recebe na hora e você não precisa se identificar.</p>`+
+    (car.appDriver?quickApp:[]).concat(quick).map(q=>`<button class="q">${q}</button>`).join('')+`<p class="muted">Ou escreva:</p><p class="muted" style="margin-top:-6px">⏳ Você terá <b>20 minutos</b> para conversar a partir da primeira mensagem.</p><form id="f"><input id="t" maxlength="500"><button class="s">Enviar</button></form>`;
   app.querySelectorAll('.q').forEach(b=>b.onclick=()=>send(b.textContent)); form(); if(car.fleet)rateBox(); awayBanner();
 })();
 function rateBox(){const r=document.getElementById('rate');if(!r)return;let st=0;
