@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Linking, View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, SafeAreaView, Alert, Switch, Platform } from 'react-native';
+import { KeyboardAvoidingView, Platform as RNPlatform, Linking, View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, SafeAreaView, Alert, Switch, Platform } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { SvgXml } from 'react-native-svg';
 const LOGO = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#FF6B00"/><path d="M92 112h328a40 40 0 0 1 40 40v184a40 40 0 0 1-40 40H232l-86 72v-72H92a40 40 0 0 1-40-40V152a40 40 0 0 1 40-40z" fill="#111"/><path d="M96 300v-26c0-14 8-24 22-27l52-10 44-38c10-8 22-12 35-12h70c16 0 30 6 41 17l34 33 22 4c14 3 24 14 24 28v31z" fill="#FF6B00"/><path d="M206 244l30-26c6-5 13-7 21-7h22v33z M295 244v-33h22c9 0 17 3 23 9l25 24z" fill="#111"/><rect x="352" y="262" width="22" height="9" rx="4" fill="#111"/><circle cx="164" cy="304" r="30" fill="#111"/><circle cx="164" cy="304" r="16" fill="#FF6B00"/><circle cx="350" cy="304" r="30" fill="#111"/><circle cx="350" cy="304" r="16" fill="#FF6B00"/><g transform="translate(364 132)" fill="#FF6B00"><path d="M0 0h26v26H0zM8 8v10h10V8z" fill-rule="evenodd"/><path d="M38 0h26v26H38zM46 8v10h10V8z" fill-rule="evenodd"/><path d="M0 38h26v26H0zM8 46v10h10V46z" fill-rule="evenodd"/><rect x="38" y="38" width="10" height="10"/><rect x="54" y="38" width="10" height="10"/><rect x="46" y="54" width="10" height="10"/></g></svg>`;
@@ -40,9 +40,11 @@ export default function App() {
         <SvgXml xml={LOGO} width={36} height={36} />
         <Text style={s.title}>Auto<Text style={{ color: '#FF6B00' }}>Link</Text></Text>
       </View>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={RNPlatform.OS === 'ios' ? 'padding' : 'height'}>
       {screen.name === 'home' && <Home uid={uid} go={go} />}
       {screen.name === 'car' && <Car car={screen.car} go={go} />}
       {screen.name === 'chat' && <Chat car={screen.car} chatId={screen.chatId} />}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
