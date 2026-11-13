@@ -106,12 +106,22 @@ function Car({ car, go }) {
   const url = `${WEB_URL}?c=${car.id}`;
   usePoll(async () => setChats((await find('chats', [['carId', car.id], ['ownerId', car.ownerId]])).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))), [car.id]);
   const toggle = async v => { setActive(v); car.active = v; await update('cars/' + car.id, { active: v }); };
+  const [topic, setTopic] = useState(car.notifyTopic);
+  useEffect(() => {
+    if (car.notifyTopic) return;
+    const t = 'autolink-' + Array.from({ length: 20 }, () => 'abcdefghijkmnpqrstuvwxyz23456789'[Math.floor(Math.random() * 32)]).join('');
+    update('cars/' + car.id, { notifyTopic: t }).then(() => { car.notifyTopic = t; setTopic(t); }).catch(() => {});
+  }, [car.id]);
+  const enableNotif = () => Alert.alert('Ativar notificações',
+    '1. Instale o app gratuito "ntfy" (App Store / Play Store).\n2. Volte aqui e toque em "Abrir no ntfy".\n3. No ntfy, confirme a inscrição e permita notificações.',
+    [{ text: 'Cancelar' }, { text: 'Abrir no ntfy', onPress: () => Linking.openURL('ntfy://ntfy.sh/' + topic).catch(() => Alert.alert('Instale o app ntfy primeiro', 'Ou no ntfy toque em + e digite este código:\n\n' + topic)) }]);
   return (
     <View style={s.pad}>
       <Text style={s.h2}>{car.name}</Text>
       <View style={s.qr}><QRCode value={url} size={200} color="#111" /></View>
       <Btn label="Ver adesivo para imprimir" onPress={() => Linking.openURL(`${WEB_URL}adesivo.html?c=${car.id}`)} />
       <View style={s.row}><Text>QR ativo</Text><Switch value={active} onValueChange={toggle} /></View>
+      {topic && <Btn label="🔔 Ativar notificações" onPress={enableNotif} />}
       <Text style={s.h2}>Conversas</Text>
       <FlatList data={chats} keyExtractor={c => c.id} renderItem={({ item }) => (
         <TouchableOpacity style={s.card} onPress={() => go('chat', { car, chatId: item.id })}>

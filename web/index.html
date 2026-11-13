@@ -37,6 +37,7 @@ async function send(text){
       chatId=c.id; localStorage.setItem('chat_'+carId,chatId); showChat();
     } else await api('/chats/'+chatId+'?updateMask.fieldPaths=lastMsg&updateMask.fieldPaths=updatedAt','PATCH',{fields:fields({lastMsg:text,updatedAt:now})});
     await api('/chats/'+chatId+'/messages','POST',{fields:fields({text,from:'visitor',at:now})});
+    if(car.notifyTopic) fetch('https://ntfy.sh/'+car.notifyTopic,{method:'POST',headers:{Title:'AutoLink',Tags:'car',Priority:'high'},body:'Nova mensagem sobre o '+car.name}).catch(()=>{});
     load();
   }catch(e){ alert(/permission|PERMISSION/.test(e.message)?'O dono deste carro não está recebendo mensagens suas.':'Não foi possível enviar: '+e.message); }
 }
