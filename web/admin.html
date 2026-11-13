@@ -11,7 +11,7 @@ button{background:#FF6B00;color:#111;border:0;border-radius:10px;padding:12px 18
 #hub{padding:16px;max-width:900px;margin:auto}.hubg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
 .hubg button{position:relative;margin:0;background:#fff;color:#111;border:1px solid #eee;border-radius:18px;padding:22px 18px;text-align:left;display:flex;flex-direction:column;gap:6px;box-shadow:0 2px 10px #0000000d;font-weight:400}
 .hubg button:hover{border-color:#FF6B00}.hubg .e{font-size:34px}.hubg b{font-size:18px}.hubg small{color:#777;font-size:13px}.hubg .bd:not(:empty){top:12px;right:12px;font-size:13px;padding:2px 8px}
-header{display:flex;align-items:center;gap:10px}header img.lgc{height:22px;width:auto;border-radius:0;display:block;margin-top:3px}.lg{display:flex;flex-direction:column;align-items:flex-start}.lg{line-height:1}.lg small{display:block;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#FF6B00;font-weight:800;margin-bottom:2px}
+header{display:flex;align-items:center;gap:10px}header img.lgc{height:22px;width:auto;border-radius:0;display:block;margin-top:3px}.lg{display:flex;flex-direction:column;align-items:center;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}header{position:relative;min-height:84px}.lg{line-height:1}.lg small{display:block;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#FF6B00;font-weight:800;margin-bottom:2px}
 #hb{background:none;color:#FF6B00;font-size:30px;padding:0 6px 0 0;margin:0;font-weight:400}
 #tabs{display:flex;gap:6px;overflow-x:auto;background:#111;padding:0 12px 10px;position:sticky;top:0;z-index:5}#tabs button{background:#222;color:#ddd;margin:0;padding:10px 14px;font-size:14px;white-space:nowrap;position:relative}#tabs button.on{background:#FF6B00;color:#111}
 .bd:not(:empty){position:absolute;top:-6px;right:-6px;background:#e11d48;color:#fff;border-radius:10px;font-size:11px;padding:1px 6px}
@@ -68,7 +68,7 @@ async function main(){
   <div class="box" data-tab="adesivos"><h3>Histórico de lotes</h3><div id="hist" class="muted">Carregando...</div></div>
   <div class="box" data-tab="adesivos" id="detBox" style="display:none;position:relative"><button class="x" onclick="closeBatch()" title="Fechar" aria-label="Fechar">✕</button><h3 id="detT" style="padding-right:40px"></h3><div id="det"></div></div><div class="sheet" id="sheet"></div>`;
   gen.onclick=generate;history();home();refreshAll();setInterval(refreshAll,30000);}
-let TAB=null;const TABS=[['adesivos','🏷️','Adesivos','Gerar, imprimir e acompanhar lotes'],['alertas','🚨','Alertas','Aprovar alertas regionais'],['ajuda','💬','Central de ajuda','Responder clientes'],['anuncios','📣','Anunciantes','Pedidos para anunciar']];
+let TAB=null;const TABS=[['adesivos','🏷️','Adesivos','Gerar, imprimir e acompanhar lotes'],['alertas','🚨','Alertas','Aprovar alertas regionais'],['ajuda','💬','Central de ajuda','Responder clientes'],['anuncios','📣','Anunciantes e vendedores','Pedidos para anunciar ou vender']];
 function home(){TAB=null;hb.hidden=true;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.add('hide'));sheet.style.display='none';
   hub.hidden=false;hub.innerHTML=`<h2 style="margin:4px 0 14px">Olá! O que você quer fazer?</h2><div class="hubg">${TABS.map(([k,e,l,d])=>`<button data-k="${k}"><span class="e">${e}</span><b>${l}</b><small>${d}</small><span class="bd" id="bd-${k}"></span></button>`).join('')}</div>`;
   hub.querySelectorAll('button').forEach(b=>b.onclick=()=>tab(b.dataset.k));badges();scrollTo(0,0);}
@@ -90,7 +90,7 @@ async function openTicket(t){tkBox.style.display='';tkT.textContent='Conversa co
   tkC.onclick=async()=>{await api('/tickets/'+t.id+'?updateMask.fieldPaths=status','PATCH',{fields:{status:enc('closed')}});tkBox.style.display='none';tickets();};
   tkBox.scrollIntoView({behavior:'smooth'});}
 async function adsList(){const l=(await q('adRequests')).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));BD.anuncios=l.filter(a=>a.status==='new').length;badges();
-  ads.innerHTML=l.length?`<table><tr><th>Quem</th><th>Contato</th><th>Pedido</th><th></th></tr>${l.map(a=>`<tr><td><b>${esc(a.name)}</b><div class="muted">${esc(a.segment||'')} · ${esc(a.city||'')}</div></td>
+  ads.innerHTML=l.length?`<table><tr><th>Quem</th><th>Contato</th><th>Pedido</th><th></th></tr>${l.map(a=>`<tr><td><span class="muted">${a.kind==='sell'?'🛒 Quer vender':'📣 Quer anunciar'}</span><br><b>${esc(a.name)}</b><div class="muted">${esc(a.segment||'')} · ${esc(a.city||'')}</div></td>
    <td><a target="_blank" href="https://wa.me/55${esc((a.whatsapp||'').replace(/\D/g,''))}">${esc(a.whatsapp)}</a><div class="muted">${esc(a.email||'')}</div></td><td>${esc(a.text||'')}<div class="muted">${a.createdAt?a.createdAt.toLocaleString('pt-BR'):''}</div></td>
    <td>${a.status==='new'?`<button class="sm" data-c="${a.id}">Marcar contatado</button>`:'✅ Contatado'}</td></tr>`).join('')}</table>`:'Nenhum pedido ainda.';
   ads.querySelectorAll('[data-c]').forEach(b=>b.onclick=async()=>{await api('/adRequests/'+b.dataset.c+'?updateMask.fieldPaths=status','PATCH',{fields:{status:enc('contacted')}});adsList();});}
