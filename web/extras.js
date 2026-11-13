@@ -329,6 +329,7 @@ function Company() {
     ['🚑', 'Ocorrências', 'Acidentes e alertas envolvendo veículos da empresa.']];
   m.innerHTML = `<h2>🏢 AutoLink para empresas</h2><p class="muted">Soluções para quem tem frota: transportadoras, entregas, locadoras, aplicativos e empresas de serviço.</p>
    ${F.map(([e, t, d, ok]) => `<button class="card cf" style="display:flex;gap:12px;align-items:center" data-ok="${ok ? 1 : ''}"><span style="font-size:28px">${e}</span><div style="flex:1"><b>${t}</b> ${ok ? '<span class="pill" style="margin:0">Disponível</span>' : '<span class="pill" style="margin:0;background:#3a3a40;color:var(--mut)">Em breve</span>'}<div class="muted">${d}</div></div></button>`).join('')}
+   <div class="card" style="border-color:var(--or)"><b>💰 Quanto custa</b><div style="font-size:22px;font-weight:900;color:var(--or);margin:6px 0">R$ 69,00/mês <span style="font-size:15px">+ R$ 7,90 por veículo</span></div><div class="muted">Exemplo: frota de 10 caminhões = R$ 69,00 + 10 × R$ 7,90 = <b>R$ 148,00 por mês</b>.</div></div>
    <button class="btn" id="cq" style="margin-top:8px">Quero o AutoLink na minha empresa</button>`;
   m.querySelectorAll('.cf').forEach(b => b.onclick = () => b.dataset.ok ? go(Garage) : toast('🚧 ' + b.querySelector('b').textContent + ': em construção. Em breve!'));
   el('cq').onclick = () => go(Advertise, 'company');
@@ -373,6 +374,7 @@ function awayTimer(car) {
 
 // ---------- Foto do perfil ----------
 async function drawAvatar() {
+  drawName();
   const b = el('dAv'), inp = el('dAvI'); if (!b || !inp) return;
   if (S && !PROFILE) await loadProfile();
   const ph = PROFILE && PROFILE.photo;
@@ -481,7 +483,7 @@ async function Replace() {
 // ---------- Carros da família (compartilhados) ----------
 async function sharedCars() {
   try { const r = await api(':runQuery', 'POST', { structuredQuery: { from: [{ collectionId: 'cars' }], where: { fieldFilter: { field: { fieldPath: 'members' }, op: 'ARRAY_CONTAINS', value: { stringValue: S.uid } } } } });
-    return r.filter(x => x.document).map(x => ({ ...unpack(x.document), shared: true })); } catch (e) { return []; }
+    return r.filter(x => x.document).map(x => ({ ...unpack(x.document), shared: true })).filter(c => { const i = (c.members || []).indexOf(S.uid), u = +String(c.memberUntil || '').split('|')[i]; return !(u && u < Date.now()); }); } catch (e) { return []; }
 }
 async function allCars() { const [own, sh] = await Promise.all([find('cars', [['ownerId', S.uid]]), sharedCars()]); return own.concat(sh); }
 async function allChats(cars) {
@@ -495,12 +497,21 @@ function familyBox(car) {
   const box = el('fam'); if (!box || car.ownerId !== S.uid) return;
   const names = car.memberNames ? String(car.memberNames).split('|').filter(Boolean) : [];
   const mem = Array.isArray(car.members) ? car.members : [];
+  const until = car.memberUntil ? String(car.memberUntil).split('|') : [];
+  // remove automaticamente quem passou do prazo
+  const expired = mem.map((u, i) => +until[i] && +until[i] < Date.now() ? i : -1).filter(i => i >= 0);
+  if (expired.length) { const m2 = mem.filter((_, j) => !expired.includes(j)), n2 = names.filter((_, j) => !expired.includes(j)), u2 = until.filter((_, j) => !expired.includes(j));
+    api('/cars/' + car.id + '?updateMask.fieldPaths=members&updateMask.fieldPaths=memberNames&updateMask.fieldPaths=memberUntil', 'PATCH', { fields: { members: { arrayValue: { values: m2.map(u => ({ stringValue: u })) } }, memberNames: { stringValue: n2.join('|') }, memberUntil: { stringValue: u2.join('|') } } })
+      .then(() => { car.members = m2; car.memberNames = n2.join('|'); car.memberUntil = u2.join('|'); familyBox(car); }).catch(() => {}); }
   box.innerHTML = `<div class="card"><b>👨‍👩‍👧 Família</b><p class="muted" style="margin:4px 0 8px">Compartilhe este carro: seus familiares recebem e respondem as mensagens no celular deles.</p>
-   ${mem.length ? `<div style="margin-bottom:8px">${mem.map((u, i) => `<div class="row" style="margin:4px 0"><span>👤 ${esc(names[i] || 'Familiar')}</span><button class="chip" data-rm="${i}">Remover</button></div>`).join('')}</div>` : ''}
+   ${mem.length ? `<div style="margin-bottom:8px">${mem.map((u, i) => `<div class="row" style="margin:4px 0"><span>👤 ${esc(names[i] || 'Familiar')}<br><small class="muted">${+until[i] ? 'até ' + new Date(+until[i]).toLocaleDateString('pt-BR') : 'sem prazo'}</small></span><button class="chip" data-rm="${i}">Remover</button></div>`).join('')}</div>` : ''}
+   <div class="muted" style="margin:6px 0 4px">Por quanto tempo o familiar terá acesso?</div>
+   <select id="fDur" class="sel" style="padding:10px"><option value="0">Sem prazo (indeterminado)</option><option value="1">1 dia</option><option value="3">3 dias</option><option value="7">7 dias</option><option value="30">30 dias</option><option value="90">3 meses</option><option value="365">1 ano</option></select>
    <button class="chip" id="fInv">+ Convidar familiar</button><div id="fCode"></div></div>`;
   el('fInv').onclick = async () => {
-    const code = famCode(), exp = new Date(Date.now() + 48 * 3600e3);
-    try { await api('/invites/' + code, 'PATCH', { fields: fields({ carId: car.id, ownerId: S.uid, carName: car.name, expiresAt: exp }) });
+    const code = famCode(), exp = new Date(Date.now() + 48 * 3600e3), days = +el('fDur').value;
+    const durTxt = days ? (days === 1 ? '1 dia' : days === 90 ? '3 meses' : days === 365 ? '1 ano' : days + ' dias') : 'sem prazo';
+    try { await api('/invites/' + code, 'PATCH', { fields: fields({ carId: car.id, ownerId: S.uid, carName: car.name, expiresAt: exp, accessDays: String(days) }) });
       const link = new URL('app.html', location.href).href;
       const txt = `Oi! Te convidei para receber os avisos do meu carro "${car.name}" no AutoLink 🚗
 
@@ -513,15 +524,15 @@ Como entrar (é grátis):
 4. Digite o código: ${code}
 
 ⏰ O código vale por 2 dias. Depois disso, me peça um novo.`;
-      el('fCode').innerHTML = `<div style="margin-top:10px;text-align:center"><div class="muted">Código de convite</div><div class="code">${code}</div><div class="muted" style="margin-bottom:6px">⏰ Vale por 2 dias. Depois disso, gere um novo.<br>O familiar precisa ter o app AutoLink (é grátis): a mensagem explica como entrar.</div>
+      el('fCode').innerHTML = `<div style="margin-top:10px;text-align:center"><div class="muted">Código de convite</div><div class="code">${code}</div><div class="muted" style="margin-bottom:6px">🔑 Acesso do familiar: <b>${durTxt}</b><br>⏰ O código vale 2 dias para ele entrar.<br>O familiar precisa ter o app AutoLink (é grátis): a mensagem explica como entrar.</div>
         <a class="btn" style="display:block;text-decoration:none;margin-top:8px;background:#25d366;color:#fff" target="_blank" href="https://wa.me/?text=${encodeURIComponent(txt)}">Enviar pelo WhatsApp</a></div>`;
     } catch (e) { alert('Erro: ' + e.message); }
   };
   box.querySelectorAll('[data-rm]').forEach(b => b.onclick = async () => {
     const i = +b.dataset.rm; if (!confirm('Remover ' + (names[i] || 'este familiar') + ' do carro?')) return;
-    const m2 = mem.filter((_, j) => j !== i), n2 = names.filter((_, j) => j !== i);
-    try { await api('/cars/' + car.id + '?updateMask.fieldPaths=members&updateMask.fieldPaths=memberNames', 'PATCH', { fields: { members: { arrayValue: { values: m2.map(u => ({ stringValue: u })) } }, memberNames: { stringValue: n2.join('|') } } });
-      car.members = m2; car.memberNames = n2.join('|'); familyBox(car); toast('Familiar removido'); } catch (e) { alert(e.message); }
+    const m2 = mem.filter((_, j) => j !== i), n2 = names.filter((_, j) => j !== i), u2 = until.filter((_, j) => j !== i);
+    try { await api('/cars/' + car.id + '?updateMask.fieldPaths=members&updateMask.fieldPaths=memberNames&updateMask.fieldPaths=memberUntil', 'PATCH', { fields: { members: { arrayValue: { values: m2.map(u => ({ stringValue: u })) } }, memberNames: { stringValue: n2.join('|') }, memberUntil: { stringValue: u2.join('|') } } });
+      car.members = m2; car.memberNames = n2.join('|'); car.memberUntil = u2.join('|'); familyBox(car); toast('Familiar removido'); } catch (e) { alert(e.message); }
   });
 }
 async function joinFamily(code) {
@@ -533,10 +544,12 @@ async function joinFamily(code) {
     const car = unpack(await api('/cars/' + inv.carId)); const mem = Array.isArray(car.members) ? car.members : [];
     if (mem.includes(S.uid)) return alert('Você já faz parte deste carro.');
     if (!PROFILE) await loadProfile();
-    const names = car.memberNames ? String(car.memberNames).split('|') : [];
-    await api('/cars/' + car.id + '?updateMask.fieldPaths=members&updateMask.fieldPaths=memberNames&updateMask.fieldPaths=joinCode', 'PATCH', { fields: {
+    const names = car.memberNames ? String(car.memberNames).split('|') : [], untl = car.memberUntil ? String(car.memberUntil).split('|') : [];
+    const days = +inv.accessDays || 0, myUntil = days ? String(Date.now() + days * 864e5) : '0';
+    while (untl.length < mem.length) untl.push('0');
+    await api('/cars/' + car.id + '?updateMask.fieldPaths=members&updateMask.fieldPaths=memberNames&updateMask.fieldPaths=memberUntil&updateMask.fieldPaths=joinCode', 'PATCH', { fields: { memberUntil: { stringValue: untl.concat([myUntil]).join('|') },
       members: { arrayValue: { values: mem.concat([S.uid]).map(u => ({ stringValue: u })) } }, memberNames: { stringValue: names.concat([(PROFILE && PROFILE.name || S.email || 'Familiar').split(' ')[0]]).join('|') }, joinCode: { stringValue: code } } });
-    alert('Pronto! ✅ Agora você recebe as mensagens do ' + inv.carName + '.'); go(Garage);
+    alert('Pronto! ✅ Agora você recebe as mensagens do ' + inv.carName + (days ? ' por ' + days + ' dia(s).' : '.')); go(Garage);
   } catch (e) { alert('Não foi possível entrar: ' + e.message); }
 }
 
@@ -599,3 +612,20 @@ async function Category(arg) {
   el('cq').onkeydown = ev => { if (ev.key === 'Enter' && el('cq').value.trim()) toast('🚧 Busca em ' + name + ': em breve!'); };
   el('cj').onclick = () => go(Advertise, 'sell'); el('ci').onclick = () => go(Advertise, 'ad');
 }
+
+// ---------- Planos e preços ----------
+function PLANS_HTML() {
+  const P = (id, t, price, per, items, hl) => `<div class="card" style="${hl ? 'border-color:var(--or)' : ''}"><div style="display:flex;align-items:baseline;gap:8px"><b style="font-size:17px">${t}</b><span style="margin-left:auto;font-size:22px;font-weight:900;color:var(--or);white-space:nowrap">${price}</span></div><div class="muted" style="text-align:right;margin-top:-2px">${per}</div>
+    <ul style="margin:8px 0 10px;padding-left:20px;color:var(--mut);font-size:14px">${items.map(i => `<li>${i}</li>`).join('')}</ul>${id === 'free' ? '<div class="pill" style="display:inline-block;margin:0">Seu plano atual</div>' : `<button class="btn" data-plan="${id}" style="margin:0">${id === 'frota' ? 'Falar com a equipe' : 'Assinar'}</button>`}</div>`;
+  return P('free', 'Grátis', 'R$ 0', 'para sempre', ['Adesivo QR e chat anônimo', 'Alertas, ausência, manutenção e documentos', 'Com anúncios'])
+    + P('premium', '⭐ Premium', 'R$ 4,99', 'por mês', ['Sem anúncios', 'Nome dourado no app', 'Necessário para vender no Mercado'], 1)
+    + P('pf', '🛒 Vendedor pessoa física', 'R$ 14,90', 'por mês · CPF', ['Venda peças, acessórios e veículos no Mercado', 'Exige plano Premium'])
+    + P('pj', '🏪 Lojista', 'R$ 19,90', 'por mês · CNPJ', ['Loja no Mercado com selo de verificado', 'Exige plano Premium'])
+    + P('frota', '🚚 Empresa / frota', 'R$ 69,00', 'por mês + R$ 7,90 por veículo', ['QR para todos os veículos da frota', '"Como estou dirigindo?" e relatórios', 'Ex: 10 caminhões = R$ 148,00/mês']);
+}
+
+// ---------- Ícone da família no topo ----------
+function famIcon(cars) { const b = el('famI'); if (!b) return; const on = (cars || []).some(c => c.shared || (Array.isArray(c.members) && c.members.length)); b.hidden = !on; }
+
+// ---------- Nome no menu ----------
+async function drawName() { const d = el('dName'); if (!d) return; if (S && !PROFILE) await loadProfile(); const n = (PROFILE && PROFILE.name || '').trim().split(/\s+/); d.textContent = n[0] ? (n.length > 1 ? n[0] + ' ' + n[n.length - 1] : n[0]) : ''; }

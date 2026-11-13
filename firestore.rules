@@ -79,7 +79,7 @@ service cloud.firestore {
       allow create: if request.resource.data.ownerId == me();
       allow update, delete: if resource.data.ownerId == me() || isAdmin();
       allow update: if request.auth != null
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'memberNames', 'joinCode'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'memberNames', 'memberUntil', 'joinCode'])
         && request.resource.data.members == resource.data.get('members', []).concat([me()])
         && get(/databases/$(db)/documents/invites/$(request.resource.data.joinCode)).data.carId == carId
         && get(/databases/$(db)/documents/invites/$(request.resource.data.joinCode)).data.expiresAt > request.time;
