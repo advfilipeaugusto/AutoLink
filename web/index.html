@@ -4,7 +4,7 @@ body{margin:0;font-family:system-ui,sans-serif;background:#f5f5f5;color:#111}hea
 main{padding:16px;max-width:520px;margin:auto}.q{display:block;width:100%;padding:14px;margin:8px 0;border:2px solid #111;border-radius:12px;background:#fff;color:#111;font-size:16px;font-weight:600;text-align:left}.q:active{background:#FF6B00}
 #msgs{min-height:200px}.b{padding:10px;border-radius:12px;margin:4px 0;max-width:80%}.me{background:#FF6B00;color:#111;margin-left:auto}.them{background:#111;color:#fff}
 form{display:flex;gap:8px}input{flex:1;padding:12px;border-radius:8px;border:1px solid #ddd;font-size:16px}button.s{background:#FF6B00;color:#111;border:0;border-radius:8px;padding:0 16px;font-weight:700}
-.muted{color:#777;font-size:13px}.seen{text-align:right;font-size:12px;color:#1a7f37;margin:-2px 2px 6px}</style></head><body><header><a id="bk" href="app.html" hidden aria-label="Voltar" style="color:#FF6B00;text-decoration:none;font-size:34px;line-height:1;font-weight:400;margin-right:6px">‹</a><img src="logo-car-white.png" alt="" style="width:auto;height:26px;border-radius:0"><div>Auto<span>Link</span></div></header><main id="app">Carregando...</main>
+.muted{color:#777;font-size:13px}.okb{background:#e8f8ee;border:1px solid #22c55e;border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:14px;line-height:1.45}.tk{font-size:11px;text-align:right;margin-top:3px;opacity:.85}.seen{text-align:right;font-size:12px;color:#1a7f37;margin:-2px 2px 6px}</style></head><body><header><a id="bk" href="app.html" hidden aria-label="Voltar" style="color:#FF6B00;text-decoration:none;font-size:34px;line-height:1;font-weight:400;margin-right:6px">‹</a><img src="logo-car-white.png" alt="" style="width:auto;height:26px;border-radius:0"><div>Auto<span>Link</span></div></header><main id="app">Carregando...</main>
 <script src="filter.js"></script>
 <script>
 if(new URLSearchParams(location.search).get('from')==='app'||navigator.standalone||matchMedia('(display-mode: standalone)').matches)document.getElementById('bk').hidden=false;
@@ -47,7 +47,9 @@ async function send(text){
   try{
     const now=new Date();
     if(!chatId){
-      const c=unpack(await api('/chats','POST',{fields:fields(Object.assign({carId,ownerId:car.ownerId,visitorId:S.uid,lastMsg:text,updatedAt:now,createdAt:now},VER?{visitorVerified:true}:{}))}));
+      let c;try{c=unpack(await api('/chats','POST',{fields:fields(Object.assign({carId,ownerId:car.ownerId,visitorId:S.uid,lastMsg:text,updatedAt:now,createdAt:now},VER?{visitorVerified:true}:{}))}));}
+      catch(e){if(/permission|PERMISSION/.test(e.message))return alert(car.active===false?'Este QR code está pausado pelo dono.':'Não foi possível iniciar a conversa.\n\nO dono deste carro pode ter bloqueado este aparelho.');throw e;}
+      window._justSent=1;
       chatId=c.id; localStorage.setItem(CK+carId,chatId); showChat();
     } else await api('/chats/'+chatId+'?updateMask.fieldPaths=lastMsg&updateMask.fieldPaths=updatedAt','PATCH',{fields:fields({lastMsg:text,updatedAt:now})});
     await api('/chats/'+chatId+'/messages','POST',{fields:fields({text,from:'visitor',at:now})});
@@ -66,9 +68,11 @@ async function load(){
   if(ch.updatedAt&&!alChatOpen(ch)){const f=document.getElementById('f');if(f)f.outerHTML='<div style="background:#f2f2f2;border-radius:12px;padding:12px;text-align:center;font-size:14px">⏱️ <b>Seu tempo para escrever acabou.</b><br>Você não pode mais enviar mensagens nesta conversa. O dono do carro continua vendo suas mensagens e ainda pode te responder aqui.<br><button class="s" style="margin-top:8px;padding:10px 14px" onclick="localStorage.removeItem(CK+carId);location.reload()">Começar nova conversa</button></div>';if(tb)tb.remove();}
   else if(tb)tb.innerHTML=(ch.repliedAt?'💬 O dono respondeu! Agora vocês podem conversar por 2 horas e trocar telefone, se quiserem.<br>':'')+`⏳ Você ainda pode escrever por <b>${alLeftTxt(ch)}</b>.`;
   const lastV=[...ms].reverse().find(m=>m.from==='visitor');
-  let html=ms.map(m=>`<div class="b ${m.from==='visitor'?'me':'them'}">${esc(m.text)}</div>`).join('');
-  if(lastV&&ch.seenAt&&+ch.seenAt>=+lastV.at)html+='<div class="seen">✓✓ Visto pelo dono</div>';
-  else if(lastV)html+='<div class="seen" style="color:#999">✓ Enviado</div>';
+  const seen=m=>ch.seenAt&&+ch.seenAt>=+m.at;
+  let html=ms.map(m=>m.from==='visitor'
+    ?`<div class="b me">${esc(m.text)}<div class="tk">${m.at?m.at.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):''} <b style="color:${seen(m)?'#0b5cff':'#555'}">${seen(m)?'✓✓':'✓'}</b></div></div>`
+    :`<div class="b them">${esc(m.text)}<div class="tk" style="color:#aaa">${m.at?m.at.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):''}</div></div>`).join('');
+  if(lastV)html+=seen(lastV)?'<div class="seen">✓✓ Visto pelo dono</div>':'<div class="seen" style="color:#777">✓ Enviado · aguardando o dono ver</div>';
   if(lastV&&car.awayText&&car.awayUntil&&+car.awayUntil>Date.now()&&!ms.some(m=>m.from==='owner'&&+m.at>+lastV.at))
     html+=`<div class="b them" style="background:#333">🤖 <b>Resposta automática</b><br>${esc(car.awayText)}<br><small style="opacity:.7">até ${car.awayUntil.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</small></div>`;
   if(box.innerHTML!==html){box.innerHTML=html;scrollTo(0,document.body.scrollHeight);}
@@ -79,7 +83,7 @@ function awayBanner(){let b=document.getElementById('awb');const on=car&&car.awa
   b.innerHTML=`<div style="background:#111;color:#fff;border-left:5px solid #FF6B00;border-radius:12px;padding:12px 14px;margin-bottom:12px">🤖 <b>O dono está ausente</b><br>${esc(car.awayText)}<br><small style="opacity:.75">Até ${car.awayUntil.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}. Você ainda pode mandar mensagem.</small></div>`;}
 function form(){ document.getElementById('f').onsubmit=e=>{e.preventDefault();const t=document.getElementById('t');const v=t.value.trim();if(v){send(v);t.value='';}}; }
 function showChat(){
-  app.innerHTML=`<p class="muted">Conversa anônima com o dono do carro <b>${esc(car.name)}</b>. As respostas aparecem aqui.</p><div id="msgs"></div><p class="muted" id="ttl" style="text-align:center"></p>
+  app.innerHTML=`<div class="okb">✅ <b>Sua mensagem foi enviada!</b><br>O dono do <b>${esc(car.name)}</b> foi avisado. Deixe esta página aberta: a resposta aparece aqui e você vê quando ele visualizar (✓✓).</div><div id="msgs"></div><p class="muted" id="ttl" style="text-align:center"></p>
   <form id="f"><input id="t" placeholder="Escreva uma mensagem..." maxlength="500"><button class="s">Enviar</button></form>`;
   form(); clearInterval(timer); timer=setInterval(()=>load().catch(()=>{}),3000);
 }

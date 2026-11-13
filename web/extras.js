@@ -403,6 +403,7 @@ function Settings() {
    <div class="muted" style="margin:6px 0">Conta</div>
    <button class="card" id="cProf" style="display:flex;gap:12px;align-items:center"><span style="font-size:24px">👤</span><div><b style="font-size:15px">Meu perfil</b><div class="muted">Telefone, endereço e contato de emergência</div></div></button>
    <button class="card" id="cRep" style="display:flex;gap:12px;align-items:center"><span style="font-size:24px">🔁</span><div><b style="font-size:15px">Danifiquei ou perdi meu QR</b><div class="muted">Pedir um adesivo novo</div></div></button>
+   <button class="card" id="cBlk" style="display:flex;gap:12px;align-items:center"><span style="font-size:24px">🚫</span><div><b style="font-size:15px">Pessoas bloqueadas</b><div class="muted">Ver e desbloquear</div></div></button>
    <div class="muted" style="margin:14px 0 6px">Aparência</div>
    ${R('cTh', cur === 'light' ? '☀️' : '🌙', 'Tema', cur === 'light' ? 'Claro' : 'Escuro', `<span class="tg" style="display:flex;background:var(--bg);border-radius:10px;padding:3px;gap:2px"><i class="t ${cur === 'light' ? 'on' : ''}" data-t="light" style="font-style:normal;padding:6px 10px;border-radius:8px">☀️</i><i class="t ${cur === 'dark' ? 'on' : ''}" data-t="dark" style="font-style:normal;padding:6px 10px;border-radius:8px">🌙</i></span>`)}
    ${R('cFt', '🔠', 'Letra maior', 'Facilita a leitura', SW('fBig', big))}
@@ -415,6 +416,7 @@ function Settings() {
    <p class="muted" style="text-align:center;margin-top:20px">AutoLink · versão 1.0 beta</p>`;
   el('cProf').onclick = () => loadProfile().then(() => go(ProfileForm, {}));
   el('cRep').onclick = () => go(Replace);
+  el('cBlk').onclick = () => go(Blocked);
   m.querySelectorAll('.t').forEach(x => x.onclick = () => { theme(x.dataset.t); go(Settings, null, false); });
   m.querySelectorAll('.t.on').forEach(x => { x.style.background = 'var(--or)'; x.style.color = '#111'; });
   el('fBig').onchange = e => { pref('font', e.target.checked ? 'big' : 'normal'); applyPrefs(); };
@@ -716,4 +718,26 @@ async function AppDriver() {
     r.querySelector('[data-a]').onchange = e => update('cars/' + c.id, { appDriver: e.target.checked }).then(() => toast(e.target.checked ? 'Modo motorista de app ativado ✅' : 'Desativado')).catch(err => alert(err.message));
     r.querySelector('[data-f]').onchange = e => update('cars/' + c.id, { fleet: e.target.checked }).then(() => toast(e.target.checked ? 'Avaliações ativadas ✅' : 'Desativado')).catch(err => alert(err.message));
     box.appendChild(r); }
+}
+
+// ---------- Pessoas bloqueadas ----------
+async function Blocked() {
+  m.innerHTML = `<h2>🚫 Pessoas bloqueadas</h2><p class="muted">Quem está aqui não consegue mandar mensagens para nenhum dos seus carros. O bloqueio vale para o aparelho da pessoa.</p><div id="bkl"><p class="muted">Carregando...</p></div>`;
+  const [bl, chats] = await Promise.all([find('blocked', [], null, '/owners/' + S.uid).catch(() => []), find('chats', [['ownerId', S.uid]]).catch(() => [])]);
+  const box = el('bkl'); if (!box) return;
+  if (!bl.length) { box.innerHTML = '<div class="card">✅ Você não bloqueou ninguém.</div>'; return; }
+  box.innerHTML = '';
+  for (const x of bl.sort((a, b) => (b.at || 0) - (a.at || 0))) {
+    const last = chats.filter(c => c.visitorId === x.id).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0];
+    const r = document.createElement('div'); r.className = 'card'; r.style.cssText = 'display:flex;gap:10px;align-items:center';
+    r.innerHTML = `<span style="font-size:24px">👤</span><div style="flex:1;min-width:0"><b style="font-size:15px">${last && last.visitorVerified ? 'Pessoa identificada' : 'Pessoa anônima'}</b>
+      <div class="muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${last ? '"' + esc(last.lastMsg || '') + '"' : ''}</div><div class="muted">Bloqueada em ${x.at ? x.at.toLocaleString('pt-BR') : '—'}</div></div><button class="chip">🔓 Desbloquear</button>`;
+    r.querySelector('button').onclick = async () => {
+      if (!confirm('Desbloquear esta pessoa? Ela poderá mandar mensagens de novo.')) return;
+      try { await api('/owners/' + S.uid + '/blocked/' + x.id, 'DELETE');
+        for (const c of chats.filter(c => c.visitorId === x.id && c.blocked)) await update('chats/' + c.id, { blocked: false }).catch(() => {});
+        toast('Pessoa desbloqueada ✅'); go(Blocked, null, false); } catch (e) { alert('Erro: ' + e.message); }
+    };
+    box.appendChild(r);
+  }
 }
