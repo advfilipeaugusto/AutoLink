@@ -1,0 +1,30 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Adesivo AutoLink</title><link rel="icon" href="logo.svg">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+body{margin:0;background:#ddd;font-family:system-ui,Arial,sans-serif;display:flex;flex-direction:column;align-items:center;padding:20px 16px}
+.st{width:320px;background:#111;border-radius:28px;padding:22px 22px 18px;color:#fff;text-align:center;box-shadow:0 6px 24px #0004;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.brand{display:flex;align-items:center;justify-content:center;gap:10px;font-size:34px;font-weight:900;letter-spacing:-1px}
+.brand img{width:44px;height:44px;border-radius:11px}.brand span{color:#FF6B00}
+.t{font-size:19px;font-weight:800;margin:14px 0 4px;line-height:1.2}.t b{color:#FF6B00}
+.qr{background:#fff;border:6px solid #FF6B00;border-radius:20px;padding:14px;display:inline-block;margin:10px 0 4px}
+.car{width:100%;margin-top:6px}.f{font-size:13px;color:#bbb;margin-top:4px}.f b{color:#FF6B00}
+.btn{margin-top:20px;background:#FF6B00;color:#111;border:0;border-radius:12px;padding:14px 22px;font-size:17px;font-weight:800}
+.dica{max-width:320px;color:#333;font-size:14px;text-align:center}
+@media print{body{background:#fff}.btn,.dica{display:none}.st{box-shadow:none}}
+</style></head><body>
+<div class="st">
+  <div class="brand"><img src="logo.svg" alt=""><div>Auto<span>Link</span></div></div>
+  <div class="t">Precisa falar com o<br><b>dono deste carro?</b></div>
+  <div class="qr"><div id="qr"></div></div>
+  <div class="t" style="font-size:16px;margin-top:6px">Aponte a câmera do celular</div>
+  <svg class="car" viewBox="0 0 400 70"><path d="M20 58v-12c0-7 4-12 11-13l34-6 28-22c6-4 13-6 20-6h70c9 0 18 3 25 9l26 22 14 3c8 2 13 8 13 15v10z" fill="#FF6B00" transform="translate(70 0) scale(.95 1)"/><path d="M100 27l20-16c4-3 9-5 14-5h22v21z M164 27V6h20c7 0 13 2 18 7l16 14z" fill="#111" transform="translate(70 0) scale(.95 1)"/><g fill="#111"><circle cx="128" cy="58" r="13"/><circle cx="292" cy="58" r="13"/></g><g fill="#FF6B00"><circle cx="128" cy="58" r="6"/><circle cx="292" cy="58" r="6"/></g><rect x="0" y="66" width="400" height="4" rx="2" fill="#333"/></svg>
+  <div class="f">Sem baixar app · <b>100% anônimo</b></div>
+</div>
+<button class="btn" onclick="print()">Imprimir / salvar PDF</button>
+<p class="dica">Dica: imprima em <b>papel adesivo vinil</b> ou leve o PDF numa gráfica. Tamanho sugerido: 8 × 12 cm. Cole por dentro do vidro.</p>
+<script>
+const c=new URLSearchParams(location.search).get('c');
+if(!c){document.querySelector('.st').innerHTML='<p>Abra o adesivo pelo app AutoLink.</p>';}
+else new QRCode(document.getElementById('qr'),{text:location.origin+location.pathname.replace('adesivo.html','')+'?c='+c,width:200,height:200,colorDark:'#111',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.H});
+</script></body></html>
