@@ -122,7 +122,7 @@ async function openTicket(t){tkBox.style.display='';tkT.textContent='Conversa co
   tkC.onclick=async()=>{await api('/tickets/'+t.id+'?updateMask.fieldPaths=status','PATCH',{fields:{status:enc('closed')}});tkBox.style.display='none';tickets();};
   tkBox.scrollIntoView({behavior:'smooth'});}
 async function adsList(){const l=(await q('adRequests')).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));BD.anuncios=l.filter(a=>a.status==='new').length;badges();
-  ads.innerHTML=l.length?`<table><tr><th>Quem</th><th>Contato</th><th>Pedido</th><th></th></tr>${l.map(a=>`<tr><td><span class="muted">${a.kind==='sell'?'🛒 Quer vender':'📣 Quer anunciar'}</span><br><b>${esc(a.name)}</b><div class="muted">${esc(a.segment||'')} · ${esc(a.city||'')}</div></td>
+  ads.innerHTML=l.length?`<table><tr><th>Quem</th><th>Contato</th><th>Pedido</th><th></th></tr>${l.map(a=>`<tr><td><span class="muted">${a.kind==='company'?'🏢 Empresa / frota':a.kind==='sell'?'🛒 Quer vender':'📣 Quer anunciar'}</span><br><b>${esc(a.name)}</b><div class="muted">${esc(a.segment||'')} · ${esc(a.city||'')}</div></td>
    <td><a target="_blank" href="https://wa.me/55${esc((a.whatsapp||'').replace(/\D/g,''))}">${esc(a.whatsapp)}</a><div class="muted">${esc(a.email||'')}</div></td><td>${esc(a.text||'')}<div class="muted">${a.createdAt?a.createdAt.toLocaleString('pt-BR'):''}</div></td>
    <td>${a.status==='new'?`<button class="sm" data-c="${a.id}">Marcar contatado</button>`:'✅ Contatado'}</td></tr>`).join('')}</table>`:'Nenhum pedido ainda.';
   ads.querySelectorAll('[data-c]').forEach(b=>b.onclick=async()=>{await api('/adRequests/'+b.dataset.c+'?updateMask.fieldPaths=status','PATCH',{fields:{status:enc('contacted')}});adsList();});}

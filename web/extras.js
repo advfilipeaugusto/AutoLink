@@ -45,7 +45,8 @@ function ProfileForm(opt = {}) {
    <input id="pt" placeholder="Telefone / WhatsApp (com DDD)" inputmode="tel" value="${esc(p.phone || '')}" required maxlength="20">
    <div class="muted" style="margin:8px 0 4px">Endereço</div>
    <input id="pc" placeholder="CEP" inputmode="numeric" value="${esc(p.cep || '')}" maxlength="9">
-   <input id="pa" placeholder="Rua, número e complemento" value="${esc(p.street || '')}" required maxlength="150">
+   <input id="pa" placeholder="Rua / avenida" value="${esc(p.street || '')}" required maxlength="120">
+   <div style="display:flex;gap:8px"><input id="pnum" placeholder="Número" value="${esc(p.num || '')}" required maxlength="10" style="width:120px"><input id="pcomp" placeholder="Complemento (opcional)" value="${esc(p.comp || '')}" maxlength="60"></div>
    <input id="pb" placeholder="Bairro" value="${esc(p.district || '')}" maxlength="80">
    <div style="display:flex;gap:8px"><input id="pci" placeholder="Cidade" value="${esc(p.city || '')}" required maxlength="80"><input id="puf" placeholder="UF" value="${esc(p.uf || '')}" required maxlength="2" style="width:80px;text-transform:uppercase"></div>
    <div class="muted" style="margin:8px 0 4px">👨‍👩‍👧 Contato de emergência (família)</div>
@@ -58,11 +59,11 @@ function ProfileForm(opt = {}) {
   cep.oninput = async () => {
     const d = onlyDigits(cep.value); if (d.length !== 8) return;
     try { const r = await (await fetch('https://viacep.com.br/ws/' + d + '/json/')).json();
-      if (!r.erro) { if (!el('pa').value) el('pa').value = r.logradouro ? r.logradouro + ', ' : ''; el('pb').value = r.bairro || ''; el('pci').value = r.localidade || ''; el('puf').value = r.uf || ''; el('pa').focus(); } } catch (e) {}
+      if (!r.erro) { if (!el('pa').value) el('pa').value = r.logradouro || ''; el('pb').value = r.bairro || ''; el('pci').value = r.localidade || ''; el('puf').value = r.uf || ''; el('pnum').focus(); } } catch (e) {}
   };
   el('pf').onsubmit = async e => {
     e.preventDefault(); const b = el('ps');
-    const data = { phone: el('pt').value.trim(), cep: onlyDigits(cep.value), street: el('pa').value.trim(), district: el('pb').value.trim(),
+    const data = { phone: el('pt').value.trim(), cep: onlyDigits(cep.value), street: el('pa').value.trim(), num: el('pnum').value.trim(), comp: el('pcomp').value.trim(), district: el('pb').value.trim(),
       city: el('pci').value.trim(), uf: el('puf').value.trim().toUpperCase(), famName: el('fn').value.trim(), famRel: el('fr').value.trim(), famPhone: el('ft').value.trim(), updatedAt: new Date() };
     if (onlyDigits(data.phone).length < 10 || onlyDigits(data.famPhone).length < 10) return toast('Confira os telefones (com DDD)');
     b.disabled = true; b.textContent = 'Salvando...';
@@ -276,4 +277,57 @@ async function carExtras(car) {
     r.innerHTML = `<div class="card"><b>Como estou dirigindo?</b><div style="font-size:28px;font-weight:900;color:var(--or)">⭐ ${avg} <small class="muted" style="font-size:13px">(${l.length} avaliações)</small></div>
      ${l.slice(0, 10).map(x => `<div style="border-top:1px solid var(--line);padding-top:8px;margin-top:8px">${'⭐'.repeat(+x.stars)}<div class="muted">${x.comment ? esc(x.comment) + ' · ' : ''}${x.at ? x.at.toLocaleString('pt-BR') : ''}</div></div>`).join('')}</div>`;
   } catch (e) {}
+}
+
+// ---------- Meu QR ----------
+async function MyQR() {
+  m.innerHTML = `<h2>Meu QR code</h2><p class="muted">O QR e o código dos adesivos ativos nos seus carros.</p><div id="qrs"><p class="muted">Carregando...</p></div>`;
+  const cars = await find('cars', [['ownerId', S.uid]]); const box = el('qrs'); if (!box) return;
+  const withQ = cars.filter(c => c.stickerCode);
+  if (!withQ.length) { box.innerHTML = `<div class="card">Você ainda não tem adesivo ativado.<p class="muted">Vá em Garagem, toque no carro e em "Ativar adesivo".</p><button class="btn" id="gq">Ir para a Garagem</button></div>`; el('gq').onclick = () => go(Garage); return; }
+  box.innerHTML = '';
+  const base = new URL('./', location.href).href;
+  for (const c of withQ) {
+    const d = document.createElement('div'); d.className = 'card'; d.style.textAlign = 'center';
+    d.innerHTML = `<b style="font-size:18px">${esc(c.name)}</b><div class="muted">${esc(c.plate || '')} · ${c.active ? '🟢 Ativo' : '⏸ Pausado'}</div>
+      <div class="qrw"><div class="qrb"></div></div><div class="code">${esc(c.stickerCode)}</div><div class="muted" style="margin-top:4px">Código do adesivo</div>`;
+    box.appendChild(d);
+    const t = () => window.QRCode ? new QRCode(d.querySelector('.qrb'), { text: base + '?s=' + c.stickerCode, width: 220, height: 220, colorDark: '#111', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M }) : setTimeout(t, 200);
+    t();
+  }
+}
+
+// ---------- Alertas na minha região (prévia do mapa) ----------
+async function regionMap() {
+  const box = el('rmap'); if (!box) return;
+  let n = 0, near = false;
+  try { const st = await navigator.permissions?.query({ name: 'geolocation' });
+    if (st && st.state === 'granted') { const p = await gps(); const l = await find('alerts', [['status', 'approved']]);
+      n = l.filter(a => !(a.expiresAt && +a.expiresAt < Date.now()) && dist(p.lat, p.lng, +a.lat, +a.lng) <= 5000).length; near = true; } } catch (e) {}
+  box.innerHTML = `<div class="card rm" style="padding:0;overflow:hidden">
+   <svg viewBox="0 0 400 170" style="display:block;width:100%;height:auto">
+    <rect width="400" height="170" fill="var(--card2)"/>
+    <g stroke="var(--line)" stroke-width="10" fill="none"><path d="M-10 60 L410 40"/><path d="M-10 130 L410 120"/><path d="M90 -10 L120 180"/><path d="M260 -10 L300 180"/></g>
+    <g stroke="var(--line)" stroke-width="4" fill="none" opacity=".7"><path d="M-10 95 L410 82"/><path d="M180 -10 L200 180"/><path d="M340 -10 L360 180"/><path d="M30 -10 L50 180"/></g>
+    <path d="M300 10 q30 20 60 10 q20 -5 40 5 v-25 h-100z" fill="#3b82f633"/>
+    <circle cx="200" cy="88" r="46" fill="#FF6B0018" stroke="#FF6B0066" stroke-dasharray="4 4"/>
+    <circle cx="200" cy="88" r="8" fill="#FF6B00"/><circle cx="200" cy="88" r="14" fill="none" stroke="#FF6B00" stroke-width="2" opacity=".6"/>
+   </svg>
+   <div style="padding:12px 16px;display:flex;align-items:center;gap:10px"><span style="font-size:22px">${n ? '⚠️' : '✅'}</span><div><b style="font-size:15px">${n ? n + ' alerta(s) na sua região' : 'Zero alertas na sua região'}</b>
+    <div class="muted">${near ? 'Num raio de 5 km de você.' : 'Mapa em construção. Permita a localização ao criar um alerta para ver os da sua região.'}</div></div></div></div>`;
+}
+
+// ---------- Empresa ----------
+function Company() {
+  const F = [['🚚', 'QR para frota', 'Adesivos AutoLink para todos os veículos da empresa, gerenciados em um só lugar.'],
+    ['⭐', 'Como estou dirigindo?', 'Receba avaliações de quem vê seus motoristas na rua. Ative em cada carro: Garagem → carro → "Veículo de empresa".', 1],
+    ['👥', 'Motoristas', 'Cadastre motoristas e saiba quem está com cada veículo.'],
+    ['📊', 'Relatórios', 'Avaliações, ocorrências e manutenções de toda a frota.'],
+    ['🔧', 'Manutenção da frota', 'Lembretes de revisão, IPVA e licenciamento de todos os veículos.'],
+    ['🚑', 'Ocorrências', 'Acidentes e alertas envolvendo veículos da empresa.']];
+  m.innerHTML = `<h2>🏢 AutoLink para empresas</h2><p class="muted">Soluções para quem tem frota: transportadoras, entregas, locadoras, aplicativos e empresas de serviço.</p>
+   ${F.map(([e, t, d, ok]) => `<button class="card cf" style="display:flex;gap:12px;align-items:center" data-ok="${ok ? 1 : ''}"><span style="font-size:28px">${e}</span><div style="flex:1"><b>${t}</b> ${ok ? '<span class="pill" style="margin:0">Disponível</span>' : '<span class="pill" style="margin:0;background:#3a3a40;color:var(--mut)">Em breve</span>'}<div class="muted">${d}</div></div></button>`).join('')}
+   <button class="btn" id="cq" style="margin-top:8px">Quero o AutoLink na minha empresa</button>`;
+  m.querySelectorAll('.cf').forEach(b => b.onclick = () => b.dataset.ok ? go(Garage) : toast('🚧 ' + b.querySelector('b').textContent + ': em construção. Em breve!'));
+  el('cq').onclick = () => go(Advertise, 'company');
 }
