@@ -7,7 +7,7 @@ header{background:#111;color:#fff;padding:14px 16px;font-size:22px;font-weight:9
 main{padding:16px;max-width:900px;margin:auto}.box{background:#fff;border-radius:14px;padding:16px;margin-bottom:14px}
 input{padding:12px;border:1px solid #ccc;border-radius:8px;font-size:16px;width:100%;box-sizing:border-box;margin:6px 0}
 button{background:#FF6B00;color:#111;border:0;border-radius:10px;padding:12px 18px;font-size:16px;font-weight:800;margin:6px 6px 0 0}
-.muted{color:#666;font-size:14px}code{background:#eee;padding:2px 6px;border-radius:4px}
+.muted{color:#666;font-size:14px}table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0;color:#111}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid #eee}th{color:#666;font-weight:600}button.sm{padding:6px 10px;font-size:13px;margin:0}code{background:#eee;padding:2px 6px;border-radius:4px}
 .sheet{display:flex;flex-wrap:wrap;gap:4mm;justify-content:center}
 .st{width:60mm;background:#111;border-radius:5mm;padding:4mm;color:#fff;text-align:center;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid}
 .st .b{font-size:7mm;font-weight:900;letter-spacing:-.3mm}.st .b span{color:#FF6B00}
@@ -36,18 +36,32 @@ async function main(){
   m.innerHTML=`<div class="box"><h3>Gerar lote de adesivos</h3><p class="muted">Cada adesivo recebe um código único. O cliente ativa no app depois de colar no carro.</p>
   <input id="n" type="number" value="12" min="1" max="200"><input id="lote" placeholder="Nome do lote (ex: Lote 1 - Nov/2026)">
   <button id="gen">Gerar adesivos</button><button onclick="print()">Imprimir / PDF</button>
-  <h3 style="margin-top:20px">Reimprimir lote</h3><input id="rl" placeholder="Nome exato do lote"><button id="re">Carregar lote</button><p id="info" class="muted"></p></div><div class="sheet" id="sheet"></div>`;
-  gen.onclick=generate;re.onclick=reload;}
+  <p id="info" class="muted"></p></div>
+  <div class="box"><h3>Histórico de lotes</h3><div id="hist" class="muted">Carregando...</div></div>
+  <div class="box" id="detBox" style="display:none"><h3 id="detT"></h3><div id="det"></div></div><div class="sheet" id="sheet"></div>`;
+  gen.onclick=generate;history();}
+let ALL=[];
+async function history(){
+  const r=await api(':runQuery','POST',{structuredQuery:{from:[{collectionId:'stickers'}]}});
+  ALL=r.filter(x=>x.document).map(x=>{const f=x.document.fields;return{code:x.document.name.split('/').pop(),batch:f.batch?.stringValue||'(sem nome)',created:f.createdAt?new Date(f.createdAt.timestampValue):null,active:!!f.carId,activated:f.activatedAt?new Date(f.activatedAt.timestampValue):null}});
+  const g={};for(const x of ALL){(g[x.batch]??={name:x.batch,date:x.created,list:[]}).list.push(x);if(x.created&&(!g[x.batch].date||x.created<g[x.batch].date))g[x.batch].date=x.created;}
+  const rows=Object.values(g).sort((a,b)=>(b.date||0)-(a.date||0));
+  const tot=ALL.length,act=ALL.filter(x=>x.active).length;
+  hist.innerHTML=rows.length?`<p><b>${tot}</b> adesivos gerados · <b>${act}</b> ativados (${tot?Math.round(act/tot*100):0}%)</p><table>
+   <tr><th>Lote</th><th>Data</th><th>Gerados</th><th>Ativados</th><th></th></tr>${rows.map((b,i)=>`<tr><td>${esc(b.name)}</td><td>${b.date?b.date.toLocaleDateString('pt-BR'):''}</td><td>${b.list.length}</td><td>${b.list.filter(x=>x.active).length}</td><td><button class="sm" data-i="${i}">Ver / imprimir</button></td></tr>`).join('')}</table>`:'Nenhum lote gerado ainda.';
+  hist.querySelectorAll('button[data-i]').forEach(bt=>bt.onclick=()=>showBatch(rows[+bt.dataset.i]));}
+async function showBatch(b){
+  detBox.style.display='';detT.textContent='Lote: '+b.name;
+  det.innerHTML=`<table><tr><th>Código</th><th>Situação</th><th>Ativado em</th></tr>${b.list.sort((x,y)=>x.code.localeCompare(y.code)).map(x=>`<tr><td><b>${x.code}</b></td><td>${x.active?'<span style="color:#1a7f37">● Ativado</span>':'<span style="color:#999">○ Disponível</span>'}</td><td>${x.activated?x.activated.toLocaleString('pt-BR'):''}</td></tr>`).join('')}</table><button onclick="print()">Imprimir este lote</button>`;
+  const pins={};await Promise.all(b.list.map(async x=>{try{pins[x.code]=(await api('/stickerSecrets/'+x.code)).fields.pin.stringValue}catch(e){}}));
+  render(b.list.map(x=>x.code),pins);detBox.scrollIntoView({behavior:'smooth'});}
+const esc=t=>String(t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const ALPHA='ABCDEFGHJKMNPQRSTUVWXYZ23456789';const code=()=>'AL-'+Array.from(crypto.getRandomValues(new Uint8Array(6)),b=>ALPHA[b%ALPHA.length]).join('');
 async function generate(){const n=Math.min(200,Math.max(1,+document.getElementById('n').value||0)),b=lote.value.trim()||('Lote '+new Date().toLocaleDateString('pt-BR'));
   const codes=Array.from({length:n},code),now=new Date(),pins={};codes.forEach(c=>pins[c]=String(100000+crypto.getRandomValues(new Uint32Array(1))[0]%900000));
   try{await api(':commit','POST',{writes:codes.map(c=>({update:{name:DOC+'/stickers/'+c,fields:{batch:enc(b),createdAt:enc(now)}},currentDocument:{exists:false}})).concat(codes.map(c=>({update:{name:DOC+'/stickerSecrets/'+c,fields:{pin:enc(pins[c])}}})))});}
   catch(e){return alert('Erro ao gerar: '+e.message+'\nTente de novo.');}
-  info.textContent=`${n} adesivos gerados no lote "${b}". Clique em Imprimir.`;render(codes,pins);}
-async function reload(){const r=await api(':runQuery','POST',{structuredQuery:{from:[{collectionId:'stickers'}],where:{fieldFilter:{field:{fieldPath:'batch'},op:'EQUAL',value:{stringValue:rl.value.trim()}}}}});
-  const docs=r.filter(x=>x.document);const codes=docs.map(x=>x.document.name.split('/').pop());const act=docs.filter(x=>x.document.fields.carId).length;
-  const pins={};await Promise.all(codes.map(async c=>{try{pins[c]=(await api('/stickerSecrets/'+c)).fields.pin.stringValue}catch(e){}}));
-  info.textContent=`${codes.length} adesivos no lote (${act} já ativados).`;render(codes,pins);}
+  info.textContent=`${n} adesivos gerados no lote "${b}". Clique em Imprimir.`;render(codes,pins);history();}
 function render(codes,pins={}){sheet.innerHTML='';for(const c of codes){const d=document.createElement('div');d.className='st';
   d.innerHTML=`<div class="b">Auto<span>Link</span></div><div class="t">Precisa falar com o<br><b>dono deste carro?</b></div><div class="q"></div><div class="c">Aponte a câmera do celular<br><b style="font-size:3.6mm;letter-spacing:.5mm">${c}</b></div>`;
   sheet.appendChild(d);new QRCode(d.querySelector('.q'),{text:SITE+'?s='+c,width:300,height:300,colorDark:'#111',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});}
