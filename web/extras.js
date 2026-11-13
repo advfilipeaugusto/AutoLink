@@ -170,20 +170,18 @@ function Accident() {
   m.innerHTML = `<h2>🚑 Registrar acidente</h2>
   <div class="card"><b>Como funciona</b><p class="muted" style="margin:6px 0 0">Se você sofreu um acidente de carro, tire uma foto e envie. A equipe AutoLink analisa e <b>entra em contato com o seu contato de emergência</b> (família).</p></div>
   <div class="warn" style="margin-top:8px">🚨 Em caso de feridos, ligue <b>192 (SAMU)</b> ou <b>193 (Bombeiros)</b> antes de tudo.</div>
-  <label class="btn" style="display:block;text-align:center;margin-top:14px">📷 Tirar foto do acidente<input type="file" accept="image/*" capture="environment" id="acf" hidden></label>
-  <img id="acp" style="width:100%;border-radius:14px;display:none;margin-bottom:10px">
+  <div id="acph" style="margin-top:14px"></div>
   <textarea id="acd" maxlength="300" placeholder="O que aconteceu? (opcional)"></textarea>
   <div class="card gps"><span style="font-size:22px">📍</span><div style="flex:1"><b style="font-size:15px">Localização</b><div class="muted" id="acg">Toque para incluir onde você está</div></div><button class="chip" id="acl">Incluir</button></div>
   <button class="btn" id="acs">Enviar para a equipe</button>
   <h2>Meus registros</h2><div id="acl2"><p class="muted">Carregando...</p></div>`;
-  let photo = null, pos = null;
-  el('acf').onchange = async e => { const f = e.target.files[0]; if (!f) return; try { photo = await shrinkImage(f); el('acp').src = photo; el('acp').style.display = 'block'; } catch (err) { toast('Não foi possível ler a foto'); } };
-  el('acl').onclick = () => { el('acg').textContent = 'Obtendo...'; gps().then(p => { pos = p; el('acg').textContent = 'Localização incluída ✅'; }).catch(() => { el('acg').textContent = 'Não foi possível pegar o GPS'; }); };
+  let pos = null; const pics = photoPicker(el('acph'), 'Fotos do acidente (até 3)', true);
+  el('acl').onclick = () => { el('acg').textContent = 'Obtendo...'; gps().then(p => { pos = p; el('acg').innerHTML = '<b style="color:#22c55e">📍 Localização incluída ✅</b>'; }).catch(() => { el('acg').textContent = 'Não foi possível pegar o GPS'; }); };
   el('acs').onclick = async () => {
-    if (!photo) return toast('Tire a foto do acidente');
+    const ph = pics.get(); if (!ph.length) return toast('Tire pelo menos 1 foto do acidente');
     if (!PROFILE) await loadProfile();
     const b = el('acs'); b.disabled = true; b.textContent = 'Enviando...';
-    try { await add('accidents', { authorId: S.uid, email: S.email || '', desc: el('acd').value.trim(), photo, lat: pos ? String(pos.lat) : '', lng: pos ? String(pos.lng) : '', status: 'pending', createdAt: new Date() });
+    try { await add('accidents', Object.assign({ authorId: S.uid, email: S.email || '', desc: el('acd').value.trim(), photo: ph[0], lat: pos ? String(pos.lat) : '', lng: pos ? String(pos.lng) : '', status: 'pending', createdAt: new Date() }, ph[1] ? { photo2: ph[1] } : {}, ph[2] ? { photo3: ph[2] } : {}));
       alert('Registro enviado ✅\n\nNossa equipe vai analisar e entrar em contato com seu contato de emergência.'); go(Accident, null, false);
     } catch (e) { alert('Erro: ' + e.message); b.disabled = false; b.textContent = 'Enviar para a equipe'; }
   };
@@ -404,6 +402,7 @@ function Settings() {
   m.innerHTML = `<h2>⚙️ Configurações</h2>
    <div class="muted" style="margin:6px 0">Conta</div>
    <button class="card" id="cProf" style="display:flex;gap:12px;align-items:center"><span style="font-size:24px">👤</span><div><b style="font-size:15px">Meu perfil</b><div class="muted">Telefone, endereço e contato de emergência</div></div></button>
+   <button class="card" id="cRep" style="display:flex;gap:12px;align-items:center"><span style="font-size:24px">🔁</span><div><b style="font-size:15px">Danifiquei ou perdi meu QR</b><div class="muted">Pedir um adesivo novo</div></div></button>
    <div class="muted" style="margin:14px 0 6px">Aparência</div>
    ${R('cTh', cur === 'light' ? '☀️' : '🌙', 'Tema', cur === 'light' ? 'Claro' : 'Escuro', `<span class="tg" style="display:flex;background:var(--bg);border-radius:10px;padding:3px;gap:2px"><i class="t ${cur === 'light' ? 'on' : ''}" data-t="light" style="font-style:normal;padding:6px 10px;border-radius:8px">☀️</i><i class="t ${cur === 'dark' ? 'on' : ''}" data-t="dark" style="font-style:normal;padding:6px 10px;border-radius:8px">🌙</i></span>`)}
    ${R('cFt', '🔠', 'Letra maior', 'Facilita a leitura', SW('fBig', big))}
@@ -415,6 +414,7 @@ function Settings() {
    <button class="card" id="cDel" style="display:flex;gap:12px;align-items:center;border-color:#ef444455"><span style="font-size:24px">🗑️</span><div><b style="font-size:15px;color:var(--red)">Apagar minha conta</b><div class="muted">Remove seus dados, carros e documentos</div></div></button>
    <p class="muted" style="text-align:center;margin-top:20px">AutoLink · versão 1.0 beta</p>`;
   el('cProf').onclick = () => loadProfile().then(() => go(ProfileForm, {}));
+  el('cRep').onclick = () => go(Replace);
   m.querySelectorAll('.t').forEach(x => x.onclick = () => { theme(x.dataset.t); go(Settings, null, false); });
   m.querySelectorAll('.t.on').forEach(x => { x.style.background = 'var(--or)'; x.style.color = '#111'; });
   el('fBig').onchange = e => { pref('font', e.target.checked ? 'big' : 'normal'); applyPrefs(); };
@@ -629,3 +629,53 @@ function famIcon(cars) { const b = el('famI'); if (!b) return; const on = (cars 
 
 // ---------- Nome no menu ----------
 async function drawName() { const d = el('dName'); if (!d) return; if (S && !PROFILE) await loadProfile(); const n = (PROFILE && PROFILE.name || '').trim().split(/\s+/); d.textContent = n[0] ? (n.length > 1 ? n[0] + ' ' + n[n.length - 1] : n[0]) : ''; }
+
+// ---------- Seletor de fotos (até 3, miniaturas, ampliar e apagar) ----------
+function photoPicker(box, title, camera) {
+  const ph = [];
+  const draw = () => {
+    box.innerHTML = `<div class="muted" style="margin:0 0 6px">${title} · ${ph.length}/3</div><div class="pp">${ph.map((p, i) => `<div class="ppi"><img src="${p}" data-v="${i}"><button type="button" data-x="${i}" aria-label="Apagar foto">✕</button></div>`).join('')}
+      ${ph.length < 3 ? `<label class="ppa"><span>📷</span><small>Adicionar</small><input type="file" accept="image/*" ${camera ? 'capture="environment"' : ''} hidden></label>` : ''}</div>`;
+    const inp = box.querySelector('input'); if (inp) inp.onchange = async () => { const f = inp.files[0]; if (!f) return; try { ph.push(await shrinkImage(f, 900, .55)); draw(); } catch (e) { toast('Não foi possível ler a foto'); } };
+    box.querySelectorAll('[data-x]').forEach(b => b.onclick = () => { if (confirm('Apagar esta foto?')) { ph.splice(+b.dataset.x, 1); draw(); } });
+    box.querySelectorAll('[data-v]').forEach(i => i.onclick = () => { const d = document.createElement('div'); d.className = 'lb'; d.innerHTML = `<img src="${i.src}"><button type="button">✕ Fechar</button>`; d.onclick = () => d.remove(); document.body.appendChild(d); });
+  };
+  draw(); return { get: () => ph.slice() };
+}
+
+// ---------- Protocolo da Central de ajuda ----------
+function newProtocol() { const d = new Date(), z = n => String(n).padStart(2, '0'); return d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + '-' + Array.from(crypto.getRandomValues(new Uint8Array(3)), b => z(b % 100)).join(''); }
+function ticketHead(t) {
+  const h = el('tkh'); if (!h) return;
+  const closed = t.status === 'closed';
+  h.innerHTML = `<div class="card" style="display:flex;gap:10px;align-items:center"><div style="flex:1"><div class="muted">Protocolo</div><b style="font-size:17px;letter-spacing:1px">${esc(t.protocol || '—')}</b>
+    <div class="muted">${closed ? '✅ Atendimento encerrado' + (t.closedAt ? ' em ' + t.closedAt.toLocaleString('pt-BR') : '') : '🟠 Em atendimento'}</div></div>${closed ? '' : '<button class="chip" id="tkClose">Encerrar</button>'}</div>
+    ${closed ? '<p class="muted">Se precisar, é só escrever de novo: o atendimento é reaberto com o mesmo protocolo.</p>' : ''}`;
+  const b = el('tkClose'); if (b) b.onclick = async () => { if (!confirm('Encerrar este atendimento?')) return;
+    const f = { status: 'closed', closedAt: new Date(), closedBy: 'user' }; if (!t.protocol) f.protocol = newProtocol();
+    try { await update('tickets/' + t.id, f); Object.assign(t, f); ticketHead(t); alert('Atendimento encerrado ✅\n\nProtocolo: ' + t.protocol); } catch (e) { alert('Erro: ' + e.message); } };
+}
+
+// ---------- Busca dentro do app ----------
+const SEARCH_ITEMS = [['🏠', 'Início', () => go(Home)], ['🚗', 'Garagem / meus carros', () => go(Garage)], ['🔳', 'Meu QR code', () => go(MyQR)], ['🚨', 'Criar alerta regional', () => go(NewAlert)],
+  ['🚑', 'Acidente', () => go(Accident)], ['⏳', 'Mensagem de ausência', () => go(Away)], ['💬', 'Histórico de contatos', () => go(History)], ['🔧', 'Manutenção', () => go(Maint)],
+  ['📅', 'Calendário: rodízio, IPVA, licenciamento', () => go(Calendar)], ['📄', 'Documentos (CNH, CRLV, seguro)', () => go(Docs)], ['🏢', 'Empresa / frota', () => go(Company)],
+  ['🔁', 'Danifiquei ou perdi meu QR', () => go(Replace)], ['🛒', 'Mercado', () => go(Soon, 'mercado')], ['👥', 'Comunidade', () => go(Soon, 'comunidade')], ['🔔', 'Notificações', () => go(Notifs)],
+  ['⭐', 'Meu plano / preços', () => go(Plan)], ['⚙️', 'Configurações', () => go(Settings)], ['👤', 'Meu perfil', () => loadProfile().then(() => go(ProfileForm, {}))],
+  ['🆘', 'Central de ajuda', () => go(Help)], ['📘', 'Manual do AutoLink', () => location.href = 'manual.html'], ['📣', 'Quero anunciar', () => go(Advertise)], ['🛍️', 'Quero vender', () => go(Advertise, 'sell')],
+  ['👨‍👩‍👧', 'Carro da família', () => go(Garage)], ['📄', 'Termos e privacidade', () => location.href = 'termos.html']];
+const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+async function Search() {
+  m.innerHTML = `<h2>🔎 Buscar no AutoLink</h2><input id="sq" placeholder="O que você procura? (ex: IPVA, ausência, placa)" autocomplete="off"><div id="sr"></div>`;
+  const cars = await allCars().catch(() => []);
+  const run = () => { const q = norm(el('sq').value.trim()); const box = el('sr'); if (!box) return;
+    const res = [];
+    for (const c of cars) if (!q || norm(c.name + ' ' + (c.plate || '') + ' ' + (c.brand || '') + ' ' + (c.model || '')).includes(q)) res.push(['🚗', c.name + (c.plate ? ' · ' + c.plate : ''), () => go(Car, c), 'Carro']);
+    for (const [e, t, f] of SEARCH_ITEMS) if (!q || norm(t).includes(q)) res.push([e, t, f, 'Função']);
+    if (q) for (const [qq, a] of FAQ) if (norm(qq + ' ' + a).includes(q)) res.push(['❓', qq, () => go(Help), 'Ajuda']);
+    if (q) for (const [e, l] of MCATS) if (norm(l).includes(q)) res.push([e, l, () => go(Category, { name: l, e }), 'Mercado']);
+    box.innerHTML = res.length ? '' : '<p class="muted">Nada encontrado. Tente outra palavra.</p>';
+    res.slice(0, 40).forEach(([e, t, f, k]) => { const b = document.createElement('button'); b.className = 'card'; b.style.cssText = 'display:flex;gap:12px;align-items:center';
+      b.innerHTML = `<span style="font-size:22px">${e}</span><div style="flex:1;min-width:0"><b style="font-size:15px">${esc(t)}</b></div><span class="pill" style="margin:0">${k}</span>`; b.onclick = f; box.appendChild(b); }); };
+  el('sq').oninput = run; run(); el('sq').focus();
+}

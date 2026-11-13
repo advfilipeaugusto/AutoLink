@@ -61,6 +61,7 @@ service cloud.firestore {
       allow get, list: if request.auth != null && (resource.data.userId == me() || isAdmin());
       allow create: if request.auth != null && request.resource.data.userId == me();
       allow update: if isAdmin() || (resource.data.userId == me() && request.resource.data.userId == me());
+      allow delete: if isAdmin();
       match /messages/{m} {
         allow read: if isAdmin() || get(/databases/$(db)/documents/tickets/$(id)).data.userId == me();
         allow create: if (isAdmin() && request.resource.data.from == 'team')
