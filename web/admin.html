@@ -19,6 +19,8 @@ textarea{width:100%;box-sizing:border-box;padding:12px;border:1px solid #ccc;bor
 .thread{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto}.msg{padding:10px 12px;border-radius:12px;max-width:80%}.msg.us{background:#eee}.msg.tm{background:#FFE1CC;align-self:flex-end}
 #det td:first-child,#det td:last-child{white-space:nowrap}.pw{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}.pwb{background:#fff;border-radius:16px;padding:20px;width:100%;max-width:360px}.pwb button{width:100%;margin:6px 0 0}.err{color:#c00}
 .kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}.kc{background:#f7f7f8;border-radius:14px;padding:14px}.kc .e{font-size:22px}.kc .v{font-size:30px;font-weight:900;color:#111;margin:4px 0}.kc .v small{font-size:14px;color:#1a7f37}
+.acd{display:flex;gap:14px;flex-wrap:wrap;border-top:1px solid #eee;padding:14px 0}.acd img{width:200px;max-width:100%;border-radius:12px;object-fit:cover}
+a.wa{display:inline-block;background:#25d366;color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;margin:8px 6px 0 0;font-size:14px}
 button.x{position:absolute;top:10px;right:10px;width:36px;height:36px;padding:0;margin:0;border-radius:50%;background:#eee;font-size:18px;line-height:36px}button.x:hover{background:#ddd}button.gray{background:#ddd}button.red{background:#d32f2f;color:#fff}button.sm{padding:6px 10px;font-size:13px;margin:0}code{background:#eee;padding:2px 6px;border-radius:4px}
 .sheet{display:flex;flex-wrap:wrap;gap:4mm;justify-content:center}
 .st{width:60mm;background:#111;border-radius:5mm;padding:4mm;color:#fff;text-align:center;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid}
@@ -63,6 +65,7 @@ async function main(){
   <button id="gen">Gerar adesivos</button><button onclick="print()">Imprimir / PDF</button>
   <p id="info" class="muted"></p></div>
   <div class="box" data-tab="alertas"><h3>🚨 Alertas regionais</h3><div id="alr" class="muted">Carregando...</div></div>
+  <div class="box" data-tab="acidentes"><h3>🚑 Acidentes</h3><div id="acc" class="muted">Carregando...</div></div>
   <div class="box" data-tab="ajuda"><h3>💬 Central de ajuda</h3><div id="tks" class="muted">Carregando...</div></div>
   <div class="box" data-tab="ajuda" id="tkBox" style="display:none;position:relative"><button class="x" onclick="tkBox.style.display='none'" aria-label="Fechar">✕</button><h3 id="tkT"></h3><div id="tkM" class="thread"></div><textarea id="tkR" placeholder="Responder ao cliente..."></textarea><button id="tkS">Enviar resposta</button><button class="gray" id="tkC">Marcar como resolvido</button></div>
   <div class="box" data-tab="anuncios"><h3>📣 Pedidos de anunciantes</h3><div id="ads" class="muted">Carregando...</div></div>
@@ -70,13 +73,13 @@ async function main(){
   <div class="box" data-tab="adesivos"><h3>Histórico de lotes</h3><div id="hist" class="muted">Carregando...</div></div>
   <div class="box" data-tab="adesivos" id="detBox" style="display:none;position:relative"><button class="x" onclick="closeBatch()" title="Fechar" aria-label="Fechar">✕</button><h3 id="detT" style="padding-right:40px"></h3><div id="det"></div></div><div class="sheet" id="sheet"></div>`;
   gen.onclick=generate;history();home();refreshAll();setInterval(refreshAll,30000);}
-let TAB=null;const TABS=[['numeros','📊','Números','Usuários, adesivos e conversas'],['adesivos','🏷️','Adesivos','Gerar, imprimir e acompanhar lotes'],['alertas','🚨','Alertas','Aprovar alertas regionais'],['ajuda','💬','Central de ajuda','Responder clientes'],['anuncios','📣','Anunciantes e vendedores','Pedidos para anunciar ou vender']];
+let TAB=null;const TABS=[['numeros','📊','Números','Usuários, adesivos e conversas'],['adesivos','🏷️','Adesivos','Gerar, imprimir e acompanhar lotes'],['alertas','🚨','Alertas','Aprovar alertas regionais'],['acidentes','🚑','Acidentes','Analisar e avisar a família'],['ajuda','💬','Central de ajuda','Responder clientes'],['anuncios','📣','Anunciantes e vendedores','Pedidos para anunciar ou vender']];
 function home(){TAB=null;hb.hidden=true;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.add('hide'));sheet.style.display='none';
   hub.hidden=false;hub.innerHTML=`<h2 style="margin:4px 0 14px">Olá! O que você quer fazer?</h2><div class="hubg">${TABS.map(([k,e,l,d])=>`<button data-k="${k}"><span class="e">${e}</span><b>${l}</b><small>${d}</small><span class="bd" id="bd-${k}"></span></button>`).join('')}</div>`;
   hub.querySelectorAll('button').forEach(b=>b.onclick=()=>tab(b.dataset.k));badges();scrollTo(0,0);}
 function tab(t){TAB=t;if(t==='numeros')numbers();hub.hidden=true;hb.hidden=false;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('hide',x.dataset.tab!==t));sheet.style.display=t==='adesivos'?'':'none';scrollTo(0,0);}
 let BD={};function badges(){for(const k in BD){const e=document.getElementById('bd-'+k);if(e)e.textContent=BD[k]?BD[k]:'';}}
-function refreshAll(){alerts().catch(()=>{});tickets().catch(()=>{});adsList().catch(()=>{});}
+function refreshAll(){accidents().catch(()=>{});alerts().catch(()=>{});tickets().catch(()=>{});adsList().catch(()=>{});}
 const pk=f=>Object.fromEntries(Object.entries(f||{}).map(([k,v])=>[k,'timestampValue' in v?new Date(v.timestampValue):'booleanValue' in v?v.booleanValue:v.stringValue]));
 const q=async(col,parent='',order)=>(await api(parent+':runQuery','POST',{structuredQuery:Object.assign({from:[{collectionId:col}]},order?{orderBy:[{field:{fieldPath:order},direction:'ASCENDING'}]}:{})})).filter(x=>x.document).map(x=>({id:x.document.name.split('/').pop(),...pk(x.document.fields)}));
 async function numbers(){kpi.innerHTML='Carregando...';
@@ -92,6 +95,20 @@ async function numbers(){kpi.innerHTML='Carregando...';
    ['🆘','Chamados de ajuda abertos',n(tk?.filter(t=>t.status!=='closed').length)],['📣','Pedidos de anúncio/venda',n(ads?.length)]];
   kpi.innerHTML=`<div class="kg">${K.map(([e,l,v])=>`<div class="kc"><div class="e">${e}</div><div class="v">${v}</div><div class="muted">${l}</div></div>`).join('')}</div>
    <p class="muted" style="margin-top:12px">Atualizado em ${new Date().toLocaleString('pt-BR')}. ${cars===null||chats===null?'⚠️ Alguns números precisam das regras novas do Firebase.':''}</p><button class="sm" onclick="numbers()">Atualizar</button>`;}
+async function accidents(){const l=(await q('accidents')).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));const pend=l.filter(a=>a.status==='pending');BD.acidentes=pend.length;badges();
+  if(!l.length){acc.innerHTML='Nenhum registro de acidente.';return;}
+  const prof={};await Promise.all([...new Set(l.map(a=>a.authorId))].map(async u=>{try{const r=await api('/profiles/'+u);prof[u]=pk(r.fields);}catch(e){}}));
+  const ST={pending:'⏳ Aguardando análise',contacted:'✅ Família avisada',rejected:'❌ Recusado'};
+  acc.innerHTML=`<p><b>${pend.length}</b> aguardando análise</p>`+l.map(a=>{const p=prof[a.authorId]||{};const fam=(p.famPhone||'').replace(/\D/g,'');
+    const txt=encodeURIComponent(`Olá ${p.famName||''}, aqui é da equipe AutoLink. ${p.name||'Seu familiar'} registrou um acidente de carro${a.lat?` neste local: https://www.google.com/maps?q=${a.lat},${a.lng}`:''}. Ele(a) cadastrou você como contato de emergência.`);
+    return `<div class="acd"><img src="${a.photo}" alt="foto"><div style="flex:1;min-width:220px"><b>${ST[a.status]||a.status}</b><div class="muted">${a.createdAt?a.createdAt.toLocaleString('pt-BR'):''}</div>
+     <p style="margin:6px 0"><b>${esc(p.name||'Sem perfil')}</b> · ${esc(p.phone||'')}<br>${esc(a.desc||'(sem descrição)')}</p>
+     ${a.lat?`<a target="_blank" href="https://www.google.com/maps?q=${+a.lat},${+a.lng}">📍 Ver no mapa</a><br>`:''}
+     <div style="margin-top:6px">👨‍👩‍👧 <b>${esc(p.famName||'—')}</b> ${p.famRel?'('+esc(p.famRel)+')':''} · ${esc(p.famPhone||'sem telefone')}</div>
+     ${a.status==='pending'?`<a class="wa" target="_blank" href="https://wa.me/55${fam}?text=${txt}">💬 Avisar família no WhatsApp</a> <button class="sm" data-ok="${a.id}">Marcar família avisada</button> <button class="sm red" data-no="${a.id}">Recusar</button>`:''}</div></div>`;}).join('');
+  const set=async(id,st)=>{await api('/accidents/'+id+'?updateMask.fieldPaths=status&updateMask.fieldPaths=reviewedAt','PATCH',{fields:{status:enc(st),reviewedAt:enc(new Date())}});accidents();};
+  acc.querySelectorAll('[data-ok]').forEach(b=>b.onclick=()=>set(b.dataset.ok,'contacted'));
+  acc.querySelectorAll('[data-no]').forEach(b=>b.onclick=()=>confirm('Recusar este registro?')&&set(b.dataset.no,'rejected'));}
 async function tickets(){const l=(await q('tickets')).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));const open=l.filter(t=>t.status!=='closed');BD.ajuda=l.filter(t=>t.unreadTeam).length;badges();
   tks.innerHTML=l.length?`<p><b>${open.length}</b> em aberto</p><table><tr><th>Cliente</th><th>Última mensagem</th><th>Situação</th><th></th></tr>${l.map(t=>`<tr><td>${esc(t.email||'—')}</td><td>${t.unreadTeam?'🟠 ':''}${esc(t.lastMsg)}<div class="muted">${t.updatedAt?t.updatedAt.toLocaleString('pt-BR'):''}</div></td><td>${t.status==='closed'?'✅ Resolvido':'Aberto'}</td><td><button class="sm" data-t="${t.id}">Abrir</button></td></tr>`).join('')}</table>`:'Nenhuma mensagem de clientes ainda.';
   tks.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>openTicket(l.find(x=>x.id===b.dataset.t)));}

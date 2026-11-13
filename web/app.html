@@ -103,12 +103,15 @@ header{position:sticky}header .brand{position:absolute;left:50%;transform:transl
 #tabs .trow button.on{color:var(--or)}#tabs .trow button svg{width:24px;height:24px}
 #tabs .scan{position:relative;top:-6px}#tabs .scan span{width:62px;height:62px}
 main{padding-bottom:calc(env(safe-area-inset-bottom) + 175px)}
+.sel{width:100%;padding:14px;border-radius:12px;border:1px solid var(--line);font-size:16px;margin-bottom:10px;background:var(--card);color:var(--tx)}
+input[type=date],input[type=time]{min-height:50px}
 </style></head><body>
 <header><button id="menu" aria-label="Menu" style="padding:4px 6px 4px 0"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button id="back" hidden aria-label="Voltar" style="font-size:34px;line-height:1;padding:0 8px 4px 2px;font-weight:400">‹</button><div class="brand"><div class="t">Auto<span>Link</span></div><img class="lc lcw" src="logo-car-white.png" alt=""><img class="lc lcb" src="logo-car.png" alt=""></div><span style="flex:1"></span><button id="out" hidden>Sair</button></header>
 <main id="m"></main>
 <nav id="tabs" hidden></nav>
 <div id="drawer" hidden><div class="dbg"></div><aside><div class="dh" style="flex-direction:column;align-items:flex-start;gap:4px"><b>Auto<span style="color:var(--or)">Link</span></b><img class="lcd lcw" src="logo-car-white.png" alt=""><img class="lcd lcb" src="logo-car.png" alt=""><div class="muted" id="dEmail"></div></div><div id="dItems"></div><div class="muted" style="margin-top:auto;padding:16px">Versão 1.0 · beta</div></aside></div><div id="toast"></div>
 <div id="scan"><video playsinline muted></video><div class="frame"></div><div class="tx" id="scanTx">Aponte para o QR code do adesivo AutoLink</div><button class="close" id="scanX" aria-label="Fechar">✕</button></div>
+<script src="extras.js"></script>
 <script>
 const KEY='AIzaSyBSGj1H273wiXM-VgpkytnC3kX6yQlt8_I';
 const BASE='https://firestore.googleapis.com/v1/projects/autolink-1aa51/databases/(default)/documents';
@@ -133,7 +136,7 @@ const msg=r=>{const x=r.error?.message||'erro';return ERR[x.split(' ')[0]]||(x.s
 
 // ---------- Banco de dados ----------
 const enc=v=>typeof v==='boolean'?{booleanValue:v}:v instanceof Date?{timestampValue:v.toISOString()}:{stringValue:String(v)};
-const dec=f=>'booleanValue' in f?f.booleanValue:'timestampValue' in f?new Date(f.timestampValue):'nullValue' in f?null:f.stringValue;
+const dec=f=>'integerValue' in f?+f.integerValue:'booleanValue' in f?f.booleanValue:'timestampValue' in f?new Date(f.timestampValue):'nullValue' in f?null:f.stringValue;
 const fields=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,enc(v)]));
 const unpack=d=>({id:d.name.split('/').pop(),...Object.fromEntries(Object.entries(d.fields||{}).map(([k,v])=>[k,dec(v)]))});
 async function api(path,method='GET',body){
@@ -197,7 +200,7 @@ function Auth(mode='signin'){
     try{
       if(mode==='reset'){const r=await post(ID+'sendOobCode?key='+KEY,{requestType:'PASSWORD_RESET',email});if(r.error)throw new Error(msg(r));alert('Se este e-mail tiver conta, você vai receber um link para criar uma nova senha. Confira também o spam.');return Auth('signin');}
       const r=await post(ID+(mode==='signin'?'signInWithPassword':'signUp')+'?key='+KEY,{email,password:$('#p').value,returnSecureToken:true});
-      if(!r.idToken)throw new Error(msg(r));save(r,email);go(Home);
+      if(!r.idToken)throw new Error(msg(r));save(r,email);gateProfile();
     }catch(err){alert(err.message);btn.disabled=false;btn.textContent=title;}};
 }
 function installTip(){
@@ -208,15 +211,17 @@ function installTip(){
 
 function Home(){
   m.innerHTML=`<div id="danger"></div><div id="hero"><div class="hero"><div class="muted">Carregando...</div></div></div>
+  <div id="xtra"></div>
   <h2>Avisos sobre meu carro</h2><div id="alerts"><div class="card muted">Carregando...</div></div>
   <h2>Atalhos</h2><div class="grid">
-   ${[['alerta','siren','Criar alerta','#ef4444'],['qr','qr','Meu QR'],['hist','msg','Histórico'],['man','wrench','Manutenção'],['doc','doc','Documentos'],['perdi','car','Perdi meu carro','#f59e0b'],['mapa','pin','Mapa','#3b82f6'],['parc','shield','Parceiros','#22c55e']]
+   ${[['alerta','siren','Criar alerta','#ef4444'],['acid','car','Acidente','#ef4444'],['away','bell','Ausência'],['qr','qr','Meu QR'],['hist','msg','Histórico'],['man','wrench','Manutenção'],['doc','doc','Documentos'],['perdi','car','Perdi meu carro','#f59e0b'],['mapa','pin','Mapa','#3b82f6'],['parc','shield','Parceiros','#22c55e']]
      .map(([k,i,l,c])=>`<button class="sc" data-k="${k}"><span class="ic">${ic(i,c||'#FF6B00')}</span>${l}</button>`).join('')}</div>
   ${installTip()}`;
   let cars=[],idx=0;
   m.querySelectorAll('.sc').forEach(b=>b.onclick=()=>{const k=b.dataset.k;
     if(k==='alerta')return go(NewAlert);
     if(k==='hist')return go(History);
+    if(k==='acid')return go(Accident);if(k==='away')return go(Away);if(k==='man')return go(Maint);if(k==='doc')return go(Docs);
     if(k==='qr')return cars.length?go(Car,cars[idx]):go(Garage);
     toast(SOON);});
   const carSvg=`<svg class="car" viewBox="0 0 120 60" fill="none" stroke="#FF6B00" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 44H8c-2 0-3-1-3-3v-7c0-2 1-3 3-4l14-4 12-9c3-2 7-3 11-3h22c5 0 9 2 12 5l9 8 14 2c4 1 7 4 7 8v4c0 2-1 3-3 3h-6"/><path d="M38 44h40"/><circle cx="26" cy="44" r="8"/><circle cx="90" cy="44" r="8"/><path d="M36 26h50"/></svg>`;
@@ -239,7 +244,7 @@ function Home(){
       b.innerHTML=`<span class="ic or">${ic('msg','#FF6B00')}</span><div style="min-width:0"><b style="font-size:15px">${esc(c.lastMsg)}</b><div class="muted">${esc(car.name)} · ${c.updatedAt.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div></div>`;
       b.onclick=()=>{stack.length=0;stack.push([Home]);go(Chat,{car,chatId:c.id});};box.appendChild(b);}};
   poll(()=>load().catch(()=>{}),8000);
-  nearAlerts();
+  nearAlerts();homeExtras();
 }
 
 function Garage(){
@@ -268,12 +273,13 @@ function History(){
       r.innerHTML=`<span class="alert"><span class="ic or">${ic('car','#FF6B00')}</span></span><div style="flex:1;min-width:0"><b>${esc(h.carName||'Carro')}</b><div class="muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(h.lastMsg||'')}</div><div class="muted">${h.at?new Date(h.at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}</div></div><button class="chip" data-o>Abrir</button><button class="chip" data-d aria-label="Apagar">🗑</button>`;
       r.querySelector('[data-o]').onclick=()=>location.href='index.html?c='+encodeURIComponent(h.carId)+'&from=app';
       r.querySelector('[data-d]').onclick=()=>{if(!confirm('Apagar esta conversa do seu histórico?'))return;
-        try{localStorage.setItem('al_hist',JSON.stringify(H().filter(x=>x.carId!==h.carId)));localStorage.removeItem('chat_'+h.carId);}catch(e){}draw();};
+        try{localStorage.setItem('al_hist',JSON.stringify(H().filter(x=>x.carId!==h.carId)));localStorage.removeItem('chat_'+h.carId);localStorage.removeItem('chatv_'+h.carId);}catch(e){}draw();};
       box.appendChild(r);}};
   draw();}
 function Car(car){
   m.innerHTML=`<h2>${esc(car.name)}</h2><div id="st"></div>
   <div class="row"><span>QR ativo (recebendo mensagens)</span><label class="sw"><input type="checkbox" id="act" ${car.active?'checked':''}><span></span></label></div>
+  <div id="fleet"></div>
   <h2>Conversas</h2><div id="chats"><p class="muted">Carregando...</p></div>
   <button class="link" id="del" style="color:#d32f2f;margin-top:30px">Apagar este carro</button>`;
   $('#del').onclick=async()=>{
@@ -283,6 +289,7 @@ function Car(car){
       await api('/cars/'+car.id,'DELETE');
       stack.length=0;go(Home);
     }catch(err){alert('Erro ao apagar: '+err.message);}};
+  carExtras(car);
   $('#act').onchange=async e=>{car.active=e.target.checked;try{await update('cars/'+car.id,{active:car.active});}catch(err){alert(err.message);}};
   const st=$('#st');
   if(car.stickerCode){st.innerHTML=`<div class="card" style="text-align:center"><div class="muted">Adesivo ativo</div><div class="code">${esc(car.stickerCode)}</div></div>`;}
@@ -313,8 +320,11 @@ function Chat({car,chatId}){
   const box=$('#msgs');let last='';
   const load=async()=>{
     chat=unpack(await api('/chats/'+chatId));
+    if(!chat.seenAt||(chat.updatedAt&&+chat.updatedAt>+chat.seenAt))update('chats/'+chatId,{seenAt:new Date()}).catch(()=>{});
     $('#acts').innerHTML=chat.blocked?'':'<button class="chip" id="bk">🚫 Bloquear</button> <button class="chip" id="rp">⚠️ Denunciar</button>';
-    $('#bl').innerHTML=chat.blocked?'<p class="muted err">Pessoa bloqueada. Ela não consegue mais te mandar mensagens.</p>':'';
+    $('#bl').innerHTML=(chat.blocked?'<p class="muted err">Pessoa bloqueada. Ela não consegue mais te mandar mensagens.</p>':'')
+      +(chat.visitorVerified?'<div class="card" style="border-color:#22c55e55">✅ <b>Pessoa identificada</b><div class="muted">Usuário AutoLink com cadastro completo.</div></div>'
+      :'<div class="warn" style="margin:0 0 10px">🛡️ <b>Pessoa não identificada.</b> Por segurança, responda pelo chat. Evite ir ao carro sozinho, à noite ou em local isolado. Desconfie de pedidos para você descer com pressa.</div>');
     if(!chat.blocked){$('#bk').onclick=()=>confirm('Bloquear? Essa pessoa não vai mais conseguir te mandar mensagens.')&&block();$('#rp').onclick=report;}
     const ms=await find('messages',[],'at','/chats/'+chatId);
     const html=ms.map(x=>`<div class="b ${x.from==='owner'?'me':'them'}">${esc(x.text)}</div>`).join('');
@@ -361,8 +371,8 @@ function theme(t){if(t)try{localStorage.setItem('al_theme',t)}catch(e){};const c
   document.querySelector('meta[name=theme-color]').content=cur==='light'?'#ffffff':'#0b0b0c';return cur;}
 function openMenu(){const d=document.getElementById('drawer');d.hidden=false;document.getElementById('dEmail').textContent=S?.email||'Não conectado';
   const cur=theme();const I=(k,i,l,x='')=>`<button class="di" data-k="${k}">${ic(i)}<span>${l}</span>${x}</button>`;
-  document.getElementById('dItems').innerHTML=I('home','home','Início')+I('theme','doc','Tema',`<span class="tg"><i class="${cur==='light'?'on':''}">☀️</i><i class="${cur==='dark'?'on':''}">🌙</i></span>`)
-   +I('config','wrench','Configurações')+I('plan','shield','Meu plano','<span class="pill">Grátis</span>')
+  document.getElementById('dItems').innerHTML=I('home','home','Início')+I('profile','users','Meu perfil')+I('theme','doc','Tema',`<span class="tg"><i class="${cur==='light'?'on':''}">☀️</i><i class="${cur==='dark'?'on':''}">🌙</i></span>`)
+   +I('notif','bell','Notificações',`<span class="pill">${'Notification' in window&&Notification.permission==='granted'?'Ativas':'Ativar'}</span>`)+I('config','wrench','Configurações')+I('plan','shield','Meu plano','<span class="pill">Grátis</span>')
    +I('ads','mega','Quero anunciar no AutoLink')+I('sell','store','Quero vender no AutoLink')+I('share','users','Indicar o AutoLink')+I('help','msg','Central de ajuda')+I('terms','doc','Termos e privacidade')
    +`<div class="dacc">${S?`<div class="muted">Conectado como</div><b>${esc(S.email||'')}</b><button class="chip" id="dOut" style="margin-top:10px">Sair da conta</button>`:''}</div>`;
   d.querySelectorAll('.di').forEach(b=>b.onclick=()=>{const k=b.dataset.k;
@@ -374,6 +384,8 @@ function openMenu(){const d=document.getElementById('drawer');d.hidden=false;doc
       if(navigator.share)navigator.share({title:'AutoLink',text:t,url:u}).catch(()=>{});else{navigator.clipboard?.writeText(t+' '+u);toast('Link copiado! Cole e envie para seus amigos.');}return;}
     if(!S)return;
     if(k==='home')return go(Home);
+    if(k==='profile')return loadProfile().then(()=>go(ProfileForm,{}));
+    if(k==='notif')return askNotif();
     if(k==='plan')go(Plan);if(k==='ads')go(Advertise);if(k==='sell')go(Advertise,'sell');if(k==='help')go(Help);});
   const o=document.getElementById('dOut');if(o)o.onclick=()=>{d.hidden=true;out.onclick();};
   d.querySelector('.dbg').onclick=()=>d.hidden=true;}
@@ -461,5 +473,5 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(
 theme();
 (async()=>{m.innerHTML='<p class="muted" style="text-align:center;margin-top:40px">Carregando...</p>';
   try{await refresh();}catch(e){}
-  S?go(Home):Auth('signin');})();
+  S?gateProfile():Auth('signin');})();
 </script></body></html>

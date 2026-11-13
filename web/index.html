@@ -4,19 +4,26 @@ body{margin:0;font-family:system-ui,sans-serif;background:#f5f5f5;color:#111}hea
 main{padding:16px;max-width:520px;margin:auto}.q{display:block;width:100%;padding:14px;margin:8px 0;border:2px solid #111;border-radius:12px;background:#fff;color:#111;font-size:16px;font-weight:600;text-align:left}.q:active{background:#FF6B00}
 #msgs{min-height:200px}.b{padding:10px;border-radius:12px;margin:4px 0;max-width:80%}.me{background:#FF6B00;color:#111;margin-left:auto}.them{background:#111;color:#fff}
 form{display:flex;gap:8px}input{flex:1;padding:12px;border-radius:8px;border:1px solid #ddd;font-size:16px}button.s{background:#FF6B00;color:#111;border:0;border-radius:8px;padding:0 16px;font-weight:700}
-.muted{color:#777;font-size:13px}</style></head><body><header><a id="bk" href="app.html" hidden aria-label="Voltar" style="color:#FF6B00;text-decoration:none;font-size:34px;line-height:1;font-weight:400;margin-right:6px">‹</a><img src="logo-car-white.png" alt="" style="width:auto;height:26px;border-radius:0"><div>Auto<span>Link</span></div></header><main id="app">Carregando...</main>
+.muted{color:#777;font-size:13px}.seen{text-align:right;font-size:12px;color:#1a7f37;margin:-2px 2px 6px}</style></head><body><header><a id="bk" href="app.html" hidden aria-label="Voltar" style="color:#FF6B00;text-decoration:none;font-size:34px;line-height:1;font-weight:400;margin-right:6px">‹</a><img src="logo-car-white.png" alt="" style="width:auto;height:26px;border-radius:0"><div>Auto<span>Link</span></div></header><main id="app">Carregando...</main>
 <script>
 if(new URLSearchParams(location.search).get('from')==='app'||navigator.standalone||matchMedia('(display-mode: standalone)').matches)document.getElementById('bk').hidden=false;
 const KEY='AIzaSyBSGj1H273wiXM-VgpkytnC3kX6yQlt8_I', BASE='https://firestore.googleapis.com/v1/projects/autolink-1aa51/databases/(default)/documents';
 const app=document.getElementById('app'), qs=new URLSearchParams(location.search), stickerCode=(qs.get('s')||'').toUpperCase(); let carId=qs.get('c');
 const esc=t=>String(t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const enc=v=>typeof v==='boolean'?{booleanValue:v}:v instanceof Date?{timestampValue:v.toISOString()}:{stringValue:String(v)};
-const dec=f=>'booleanValue' in f?f.booleanValue:'timestampValue' in f?new Date(f.timestampValue):f.stringValue;
+const dec=f=>'integerValue' in f?+f.integerValue:'booleanValue' in f?f.booleanValue:'timestampValue' in f?new Date(f.timestampValue):f.stringValue;
 const fields=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,enc(v)]));
 const unpack=d=>({id:d.name.split('/').pop(),...Object.fromEntries(Object.entries(d.fields||{}).map(([k,v])=>[k,dec(v)]))});
 let S=null;
+let VER=false,CK='chat_';
 async function login(){
-  const saved=JSON.parse(localStorage.getItem('al_session')||'null'); let r;
+  let r;
+  // Usuário do app AutoLink com cadastro: entra identificado
+  const own=JSON.parse(localStorage.getItem('al_owner')||'null');
+  if(own){ r=await (await fetch('https://securetoken.googleapis.com/v1/token?key='+KEY,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=refresh_token&refresh_token='+own.refresh})).json();
+    if(r.id_token){ S={uid:r.user_id,token:r.id_token,refresh:r.refresh_token,exp:Date.now()+50*60e3,own:1};
+      try{await api('/profiles/'+S.uid);VER=true;CK='chatv_';return;}catch(e){S=null;} } }
+  const saved=JSON.parse(localStorage.getItem('al_session')||'null');
   if(saved){ r=await (await fetch('https://securetoken.googleapis.com/v1/token?key='+KEY,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=refresh_token&refresh_token='+saved.refresh})).json();
     if(r.id_token) S={uid:r.user_id,token:r.id_token,refresh:r.refresh_token}; }
   if(!S){ r=await (await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key='+KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:'{"returnSecureToken":true}'})).json();
@@ -24,7 +31,7 @@ async function login(){
   S.exp=Date.now()+50*60e3; localStorage.setItem('al_session',JSON.stringify(S));
 }
 async function api(path,method='GET',body){
-  if(Date.now()>S.exp){S=null;await login();}
+  if(Date.now()>S.exp){S=null;VER=false;CK='chat_';await login();}
   const r=await fetch(BASE+path,{method,headers:{Authorization:'Bearer '+S.token,'Content-Type':'application/json'},body:body&&JSON.stringify(body)});
   const j=await r.json(); if(!r.ok) throw new Error(j.error?.message||JSON.stringify(j)); return j;
 }
@@ -34,8 +41,8 @@ async function send(text){
   try{
     const now=new Date();
     if(!chatId){
-      const c=unpack(await api('/chats','POST',{fields:fields({carId,ownerId:car.ownerId,visitorId:S.uid,lastMsg:text,updatedAt:now})}));
-      chatId=c.id; localStorage.setItem('chat_'+carId,chatId); showChat();
+      const c=unpack(await api('/chats','POST',{fields:fields(Object.assign({carId,ownerId:car.ownerId,visitorId:S.uid,lastMsg:text,updatedAt:now},VER?{visitorVerified:true}:{}))}));
+      chatId=c.id; localStorage.setItem(CK+carId,chatId); showChat();
     } else await api('/chats/'+chatId+'?updateMask.fieldPaths=lastMsg&updateMask.fieldPaths=updatedAt','PATCH',{fields:fields({lastMsg:text,updatedAt:now})});
     await api('/chats/'+chatId+'/messages','POST',{fields:fields({text,from:'visitor',at:now})});
     try{const h=JSON.parse(localStorage.getItem('al_hist')||'[]').filter(x=>x.carId!==carId);h.push({carId,chatId,carName:car.name,lastMsg:text,at:Date.now()});localStorage.setItem('al_hist',JSON.stringify(h.slice(-100)));}catch(e){}
@@ -46,7 +53,14 @@ async function send(text){
 async function load(){
   const box=document.getElementById('msgs'); if(!box) return;
   const res=await api('/chats/'+chatId+':runQuery','POST',{structuredQuery:{from:[{collectionId:'messages'}],orderBy:[{field:{fieldPath:'at'},direction:'ASCENDING'}]}});
-  const html=res.filter(x=>x.document).map(x=>{const m=unpack(x.document);return `<div class="b ${m.from==='visitor'?'me':'them'}">${esc(m.text)}</div>`}).join('');
+  const ms=res.filter(x=>x.document).map(x=>unpack(x.document));
+  let ch={};try{ch=unpack(await api('/chats/'+chatId));}catch(e){}
+  const lastV=[...ms].reverse().find(m=>m.from==='visitor');
+  let html=ms.map(m=>`<div class="b ${m.from==='visitor'?'me':'them'}">${esc(m.text)}</div>`).join('');
+  if(lastV&&ch.seenAt&&+ch.seenAt>=+lastV.at)html+='<div class="seen">✓✓ Visto pelo dono</div>';
+  else if(lastV)html+='<div class="seen" style="color:#999">✓ Enviado</div>';
+  if(car.awayText&&car.awayUntil&&+car.awayUntil>Date.now()&&!ms.some(m=>m.from==='owner'&&+m.at>+lastV?.at))
+    html+=`<div class="b them" style="background:#333">🤖 <b>Resposta automática</b><br>${esc(car.awayText)}<br><small style="opacity:.7">até ${car.awayUntil.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</small></div>`;
   if(box.innerHTML!==html){box.innerHTML=html;scrollTo(0,document.body.scrollHeight);}
 }
 function form(){ document.getElementById('f').onsubmit=e=>{e.preventDefault();const t=document.getElementById('t');const v=t.value.trim();if(v){send(v);t.value='';}}; }
@@ -67,10 +81,19 @@ function showChat(){
     car=carId&&unpack(await api('/cars/'+carId));
   }catch(e){ car=null; }
   if(!car||!car.active){app.innerHTML='<p>Este QR code não está ativo.</p>';return;}
-  chatId=localStorage.getItem('chat_'+carId);
+  chatId=localStorage.getItem(CK+carId);
   if(chatId){showChat();load().catch(()=>{});return;}
-  app.innerHTML=`<p>Avise o dono do <b>${esc(car.name)}</b>. Ele recebe na hora e você não precisa se identificar.</p>`+
+  if(car.fleet)rateBox();
+  app.innerHTML=(car.fleet?'<div id="rate"></div>':'')+`<p>Avise o dono do <b>${esc(car.name)}</b>. Ele recebe na hora e você não precisa se identificar.</p>`+
     quick.map(q=>`<button class="q">${q}</button>`).join('')+`<p class="muted">Ou escreva:</p><form id="f"><input id="t" maxlength="500"><button class="s">Enviar</button></form>`;
-  app.querySelectorAll('.q').forEach(b=>b.onclick=()=>send(b.textContent)); form();
+  app.querySelectorAll('.q').forEach(b=>b.onclick=()=>send(b.textContent)); form(); if(car.fleet)rateBox();
 })();
+function rateBox(){const r=document.getElementById('rate');if(!r)return;let st=0;
+  r.innerHTML=`<div style="background:#fff;border:2px solid #FF6B00;border-radius:14px;padding:14px;margin-bottom:14px;text-align:center"><b style="font-size:18px">🏢 Como estou dirigindo?</b><div class="muted">Avalie o motorista deste veículo da empresa</div>
+   <div id="stars" style="font-size:36px;margin:8px 0;cursor:pointer">${[1,2,3,4,5].map(i=>`<span data-s="${i}">☆</span>`).join('')}</div>
+   <input id="rc" maxlength="200" placeholder="Comentário (opcional)" style="width:100%;margin-bottom:8px"><button class="s" id="rs" style="width:100%;padding:12px">Enviar avaliação</button></div>`;
+  r.querySelectorAll('[data-s]').forEach(x=>x.onclick=()=>{st=+x.dataset.s;r.querySelectorAll('[data-s]').forEach(y=>y.textContent=+y.dataset.s<=st?'⭐':'☆');});
+  document.getElementById('rs').onclick=async()=>{if(!st)return alert('Escolha de 1 a 5 estrelas');
+    try{await api('/ratings','POST',{fields:{carId:{stringValue:carId},ownerId:{stringValue:car.ownerId},stars:{integerValue:String(st)},comment:{stringValue:document.getElementById('rc').value.trim()},at:{timestampValue:new Date().toISOString()},by:{stringValue:S.uid}}});
+      r.innerHTML='<div style="background:#fff;border-radius:14px;padding:14px;margin-bottom:14px;text-align:center">✅ Obrigado pela avaliação!</div>';}catch(e){alert('Não foi possível enviar: '+e.message);}};}
 </script></body></html>
