@@ -7,7 +7,7 @@ header{background:#111;color:#fff;padding:14px 16px;font-size:22px;font-weight:9
 main{padding:16px;max-width:900px;margin:auto}.box{background:#fff;border-radius:14px;padding:16px;margin-bottom:14px}
 input{padding:12px;border:1px solid #ccc;border-radius:8px;font-size:16px;width:100%;box-sizing:border-box;margin:6px 0}
 button{background:#FF6B00;color:#111;border:0;border-radius:10px;padding:12px 18px;font-size:16px;font-weight:800;margin:6px 6px 0 0}
-.muted{color:#666;font-size:14px}table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0;color:#111}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid #eee}th{color:#666;font-weight:600}button.gray{background:#ddd}button.red{background:#d32f2f;color:#fff}button.sm{padding:6px 10px;font-size:13px;margin:0}code{background:#eee;padding:2px 6px;border-radius:4px}
+.muted{color:#666;font-size:14px}table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0;color:#111}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid #eee}th{color:#666;font-weight:600}button.x{position:absolute;top:10px;right:10px;width:36px;height:36px;padding:0;margin:0;border-radius:50%;background:#eee;font-size:18px;line-height:36px}button.x:hover{background:#ddd}button.gray{background:#ddd}button.red{background:#d32f2f;color:#fff}button.sm{padding:6px 10px;font-size:13px;margin:0}code{background:#eee;padding:2px 6px;border-radius:4px}
 .sheet{display:flex;flex-wrap:wrap;gap:4mm;justify-content:center}
 .st{width:60mm;background:#111;border-radius:5mm;padding:4mm;color:#fff;text-align:center;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid}
 .st .b{font-size:7mm;font-weight:900;letter-spacing:-.3mm}.st .b span{color:#FF6B00}
@@ -38,7 +38,7 @@ async function main(){
   <button id="gen">Gerar adesivos</button><button onclick="print()">Imprimir / PDF</button>
   <p id="info" class="muted"></p></div>
   <div class="box"><h3>Histórico de lotes</h3><div id="hist" class="muted">Carregando...</div></div>
-  <div class="box" id="detBox" style="display:none"><h3 id="detT"></h3><div id="det"></div></div><div class="sheet" id="sheet"></div>`;
+  <div class="box" id="detBox" style="display:none;position:relative"><button class="x" onclick="closeBatch()" title="Fechar" aria-label="Fechar">✕</button><h3 id="detT" style="padding-right:40px"></h3><div id="det"></div></div><div class="sheet" id="sheet"></div>`;
   gen.onclick=generate;history();}
 let ALL=[];
 async function history(){
@@ -52,7 +52,7 @@ async function history(){
   hist.querySelectorAll('button[data-i]').forEach(bt=>bt.onclick=()=>showBatch(rows[+bt.dataset.i]));}
 async function showBatch(b){
   detBox.style.display='';detT.textContent='Lote: '+b.name;
-  det.innerHTML=`<table><tr><th>Código</th><th>Situação</th><th>Ativado em</th></tr>${b.list.sort((x,y)=>x.code.localeCompare(y.code)).map(x=>`<tr><td><b>${x.code}</b></td><td>${x.active?'<span style="color:#1a7f37">● Ativado</span>':'<span style="color:#999">○ Disponível</span>'}</td><td>${x.activated?x.activated.toLocaleString('pt-BR'):''}</td></tr>`).join('')}</table><button onclick="print()">Imprimir este lote</button><button class="gray" onclick="closeBatch()">Fechar</button><button class="gray" id="renB">Renomear</button><button class="red" id="delB">Apagar lote</button>`;
+  det.innerHTML=`<table><tr><th>Código</th><th>Situação</th><th>Ativado em</th></tr>${b.list.sort((x,y)=>x.code.localeCompare(y.code)).map(x=>`<tr><td><b>${x.code}</b></td><td>${x.active?'<span style="color:#1a7f37">● Ativado</span>':'<span style="color:#999">○ Disponível</span>'}</td><td>${x.activated?x.activated.toLocaleString('pt-BR'):''}</td></tr>`).join('')}</table><button onclick="print()">Imprimir este lote</button><button class="gray" id="renB">Renomear</button><button class="red" id="delB">Apagar lote</button>`;
   delB.onclick=()=>deleteBatch(b);renB.onclick=()=>renameBatch(b);
   const pins={};await Promise.all(b.list.map(async x=>{try{pins[x.code]=(await api('/stickerSecrets/'+x.code)).fields.pin.stringValue}catch(e){}}));
   render(b.list.map(x=>x.code),pins);detBox.scrollIntoView({behavior:'smooth'});}
