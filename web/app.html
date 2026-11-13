@@ -111,11 +111,14 @@ input[type=date],input[type=time]{min-height:50px}
 .hero.alertc{border-color:#ef4444!important;animation:hp 1.2s infinite}@keyframes hp{0%,100%{box-shadow:0 0 0 0 #ef444488}50%{box-shadow:0 0 0 8px #ef444400}}
 .hnav{display:flex;align-items:center;justify-content:space-between;margin-top:10px}.hnav button{background:var(--card);border:1px solid var(--line);color:var(--tx);border-radius:12px;padding:10px 14px;font-size:14px;font-weight:700}
 .otherc{display:block;width:100%;text-align:left;margin:0 0 10px;padding:12px 14px;border-radius:14px;border:0;background:#ef4444;color:#fff;font:inherit;font-weight:700;animation:blink 1.1s infinite}
+.uav{display:flex;gap:10px;align-items:center;margin-top:8px}.av{width:52px;height:52px;border-radius:50%;flex:none;border:2px solid var(--or);background:var(--card2) center/cover no-repeat;color:var(--mut);font-size:22px;padding:0;display:flex;align-items:center;justify-content:center}
+.big-text{font-size:118%}.big-text .muted{font-size:15px}.big-text .sc{font-size:13px!important}
+.awt{display:flex;align-items:center;gap:12px;border-color:var(--or)!important}.awt .tm{font-variant-numeric:tabular-nums;font-size:24px;font-weight:900;color:var(--or)}
 </style></head><body>
 <header><button id="menu" aria-label="Menu" style="padding:4px 6px 4px 0"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button id="back" hidden aria-label="Voltar" style="font-size:34px;line-height:1;padding:0 8px 4px 2px;font-weight:400">‹</button><div class="brand"><div class="t">Auto<span>Link</span></div><img class="lc lcw" src="logo-car-white.png" alt=""><img class="lc lcb" src="logo-car.png" alt=""></div><span style="flex:1"></span><button id="bell" hidden aria-label="Notificações" style="position:relative;color:var(--tx);padding:4px"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4zM10 21h4"/></svg><span class="nb" id="bellN"></span></button><button id="out" hidden>Sair</button></header>
 <main id="m"></main>
 <nav id="tabs" hidden></nav>
-<div id="drawer" hidden><div class="dbg"></div><aside><div class="dh" style="flex-direction:column;align-items:flex-start;gap:4px"><b>Auto<span style="color:var(--or)">Link</span></b><img class="lcd lcw" src="logo-car-white.png" alt=""><img class="lcd lcb" src="logo-car.png" alt=""><div class="muted" id="dEmail"></div></div><div id="dItems"></div><div class="muted" style="margin-top:auto;padding:16px">Versão 1.0 · beta</div></aside></div><div id="toast"></div>
+<div id="drawer" hidden><div class="dbg"></div><aside><div class="dh" style="flex-direction:column;align-items:flex-start;gap:4px"><b>Auto<span style="color:var(--or)">Link</span></b><img class="lcd lcw" src="logo-car-white.png" alt=""><img class="lcd lcb" src="logo-car.png" alt=""><div class="uav"><button id="dAv" class="av" aria-label="Foto do perfil"></button><div style="min-width:0"><div class="muted" id="dEmail" style="word-break:break-all"></div><small style="color:var(--or)">Toque na foto para trocar</small></div></div></div><div id="dItems"></div><div class="muted" style="margin-top:auto;padding:16px">Versão 1.0 · beta</div></aside></div><div id="toast"></div>
 <div id="scan"><video playsinline muted></video><div class="frame"></div><div class="tx" id="scanTx">Aponte para o QR code do adesivo AutoLink</div><button class="close" id="scanX" aria-label="Fechar">✕</button></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 <script src="extras.js"></script>
@@ -218,7 +221,7 @@ function installTip(){
 
 function Home(){
   m.innerHTML=`<div id="danger"></div><div id="hero"><div class="hero"><div class="muted">Carregando...</div></div></div>
-  <div id="xtra"></div>
+  <div id="awTimer"></div><div id="xtra"></div>
   <h2>Avisos sobre meu carro</h2><div id="alerts"><div class="card muted">Carregando...</div></div>
   <h2>Alertas na minha região</h2><div id="rmap"></div>
   <h2>Funcionalidades</h2><div class="grid g5">
@@ -388,16 +391,17 @@ function handleQR(text){try{const u=new URL(text);const here=new URL('./',locati
 function theme(t){if(t)try{localStorage.setItem('al_theme',t)}catch(e){};const cur=(()=>{try{return localStorage.getItem('al_theme')}catch(e){}})()||'dark';
   if(cur==='light')document.documentElement.dataset.theme='light';else delete document.documentElement.dataset.theme;
   document.querySelector('meta[name=theme-color]').content=cur==='light'?'#ffffff':'#0b0b0c';return cur;}
-function openMenu(){const d=document.getElementById('drawer');d.hidden=false;document.getElementById('dEmail').textContent=S?.email||'Não conectado';
+function openMenu(){const d=document.getElementById('drawer');d.hidden=false;document.getElementById('dEmail').textContent=S?.email||'Não conectado';drawAvatar();
   const cur=theme();const I=(k,i,l,x='')=>`<button class="di" data-k="${k}">${ic(i)}<span>${l}</span>${x}</button>`;
-  document.getElementById('dItems').innerHTML=I('home','home','Início')+I('profile','users','Meu perfil')+I('theme','doc','Tema',`<span class="tg"><i class="${cur==='light'?'on':''}">☀️</i><i class="${cur==='dark'?'on':''}">🌙</i></span>`)
-   +I('notif','bell','Notificações',`<span class="pill">${'Notification' in window&&Notification.permission==='granted'?'Ativas':'Ativar'}</span>`)+I('config','wrench','Configurações')+I('plan','shield','Meu plano','<span class="pill">Grátis</span>')
+  document.getElementById('dItems').innerHTML=I('home','home','Início')+I('myqr','qr','Meu QR code')
+   +I('config','wrench','Configurações')+I('plan','shield','Meu plano','<span class="pill">Grátis</span>')
    +I('ads','mega','Quero anunciar no AutoLink')+I('sell','store','Quero vender no AutoLink')+I('share','users','Indicar o AutoLink')+I('help','msg','Central de ajuda')+I('terms','doc','Termos e privacidade')
    +`<div class="dacc">${S?`<div class="muted">Conectado como</div><b>${esc(S.email||'')}</b><button class="chip" id="dOut" style="margin-top:10px">Sair da conta</button>`:''}</div>`;
   d.querySelectorAll('.di').forEach(b=>b.onclick=()=>{const k=b.dataset.k;
     if(k==='theme'){theme(cur==='light'?'dark':'light');return openMenu();}
     d.hidden=true;
-    if(k==='config')return toast(SOON);
+    if(k==='config')return go(Settings);
+    if(k==='myqr')return go(MyQR);
     if(k==='terms')return location.href='termos.html';
     if(k==='share'){const u=new URL('app.html',location.href).href,t='Conheça o AutoLink: com um adesivo QR no carro, qualquer pessoa te avisa se seu carro estiver bloqueando uma garagem, com farol aceso e mais. Sem expor seu telefone.';
       if(navigator.share)navigator.share({title:'AutoLink',text:t,url:u}).catch(()=>{});else{navigator.clipboard?.writeText(t+' '+u);toast('Link copiado! Cole e envie para seus amigos.');}return;}
@@ -490,7 +494,7 @@ async function nearAlerts(){
 
 // ---------- Início ----------
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
-theme();
+theme();applyPrefs();
 (async()=>{m.innerHTML='<p class="muted" style="text-align:center;margin-top:40px">Carregando...</p>';
   try{await refresh();}catch(e){}
   S?gateProfile():Auth('signin');})();

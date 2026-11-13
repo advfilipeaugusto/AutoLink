@@ -9,6 +9,7 @@ service cloud.firestore {
       allow list: if isAdmin();
       allow create: if me() == uid && request.resource.data.doc is string
         && (request.resource.data.doc.size() == 11 || request.resource.data.doc.size() == 14);
+      allow delete: if me() == uid;
       allow update: if me() == uid && request.resource.data.doc == resource.data.doc
         && request.resource.data.name == resource.data.name && request.resource.data.docType == resource.data.docType;
     }

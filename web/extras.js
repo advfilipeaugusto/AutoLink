@@ -93,7 +93,7 @@ function startNotifier() {
       const fresh = chats.filter(c => c.updatedAt && +c.updatedAt > since && !String(c.lastMsg || '').startsWith('Você:') && !c.blocked);
       if (fresh.length) {
         since = Date.now(); const t = fresh[0].lastMsg || 'Nova mensagem sobre seu carro';
-        toast('🔔 ' + t); if (navigator.vibrate) navigator.vibrate([250, 120, 250]); beep();
+        toast('🔔 ' + t); if (navigator.vibrate) navigator.vibrate([250, 120, 250]); if (pref('sound') !== 'off') beep();
         if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
           try { (await navigator.serviceWorker?.getRegistration())?.showNotification('AutoLink', { body: t, icon: 'icon3-192.png' }) || new Notification('AutoLink', { body: t }); } catch (e) {}
         }
@@ -149,8 +149,8 @@ async function homeExtras() {
     const cars = await find('cars', [['ownerId', S.uid]]);
     const act = cars.find(c => c.awayUntil && +c.awayUntil > Date.now());
     const exp = cars.find(c => c.awayText && c.awayUntil && +c.awayUntil <= Date.now() && +c.awayUntil > 0);
-    if (act) html += `<div class="card" style="border-color:var(--or)">🟠 <b>Ausência ativa</b> até ${act.awayUntil.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}<div class="muted">"${esc(act.awayText)}"</div></div>`;
-    else if (exp) html += `<div class="card" style="border-color:var(--or)">⏰ <b>Sua mensagem de ausência terminou.</b><div class="muted">"${esc(exp.awayText)}"</div><div style="display:flex;gap:8px;margin-top:8px"><button class="chip" id="awr">Renovar</button><button class="chip" id="awx">Dispensar</button></div></div>`;
+    awayTimer(act);
+    if (!act && exp) html += `<div class="card" style="border-color:var(--or)">⏰ <b>Sua mensagem de ausência terminou.</b><div class="muted">"${esc(exp.awayText)}"</div><div style="display:flex;gap:8px;margin-top:8px"><button class="chip" id="awr">Renovar</button><button class="chip" id="awx">Dispensar</button></div></div>`;
     const rem = (await find('maint', [], null, '/owners/' + S.uid)).filter(x => x.remind && +x.remind - Date.now() < 15 * 864e5).sort((a, b) => a.remind - b.remind);
     if (rem.length) html += `<h2>Lembretes</h2>` + rem.slice(0, 3).map(r => { const late = +r.remind < Date.now(); const car = cars.find(c => c.id === r.carId);
       return `<div class="card alert"><span class="ic ${late ? '' : 'or'}" style="${late ? 'background:#ef44441f' : ''}">${late ? '⚠️' : '🔧'}</span><div><b style="font-size:15px">${esc(r.kind)}${car ? ' · ' + esc(car.name) : ''}</b><div class="muted">${late ? 'Venceu em' : 'Vence em'} ${r.remind.toLocaleDateString('pt-BR')}</div></div></div>`; }).join('');
@@ -353,4 +353,85 @@ async function Notifs() {
   try { const tk = await find('tickets', [['userId', S.uid]]); for (const t of tk.filter(t => t.unreadUser)) items.push({ ic: '🆘', t: 'A equipe respondeu sua dúvida', s: esc(t.lastMsg), go: () => go(Ticket, t) }); } catch (e) {}
   box.innerHTML = items.length ? '' : '<div class="card alert"><span class="ic">✅</span><div>Nenhuma notificação nova.<div class="muted">Tudo certo!</div></div></div>';
   for (const it of items) { const b = document.createElement('button'); b.className = 'card alert'; b.innerHTML = `<span class="ic or" style="font-size:20px">${it.ic}</span><div style="min-width:0"><b style="font-size:15px">${it.t}</b><div class="muted">${it.s}</div></div>`; b.onclick = it.go; box.appendChild(b); }
+}
+
+// ---------- Cronômetro da ausência (tela inicial) ----------
+let awayIv = null;
+function awayTimer(car) {
+  const box = el('awTimer'); clearInterval(awayIv); if (!box) return;
+  if (!car) { box.innerHTML = ''; return; }
+  const tick = () => { const b = el('awTimer'); if (!b) return clearInterval(awayIv);
+    const ms = +car.awayUntil - Date.now(); if (ms <= 0) { clearInterval(awayIv); b.innerHTML = ''; homeExtras(); return; }
+    const h = Math.floor(ms / 3600e3), mi = Math.floor(ms % 3600e3 / 60e3), se = Math.floor(ms % 60e3 / 1e3), z = n => String(n).padStart(2, '0');
+    const tm = b.querySelector('.tm'); if (tm) { tm.textContent = `${z(h)}:${z(mi)}:${z(se)}`; return; }
+    b.innerHTML = `<div class="card awt"><span style="font-size:26px">⏳</span><div style="flex:1;min-width:0"><b>Ausência ativa</b><div class="muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">"${esc(car.awayText)}"</div></div><div style="text-align:right"><div class="tm">${z(h)}:${z(mi)}:${z(se)}</div><button class="chip" id="awEnd" style="margin-top:4px">Encerrar</button></div></div>`;
+    el('awEnd').onclick = async () => { if (!confirm('Encerrar a ausência agora?')) return; const cars = await find('cars', [['ownerId', S.uid]]); await setAway(cars, '', new Date(0)); clearInterval(awayIv); el('awTimer').innerHTML = ''; toast('Ausência encerrada'); }; };
+  tick(); awayIv = setInterval(tick, 1000);
+}
+
+// ---------- Foto do perfil ----------
+async function drawAvatar() {
+  const b = el('dAv'); if (!b) return;
+  if (S && !PROFILE) await loadProfile();
+  const ph = PROFILE && PROFILE.photo;
+  b.style.backgroundImage = ph ? `url(${ph})` : ''; b.textContent = ph ? '' : '📷';
+  b.onclick = () => { if (!S || !PROFILE) return toast('Complete seu cadastro primeiro');
+    const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*';
+    i.onchange = async () => { const f = i.files[0]; if (!f) return; try { const d = await squareImage(f, 240); await update('profiles/' + S.uid, { photo: d }); PROFILE.photo = d; drawAvatar(); toast('Foto atualizada ✅'); } catch (e) { alert('Erro: ' + e.message); } };
+    i.click(); };
+}
+function squareImage(file, size) {
+  return new Promise((ok, no) => { const img = new Image(); img.onload = () => { const c = document.createElement('canvas'); c.width = c.height = size; const k = Math.min(img.width, img.height);
+    c.getContext('2d').drawImage(img, (img.width - k) / 2, (img.height - k) / 2, k, k, 0, 0, size, size); URL.revokeObjectURL(img.src); ok(c.toDataURL('image/jpeg', .75)); };
+    img.onerror = no; img.src = URL.createObjectURL(file); });
+}
+
+// ---------- Configurações ----------
+function pref(k, v) { try { if (v !== undefined) localStorage.setItem('al_' + k, v); return localStorage.getItem('al_' + k); } catch (e) { return null; } }
+function applyPrefs() { document.body.classList.toggle('big-text', pref('font') === 'big'); }
+function Settings() {
+  const cur = theme(), big = pref('font') === 'big', snd = pref('sound') !== 'off';
+  const nOk = 'Notification' in window && Notification.permission === 'granted';
+  const R = (id, icn, t, d, right) => `<div class="card" style="display:flex;gap:12px;align-items:center" id="${id}"><span style="font-size:24px">${icn}</span><div style="flex:1;min-width:0"><b style="font-size:15px">${t}</b>${d ? `<div class="muted">${d}</div>` : ''}</div>${right || ''}</div>`;
+  const SW = (id, on) => `<label class="sw"><input type="checkbox" id="${id}" ${on ? 'checked' : ''}><span></span></label>`;
+  m.innerHTML = `<h2>⚙️ Configurações</h2>
+   <div class="muted" style="margin:6px 0">Conta</div>
+   <button class="card" id="cProf" style="display:flex;gap:12px;align-items:center"><span style="font-size:24px">👤</span><div><b style="font-size:15px">Meu perfil</b><div class="muted">Telefone, endereço e contato de emergência</div></div></button>
+   <div class="muted" style="margin:14px 0 6px">Aparência</div>
+   ${R('cTh', cur === 'light' ? '☀️' : '🌙', 'Tema', cur === 'light' ? 'Claro' : 'Escuro', `<span class="tg" style="display:flex;background:var(--bg);border-radius:10px;padding:3px;gap:2px"><i class="t ${cur === 'light' ? 'on' : ''}" data-t="light" style="font-style:normal;padding:6px 10px;border-radius:8px">☀️</i><i class="t ${cur === 'dark' ? 'on' : ''}" data-t="dark" style="font-style:normal;padding:6px 10px;border-radius:8px">🌙</i></span>`)}
+   ${R('cFt', '🔠', 'Letra maior', 'Facilita a leitura', SW('fBig', big))}
+   <div class="muted" style="margin:14px 0 6px">Avisos</div>
+   ${R('cSn', '🔊', 'Som dos avisos', 'Toca um som quando chega mensagem', SW('fSnd', snd))}
+   ${R('cNt', '🔔', 'Avisos do celular', nOk ? 'Ativados' : 'Permitir que o AutoLink mostre avisos', nOk ? '<span class="pill">Ativos</span>' : '<button class="chip" id="fNt">Ativar</button>')}
+   <div class="muted" style="margin:14px 0 6px">Privacidade</div>
+   <button class="card" id="cTr" style="display:flex;gap:12px;align-items:center"><span style="font-size:24px">📄</span><b style="font-size:15px">Termos e privacidade</b></button>
+   <button class="card" id="cDel" style="display:flex;gap:12px;align-items:center;border-color:#ef444455"><span style="font-size:24px">🗑️</span><div><b style="font-size:15px;color:var(--red)">Apagar minha conta</b><div class="muted">Remove seus dados, carros e documentos</div></div></button>
+   <p class="muted" style="text-align:center;margin-top:20px">AutoLink · versão 1.0 beta</p>`;
+  el('cProf').onclick = () => loadProfile().then(() => go(ProfileForm, {}));
+  m.querySelectorAll('.t').forEach(x => x.onclick = () => { theme(x.dataset.t); go(Settings, null, false); });
+  m.querySelectorAll('.t.on').forEach(x => { x.style.background = 'var(--or)'; x.style.color = '#111'; });
+  el('fBig').onchange = e => { pref('font', e.target.checked ? 'big' : 'normal'); applyPrefs(); };
+  el('fSnd').onchange = e => { pref('sound', e.target.checked ? 'on' : 'off'); if (e.target.checked) beep(); };
+  if (el('fNt')) el('fNt').onclick = () => askNotif().then(() => go(Settings, null, false));
+  el('cTr').onclick = () => location.href = 'termos.html';
+  el('cDel').onclick = deleteAccount;
+}
+async function deleteAccount() {
+  if (!confirm('Apagar sua conta AutoLink?\n\nSeus carros, documentos, registros e perfil serão apagados. Os adesivos ficam livres para serem ativados de novo com o PIN.\n\nNão dá para desfazer.')) return;
+  const pw = prompt('Para confirmar, digite sua senha:'); if (!pw) return;
+  const r = await (await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + KEY, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: S.email, password: pw, returnSecureToken: true }) })).json();
+  if (!r.idToken) return alert('Senha incorreta.');
+  S.token = r.idToken; toast('Apagando...');
+  try {
+    const cars = await find('cars', [['ownerId', S.uid]]);
+    for (const c of cars) { if (c.stickerCode) await api('/stickers/' + c.stickerCode + '?updateMask.fieldPaths=carId&updateMask.fieldPaths=ownerId&updateMask.fieldPaths=activatedAt&updateMask.fieldPaths=activationPin', 'PATCH', { fields: { carId: { nullValue: null }, ownerId: { nullValue: null }, activatedAt: { nullValue: null }, activationPin: { nullValue: null } } }).catch(() => {});
+      await api('/cars/' + c.id, 'DELETE').catch(() => {}); }
+    for (const col of ['maint', 'docs', 'blocked']) { const l = await find(col, [], null, '/owners/' + S.uid).catch(() => []);
+      for (const x of l) { if (col === 'docs') for (let i = 0; i < +x.chunks; i++) await api('/owners/' + S.uid + '/docs/' + x.id + '/chunks/' + i, 'DELETE').catch(() => {});
+        await api('/owners/' + S.uid + '/' + col + '/' + x.id, 'DELETE').catch(() => {}); } }
+    await api('/profiles/' + S.uid, 'DELETE').catch(() => {});
+    await fetch('https://identitytoolkit.googleapis.com/v1/accounts:delete?key=' + KEY, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken: S.token }) });
+    S = null; try { localStorage.removeItem('al_owner'); } catch (e) {}
+    alert('Sua conta foi apagada.'); location.reload();
+  } catch (e) { alert('Erro ao apagar: ' + e.message); }
 }

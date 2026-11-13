@@ -52,6 +52,7 @@ async function send(text){
 }
 async function load(){
   const box=document.getElementById('msgs'); if(!box) return;
+  try{car=unpack(await api('/cars/'+carId));}catch(e){}awayBanner();
   const res=await api('/chats/'+chatId+':runQuery','POST',{structuredQuery:{from:[{collectionId:'messages'}],orderBy:[{field:{fieldPath:'at'},direction:'ASCENDING'}]}});
   const ms=res.filter(x=>x.document).map(x=>unpack(x.document));
   let ch={};try{ch=unpack(await api('/chats/'+chatId));}catch(e){}
@@ -59,10 +60,14 @@ async function load(){
   let html=ms.map(m=>`<div class="b ${m.from==='visitor'?'me':'them'}">${esc(m.text)}</div>`).join('');
   if(lastV&&ch.seenAt&&+ch.seenAt>=+lastV.at)html+='<div class="seen">✓✓ Visto pelo dono</div>';
   else if(lastV)html+='<div class="seen" style="color:#999">✓ Enviado</div>';
-  if(car.awayText&&car.awayUntil&&+car.awayUntil>Date.now()&&!ms.some(m=>m.from==='owner'&&+m.at>+lastV?.at))
+  if(lastV&&car.awayText&&car.awayUntil&&+car.awayUntil>Date.now()&&!ms.some(m=>m.from==='owner'&&+m.at>+lastV.at))
     html+=`<div class="b them" style="background:#333">🤖 <b>Resposta automática</b><br>${esc(car.awayText)}<br><small style="opacity:.7">até ${car.awayUntil.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</small></div>`;
   if(box.innerHTML!==html){box.innerHTML=html;scrollTo(0,document.body.scrollHeight);}
 }
+function awayBanner(){let b=document.getElementById('awb');const on=car&&car.awayText&&car.awayUntil&&+car.awayUntil>Date.now();
+  if(!on){if(b)b.remove();return;}
+  if(!b){b=document.createElement('div');b.id='awb';app.prepend(b);}
+  b.innerHTML=`<div style="background:#111;color:#fff;border-left:5px solid #FF6B00;border-radius:12px;padding:12px 14px;margin-bottom:12px">🤖 <b>O dono está ausente</b><br>${esc(car.awayText)}<br><small style="opacity:.75">Até ${car.awayUntil.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}. Você ainda pode mandar mensagem.</small></div>`;}
 function form(){ document.getElementById('f').onsubmit=e=>{e.preventDefault();const t=document.getElementById('t');const v=t.value.trim();if(v){send(v);t.value='';}}; }
 function showChat(){
   app.innerHTML=`<p class="muted">Conversa anônima com o dono do carro <b>${esc(car.name)}</b>. As respostas aparecem aqui.</p><div id="msgs"></div>
@@ -86,7 +91,7 @@ function showChat(){
   if(car.fleet)rateBox();
   app.innerHTML=(car.fleet?'<div id="rate"></div>':'')+`<p>Avise o dono do <b>${esc(car.name)}</b>. Ele recebe na hora e você não precisa se identificar.</p>`+
     quick.map(q=>`<button class="q">${q}</button>`).join('')+`<p class="muted">Ou escreva:</p><form id="f"><input id="t" maxlength="500"><button class="s">Enviar</button></form>`;
-  app.querySelectorAll('.q').forEach(b=>b.onclick=()=>send(b.textContent)); form(); if(car.fleet)rateBox();
+  app.querySelectorAll('.q').forEach(b=>b.onclick=()=>send(b.textContent)); form(); if(car.fleet)rateBox(); awayBanner();
 })();
 function rateBox(){const r=document.getElementById('rate');if(!r)return;let st=0;
   r.innerHTML=`<div style="background:#fff;border:2px solid #FF6B00;border-radius:14px;padding:14px;margin-bottom:14px;text-align:center"><b style="font-size:18px">🏢 Como estou dirigindo?</b><div class="muted">Avalie o motorista deste veículo da empresa</div>
