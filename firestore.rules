@@ -67,16 +67,27 @@ service cloud.firestore {
           || (get(/databases/$(db)/documents/tickets/$(id)).data.userId == me() && request.resource.data.from == 'user');
       }
     }
+    function isMember(carId) { return me() in get(/databases/$(db)/documents/cars/$(carId)).data.get('members', []); }
+    match /invites/{code} {
+      allow get: if request.auth != null;
+      allow create: if request.auth != null && get(/databases/$(db)/documents/cars/$(request.resource.data.carId)).data.ownerId == me();
+      allow delete: if request.auth != null && resource.data.ownerId == me();
+    }
     match /cars/{carId} {
       allow get: if request.auth != null;
-      allow list: if resource.data.ownerId == me() || isAdmin();
+      allow list: if resource.data.ownerId == me() || isAdmin() || me() in resource.data.get('members', []);
       allow create: if request.resource.data.ownerId == me();
       allow update, delete: if resource.data.ownerId == me() || isAdmin();
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'memberNames', 'joinCode'])
+        && request.resource.data.members == resource.data.get('members', []).concat([me()])
+        && get(/databases/$(db)/documents/invites/$(request.resource.data.joinCode)).data.carId == carId
+        && get(/databases/$(db)/documents/invites/$(request.resource.data.joinCode)).data.expiresAt > request.time;
     }
     match /chats/{chatId} {
       function part() { return me() == resource.data.ownerId || me() == resource.data.visitorId; }
-      allow get, list: if request.auth != null && (part() || isAdmin());
-      allow update: if request.auth != null && (me() == resource.data.ownerId ||
+      allow get, list: if request.auth != null && (part() || isAdmin() || isMember(resource.data.carId));
+      allow update: if request.auth != null && (me() == resource.data.ownerId || isMember(resource.data.carId) ||
         (me() == resource.data.visitorId && resource.data.get('blocked', false) == false &&
          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastMsg', 'updatedAt'])));
       allow create: if request.resource.data.visitorId == me()
@@ -86,9 +97,9 @@ service cloud.firestore {
         && (request.resource.data.get('visitorVerified', false) == false || exists(/databases/$(db)/documents/profiles/$(me())));
       match /messages/{m} {
         function chat() { return get(/databases/$(db)/documents/chats/$(chatId)).data; }
-        allow read: if me() == chat().ownerId || me() == chat().visitorId;
+        allow read: if me() == chat().ownerId || me() == chat().visitorId || isMember(chat().carId);
         allow create: if request.resource.data.text is string && request.resource.data.text.size() <= 500 &&
-          ((me() == chat().ownerId && request.resource.data.from == 'owner') ||
+          ((( me() == chat().ownerId || isMember(chat().carId)) && request.resource.data.from == 'owner') ||
            (me() == chat().visitorId && request.resource.data.from == 'visitor' && chat().get('blocked', false) == false));
       }
     }

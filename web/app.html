@@ -41,7 +41,7 @@ input:focus{border-color:var(--or)}input::placeholder{color:#6b6b73}
 .hero .nm{font-size:26px;font-weight:900;letter-spacing:-.5px;margin:4px 0 2px}.hero .pl{color:var(--mut);font-size:14px;letter-spacing:.5px}
 .hero .st{display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-size:13px;font-weight:700;padding:5px 10px;border-radius:20px}
 .st.on{background:#22c55e1f;color:var(--ok)}.st.off{background:#ef44441f;color:var(--red)}.st i{width:7px;height:7px;border-radius:50%;background:currentColor}
-.hero svg.car,.hero img.car{position:absolute;right:10px;bottom:14px;width:150px;opacity:.95}
+.hero svg.car{position:absolute;right:-6px;bottom:8px;width:120px;opacity:.95}
 .dots{display:flex;gap:6px;justify-content:center;margin-top:10px}.dots i{width:6px;height:6px;border-radius:50%;background:#3a3a40}.dots i.a{background:var(--or);width:18px;border-radius:4px}
 .alert{display:flex;gap:12px;align-items:center}.alert .ic{flex:none;width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#22c55e1f}
 .alert .ic.or{background:#ff6b001f}.alert svg{width:20px;height:20px}
@@ -147,7 +147,7 @@ const msg=r=>{const x=r.error?.message||'erro';return ERR[x.split(' ')[0]]||(x.s
 
 // ---------- Banco de dados ----------
 const enc=v=>typeof v==='boolean'?{booleanValue:v}:v instanceof Date?{timestampValue:v.toISOString()}:{stringValue:String(v)};
-const dec=f=>'integerValue' in f?+f.integerValue:'booleanValue' in f?f.booleanValue:'timestampValue' in f?new Date(f.timestampValue):'nullValue' in f?null:f.stringValue;
+const dec=f=>'arrayValue' in f?(f.arrayValue.values||[]).map(dec):'integerValue' in f?+f.integerValue:'booleanValue' in f?f.booleanValue:'timestampValue' in f?new Date(f.timestampValue):'nullValue' in f?null:f.stringValue;
 const fields=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,enc(v)]));
 const unpack=d=>({id:d.name.split('/').pop(),...Object.fromEntries(Object.entries(d.fields||{}).map(([k,v])=>[k,dec(v)]))});
 async function api(path,method='GET',body){
@@ -172,18 +172,14 @@ function tabs(view,arg){const t=document.getElementById('tabs');if(!S||!TOP().in
   const cur=view===Home?'home':view===Garage?'garage':arg;
   const B=(k,i,l)=>`<button data-t="${k}" class="${cur===k?'on':''}">${ic(i)}${l}</button>`;
   t.innerHTML=`<button class="adbar" id="adb">${ic('mega','#FF6B00')}<div><b>Anuncie aqui</b><div class="muted">Alcance milhares de motoristas</div></div><span class="tag">AD</span></button><div class="trow">`
-   +B('home','home','Início')+`<button data-t="garage" class="${cur==='garage'?'on':''}"><span class="tcar"></span>Garagem</button>`+`<button class="scan" data-t="scan" aria-label="Escanear QR"><span>${ic('scan','#111',2.4)}</span></button>`+B('mercado','store','Mercado')+B('comunidade','users','Comunidade')+'</div>';
+   +B('home','home','Início')+B('garage','car','Garagem')+`<button class="scan" data-t="scan" aria-label="Escanear QR"><span>${ic('scan','#111',2.4)}</span></button>`+B('mercado','store','Mercado')+B('comunidade','users','Comunidade')+'</div>';
   t.querySelector('#adb').onclick=()=>go(Advertise);
   t.querySelector('#adb svg').style.cssText='width:28px;height:28px;flex:none';
   t.querySelectorAll('.trow button').forEach(b=>b.onclick=()=>{const k=b.dataset.t;k==='scan'?startScan():k==='home'?go(Home):k==='garage'?go(Garage):go(Soon,k);});}
 function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),2200);}
 const SOON='🚧 Funcionalidade em construção. Em breve!';
 function Soon(k){
-  if(k==='mercado'){m.innerHTML=`<h2>Mercado</h2><p class="muted">Tudo para o seu carro em um só lugar.</p><div class="grid" style="margin-top:14px">
-   ${[['🔩','Peças'],['🚗','Compra e venda'],['🛡️','Seguros'],['🔑','Aluguel de carros'],['🔧','Oficinas'],['🧽','Lava-jato'],['🚛','Guincho 24h'],['🎧','Acessórios'],['📡','Rastreador GPS'],['⛽','Postos'],['⚡','Postos elétricos'],['🅿️','Estacionamentos'],['🤝','Parceiros'],['📋','Despachante'],['🔍','Perito automotivo'],['🎨','Funilaria e pintura'],['🔊','Som e película'],['✅','Vistoria']]
-    .map(([e,l])=>`<button class="sc"><span class="ic" style="font-size:28px">${e}</span>${l}</button>`).join('')}</div>
-   <div class="warn" style="text-align:center">🚧 O Mercado está em construção. Em breve!</div>`;
-   m.querySelectorAll('.sc').forEach(b=>b.onclick=()=>toast('🚧 '+b.textContent.trim()+': em construção. Em breve!'));return;}
+  if(k==='mercado')return Market();
   if(k==='comunidade'){m.innerHTML=`<h2>Comunidade</h2><p class="muted">Encontre motoristas, participe e tire suas dúvidas.</p>
    ${[['📅','Eventos','Encontros de carros, passeios e eventos automotivos da sua região.'],['❓','Dúvidas','Pergunte e responda dúvidas abertas para toda a comunidade.']]
     .map(([e,l,d])=>`<button class="card cm" style="display:flex;gap:14px;align-items:center;padding:18px"><span style="font-size:34px">${e}</span><div><b style="font-size:17px">${l}</b><div class="muted">${d}</div></div></button>`).join('')}
@@ -238,7 +234,7 @@ function Home(){
     if(k==='emp')return go(Company);
     if(k==='repo')return go(Replace);
     toast(SOON);});
-  const carSvg=`<img class="car lcw" src="logo-car-white.png" alt=""><img class="car lcb" src="logo-car.png" alt="">`;
+  const carSvg=`<svg class="car" viewBox="0 0 120 60" fill="none" stroke="#FF6B00" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 44H8c-2 0-3-1-3-3v-7c0-2 1-3 3-4l14-4 12-9c3-2 7-3 11-3h22c5 0 9 2 12 5l9 8 14 2c4 1 7 4 7 8v4c0 2-1 3-3 3h-6"/><path d="M38 44h40"/><circle cx="26" cy="44" r="8"/><circle cx="90" cy="44" r="8"/><path d="M36 26h50"/></svg>`;
   const drawHero=()=>{const h=document.getElementById('hero');if(!h)return;
     if(!cars.length){h.innerHTML=`<div class="hero"><div class="lbl">Bem-vindo</div><div class="nm">Cadastre seu carro</div><div class="pl">e ative seu adesivo AutoLink</div><button class="btn" style="margin-top:14px;width:auto;padding:12px 18px" id="addc">+ Adicionar carro</button>${carSvg}</div>`;h.querySelector('#addc').onclick=()=>go(Garage);return;}
     const c=cars[idx],on=c.stickerCode&&c.active,un=UNREAD[c.id]||0;
@@ -252,8 +248,8 @@ function Home(){
     if(cars.length>1){h.querySelector('#hp').onclick=()=>{idx=(idx+cars.length-1)%cars.length;drawHero();};h.querySelector('#hn').onclick=()=>{idx=(idx+1)%cars.length;drawHero();};}
     let x0=null;hc.ontouchstart=e=>x0=e.touches[0].clientX;hc.ontouchend=e=>{if(x0===null)return;const dx=e.changedTouches[0].clientX-x0;x0=null;if(Math.abs(dx)>40){e.preventDefault();idx=(idx+(dx<0?1:cars.length-1))%cars.length;drawHero();}};};
   const load=async()=>{
-    cars=await find('cars',[['ownerId',S.uid]]);if(idx>=cars.length)idx=0;
-    const chats=(await find('chats',[['ownerId',S.uid]])).filter(c=>!c.blocked).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+    cars=await allCars();if(idx>=cars.length)idx=0;
+    const chats=(await allChats(cars)).filter(c=>!c.blocked).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
     setUnread(chats);if(!window._autoIdx){window._autoIdx=1;const j=cars.findIndex(x=>UNREAD[x.id]);if(j>=0)idx=j;}drawHero();
     const box=document.getElementById('alerts');if(!box)return;
     const recent=chats.filter(c=>c.updatedAt&&Date.now()-c.updatedAt<48*3600e3&&!String(c.lastMsg||'').startsWith('Você:'));
@@ -270,16 +266,22 @@ function Garage(){
   m.innerHTML=`<h2>Minha garagem</h2><div id="cars"><p class="muted">Carregando...</p></div>
   <h2>Adicionar carro</h2><form id="f"><input id="n" placeholder="Nome (ex: Onix prata)" required maxlength="40">
   <input id="pl" placeholder="Placa (opcional) ex: ABC1D23" maxlength="7" autocapitalize="characters" autocorrect="off" spellcheck="false" autocomplete="off">
-  <button class="btn">Adicionar</button></form>`;
+  <div style="display:flex;gap:8px"><input id="mb" placeholder="Marca (ex: Nissan)" maxlength="30"><input id="mm" placeholder="Modelo (ex: March)" maxlength="40"></div>
+  <input id="my" placeholder="Ano (ex: 2018)" inputmode="numeric" maxlength="4">
+  <p class="muted" style="margin:-4px 0 10px">Marca, modelo e ano ajudam a achar peças compatíveis no Mercado.</p>
+  <button class="btn">Adicionar</button></form>
+  <h2>👨‍👩‍👧 Carro da família</h2><div class="card"><b>Entrar em um carro compartilhado</b><p class="muted">Peça o código de convite para o dono do carro (ele gera em Garagem → carro → Família).</p>
+  <div style="display:flex;gap:8px"><input id="jc" placeholder="Código (ex: F7K2QX)" maxlength="6" autocapitalize="characters" style="margin:0"><button class="chip" id="jb">Entrar</button></div></div>`;
+  $('#jb').onclick=()=>joinFamily($('#jc').value);
   const pl=$('#pl');pl.oninput=()=>pl.value=pl.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
-  const list=async()=>{const cars=await find('cars',[['ownerId',S.uid]]);await refreshUnread();const box=$('#cars');if(!box)return;
+  const list=async()=>{const cars=await allCars();await refreshUnread(cars);const box=$('#cars');if(!box)return;
     box.innerHTML=cars.length?'':'<p class="muted">Nenhum carro ainda. Adicione abaixo.</p>';
     for(const c of cars){const b=document.createElement('button');b.className='card';
-      b.innerHTML=`<b>${esc(c.name)}</b><span class="cb ${UNREAD[c.id]?'on':''}">🔔 ${UNREAD[c.id]||0}</span><div class="muted">${esc(c.plate||'')} ${c.active?'':'· pausado'} ${c.stickerCode?'· adesivo '+esc(c.stickerCode):'· sem adesivo'}</div>`;
+      b.innerHTML=`<b>${esc(c.name)}</b><span class="cb ${UNREAD[c.id]?'on':''}">🔔 ${UNREAD[c.id]||0}</span>${c.shared?'<span class="pill" style="margin-left:6px">👨‍👩‍👧 Família</span>':''}<div class="muted">${esc([c.brand,c.model,c.year].filter(Boolean).join(' '))} ${esc(c.plate||'')} ${c.active?'':'· pausado'} ${c.stickerCode?'· adesivo '+esc(c.stickerCode):'· sem adesivo'}</div>`;
       b.onclick=()=>go(Car,c);box.appendChild(b);}};
   poll(()=>list().catch(()=>{}),10000);
   $('#f').onsubmit=async e=>{e.preventDefault();const bt=$('#f .btn');if(bt.disabled)return;bt.disabled=true;bt.textContent='Adicionando...';
-    try{const c=await add('cars',{ownerId:S.uid,name:$('#n').value.trim(),plate:pl.value,active:true,createdAt:new Date()});go(Car,c);}
+    try{const c=await add('cars',{ownerId:S.uid,name:$('#n').value.trim(),plate:pl.value,brand:$('#mb').value.trim(),model:$('#mm').value.trim(),year:$('#my').value.replace(/\D/g,''),active:true,createdAt:new Date()});go(Car,c);}
     catch(err){alert('Erro: '+err.message);bt.disabled=false;bt.textContent='Adicionar';}};
 }
 
@@ -300,7 +302,7 @@ function History(){
 function Car(car){
   m.innerHTML=`<h2>${esc(car.name)}</h2><div id="st"></div>
   <div class="row"><span>QR ativo (recebendo mensagens)</span><label class="sw"><input type="checkbox" id="act" ${car.active?'checked':''}><span></span></label></div>
-  <div id="fleet"></div>
+  <div id="fam"></div><div id="fleet"></div>
   <h2>Conversas</h2><div id="chats"><p class="muted">Carregando...</p></div>
   <button class="link" id="del" style="color:#d32f2f;margin-top:30px">Apagar este carro</button>`;
   $('#del').onclick=async()=>{
@@ -310,7 +312,9 @@ function Car(car){
       await api('/cars/'+car.id,'DELETE');
       stack.length=0;go(Home);
     }catch(err){alert('Erro ao apagar: '+err.message);}};
-  carExtras(car);
+  carExtras(car);familyBox(car);
+  if(car.ownerId!==S.uid){['#st','#fleet','#del'].forEach(q=>{const e=$(q);if(e)e.style.display='none';});const r=$('#act')?.closest('.row');if(r)r.style.display='none';
+    $('#st').insertAdjacentHTML('afterend','<div class="card">👨‍👩‍👧 <b>Carro compartilhado</b><div class="muted">Você recebe e responde as mensagens deste carro junto com o dono.</div></div>');}
   $('#act').onchange=async e=>{car.active=e.target.checked;try{await update('cars/'+car.id,{active:car.active});}catch(err){alert(err.message);}};
   const st=$('#st');
   if(car.stickerCode){st.innerHTML=`<div class="card" style="text-align:center"><div class="muted">Adesivo ativo</div><div class="code">${esc(car.stickerCode)}</div></div>`;}
@@ -326,7 +330,7 @@ function Car(car){
       if(s.carId)return alert('Este adesivo já está vinculado a um carro.');
       try{await update('stickers/'+c,{carId:car.id,ownerId:S.uid,activatedAt:new Date(),activationPin:p});}catch(err){return alert('PIN incorreto. Confira o PIN no cartão de ativação.');}
       await update('cars/'+car.id,{stickerCode:c,active:true});car.stickerCode=c;car.active=true;alert('Adesivo ativado! ✅ Quem escanear o adesivo agora fala com você.');go(Car,car,false);};}
-  const list=async()=>{const chats=(await find('chats',[['carId',car.id],['ownerId',S.uid]])).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  const list=async()=>{const chats=(await find('chats',[['carId',car.id],['ownerId',car.ownerId]])).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
     const box=$('#chats');if(!box)return;box.innerHTML=chats.length?'':'<p class="muted">Nenhuma mensagem ainda.</p>';
     for(const c of chats){const b=document.createElement('button');b.className='card';
       b.innerHTML=`<div>${c.blocked?'🚫 ':''}${esc(c.lastMsg)}</div><div class="muted">${c.updatedAt?c.updatedAt.toLocaleString('pt-BR'):''}</div>`;
@@ -343,13 +347,13 @@ function Chat({car,chatId}){
   const load=async()=>{
     chat=unpack(await api('/chats/'+chatId));
     if(!chat.seenAt||(chat.updatedAt&&+chat.updatedAt>+chat.seenAt))update('chats/'+chatId,{seenAt:new Date()}).catch(()=>{});
-    $('#acts').innerHTML=chat.blocked?'<button class="chip" id="ub">🔓 Desbloquear</button>':'<button class="chip" id="bk">🚫 Bloquear</button> <button class="chip" id="rp">⚠️ Denunciar</button>';
-    if(chat.blocked)$('#ub').onclick=async()=>{if(!confirm('Desbloquear? Essa pessoa poderá te mandar mensagens de novo.'))return;
+    if(car.ownerId!==S.uid){$('#acts').innerHTML='';}else $('#acts').innerHTML=chat.blocked?'<button class="chip" id="ub">🔓 Desbloquear</button>':'<button class="chip" id="bk">🚫 Bloquear</button> <button class="chip" id="rp">⚠️ Denunciar</button>';
+    if(chat.blocked&&$('#ub'))$('#ub').onclick=async()=>{if(!confirm('Desbloquear? Essa pessoa poderá te mandar mensagens de novo.'))return;
       try{await update('chats/'+chatId,{blocked:false});await api('/owners/'+S.uid+'/blocked/'+chat.visitorId,'DELETE').catch(()=>{});toast('Pessoa desbloqueada');load();}catch(e){alert('Erro: '+e.message);}};
     $('#bl').innerHTML=(chat.blocked?'<p class="muted err">Pessoa bloqueada. Ela não consegue mais te mandar mensagens.</p>':'')
       +(chat.visitorVerified?'<div class="card" style="border-color:#22c55e55">✅ <b>Pessoa identificada</b><div class="muted">Usuário AutoLink com cadastro completo.</div></div>'
       :'<div class="warn" style="margin:0 0 10px">🛡️ <b>Pessoa não identificada.</b> Por segurança, responda pelo chat. Evite ir ao carro sozinho, à noite ou em local isolado. Desconfie de pedidos para você descer com pressa.</div>');
-    if(!chat.blocked){$('#bk').onclick=()=>confirm('Bloquear? Essa pessoa não vai mais conseguir te mandar mensagens.')&&block();$('#rp').onclick=report;}
+    if(!chat.blocked&&$('#bk')){$('#bk').onclick=()=>confirm('Bloquear? Essa pessoa não vai mais conseguir te mandar mensagens.')&&block();$('#rp').onclick=report;}
     const ms=await find('messages',[],'at','/chats/'+chatId);
     const html=ms.map(x=>`<div class="b ${x.from==='owner'?'me':'them'}">${esc(x.text)}</div>`).join('');
     if(html!==last){last=html;box.innerHTML=html;scrollTo(0,document.body.scrollHeight);}};
