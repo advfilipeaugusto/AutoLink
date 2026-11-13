@@ -114,7 +114,7 @@ input[type=date],input[type=time]{min-height:50px}
 .uav{display:flex;gap:10px;align-items:center;margin-top:8px}.av{position:relative;width:60px;height:60px;border-radius:50%;flex:none;border:2px solid var(--or);background:var(--card2) center/cover no-repeat;cursor:pointer;overflow:hidden}.av[data-empty='1']:after{content:'📷';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:24px}.av:before{content:'✎';position:absolute;right:0;bottom:0;width:20px;height:20px;border-radius:50%;background:var(--or);color:#111;font-size:12px;display:flex;align-items:center;justify-content:center;z-index:1}
 .big-text{font-size:118%}.big-text .muted{font-size:15px}.big-text .sc{font-size:13px!important}
 .awt{display:flex;align-items:center;gap:12px;border-color:var(--or)!important}.awt .tm{font-variant-numeric:tabular-nums;font-size:24px;font-weight:900;color:var(--or)}
-#tabs .tcar{width:40px;height:24px;background:url(logo-car-white.png) center/contain no-repeat;opacity:.6}#tabs .on .tcar{opacity:1}:root[data-theme=light] #tabs .tcar{background-image:url(logo-car.png)}
+#tabs .tcar{width:40px;height:24px;background:url(car-white.png) center/contain no-repeat;opacity:.6}#tabs .on .tcar{opacity:1}:root[data-theme=light] #tabs .tcar{background-image:url(car-black.png)}
 </style></head><body>
 <header><button id="menu" aria-label="Menu" style="padding:4px 6px 4px 0"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button id="back" hidden aria-label="Voltar" style="font-size:34px;line-height:1;padding:0 8px 4px 2px;font-weight:400">‹</button><div class="brand"><div class="t">Auto<span>Link</span></div><img class="lc lcw" src="logo-car-white.png" alt=""><img class="lc lcb" src="logo-car.png" alt=""></div><span style="flex:1"></span><button id="bell" hidden aria-label="Notificações" style="position:relative;color:var(--tx);padding:4px"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4zM10 21h4"/></svg><span class="nb" id="bellN"></span></button><button id="out" hidden>Sair</button></header>
 <main id="m"></main>
@@ -238,7 +238,7 @@ function Home(){
     if(k==='emp')return go(Company);
     if(k==='repo')return go(Replace);
     toast(SOON);});
-  const carSvg=`<img class="car lcw" src="logo-car-white.png" alt=""><img class="car lcb" src="logo-car.png" alt="">`;
+  const carSvg=`<img class="car lcw" src="car-white.png" alt=""><img class="car lcb" src="car-black.png" alt="">`;
   const drawHero=()=>{const h=document.getElementById('hero');if(!h)return;
     if(!cars.length){h.innerHTML=`<div class="hero"><div class="lbl">Bem-vindo</div><div class="nm">Cadastre seu carro</div><div class="pl">e ative seu adesivo AutoLink</div><button class="btn" style="margin-top:14px;width:auto;padding:12px 18px" id="addc">+ Adicionar carro</button>${carSvg}</div>`;h.querySelector('#addc').onclick=()=>go(Garage);return;}
     const c=cars[idx],on=c.stickerCode&&c.active,un=UNREAD[c.id]||0;
