@@ -54,7 +54,7 @@ async function send(text){
     try{const h=JSON.parse(localStorage.getItem('al_hist')||'[]').filter(x=>x.carId!==carId);h.push({carId,chatId,carName:car.name,lastMsg:text,at:Date.now()});localStorage.setItem('al_hist',JSON.stringify(h.slice(-100)));}catch(e){}
     if(car.notifyTopic) fetch('https://ntfy.sh/'+car.notifyTopic,{method:'POST',headers:{Title:'AutoLink',Tags:'car',Priority:'high'},body:'Nova mensagem sobre o '+car.name}).catch(()=>{});
     load();
-  }catch(e){ if(/permission|PERMISSION/.test(e.message)){let ch={};try{ch=unpack(await api('/chats/'+chatId));}catch(x){} alert(ch.blocked?'O dono deste carro não está recebendo mensagens suas.':!alChatOpen(ch)&&ch.updatedAt?'Seu tempo para escrever nesta conversa acabou.':alBlockedMsg('palavra'));} else alert('Não foi possível enviar: '+e.message); }
+  }catch(e){ if(/permission|PERMISSION/.test(e.message)){let ch={};try{ch=unpack(await api('/chats/'+chatId));}catch(x){} alert(ch.blocked?'O dono deste carro não está recebendo mensagens suas.':!alChatOpen(ch)&&ch.updatedAt?'Seu tempo para escrever nesta conversa acabou.':'Não foi possível enviar agora. Feche e abra a página e tente de novo.\n\n(código: permissão)');} else alert('Não foi possível enviar: '+e.message); }
 }
 async function load(){
   const box=document.getElementById('msgs'); if(!box) return;
