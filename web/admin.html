@@ -14,6 +14,9 @@ button{background:#FF6B00;color:#111;border:0;border-radius:10px;padding:12px 18
 .st .t{font-size:3.2mm;font-weight:800;margin:1.5mm 0}.st .t b{color:#FF6B00}
 .st .q{background:#fff;border:1.2mm solid #FF6B00;border-radius:3mm;padding:2mm;display:inline-block}.st .q img,.st .q canvas{width:36mm!important;height:36mm!important;display:block}
 .st .c{font-size:3mm;color:#bbb;margin-top:1.5mm;letter-spacing:.3mm}.st .c b{color:#FF6B00}
+
+.pb{width:100%;break-before:page;text-align:center}.card{width:60mm;border:.4mm dashed #999;border-radius:3mm;padding:3mm;box-sizing:border-box;font-size:3.4mm;break-inside:avoid;background:#fff}
+.card .b{font-weight:900;margin-bottom:1mm}.card .b span{color:#FF6B00}.card .pin{font-size:5mm;letter-spacing:1mm}.card .mut{color:#666;font-size:2.6mm;margin-top:1mm}
 @media print{header,.box{display:none}main{padding:0;max-width:none}body{background:#fff}@page{size:A4;margin:8mm}}
 </style></head><body>
 <header>Auto<span>Link</span> · Painel da empresa</header><main id="m">Carregando...</main>
@@ -37,15 +40,18 @@ async function main(){
   gen.onclick=generate;re.onclick=reload;}
 const ALPHA='ABCDEFGHJKMNPQRSTUVWXYZ23456789';const code=()=>'AL-'+Array.from(crypto.getRandomValues(new Uint8Array(6)),b=>ALPHA[b%ALPHA.length]).join('');
 async function generate(){const n=Math.min(200,Math.max(1,+document.getElementById('n').value||0)),b=lote.value.trim()||('Lote '+new Date().toLocaleDateString('pt-BR'));
-  const codes=Array.from({length:n},code),now=new Date();
-  try{await api(':commit','POST',{writes:codes.map(c=>({update:{name:DOC+'/stickers/'+c,fields:{batch:enc(b),createdAt:enc(now)}},currentDocument:{exists:false}}))});}
+  const codes=Array.from({length:n},code),now=new Date(),pins={};codes.forEach(c=>pins[c]=String(100000+crypto.getRandomValues(new Uint32Array(1))[0]%900000));
+  try{await api(':commit','POST',{writes:codes.map(c=>({update:{name:DOC+'/stickers/'+c,fields:{batch:enc(b),createdAt:enc(now)}},currentDocument:{exists:false}})).concat(codes.map(c=>({update:{name:DOC+'/stickerSecrets/'+c,fields:{pin:enc(pins[c])}}})))});}
   catch(e){return alert('Erro ao gerar: '+e.message+'\nTente de novo.');}
-  info.textContent=`${n} adesivos gerados no lote "${b}". Clique em Imprimir.`;render(codes);}
+  info.textContent=`${n} adesivos gerados no lote "${b}". Clique em Imprimir.`;render(codes,pins);}
 async function reload(){const r=await api(':runQuery','POST',{structuredQuery:{from:[{collectionId:'stickers'}],where:{fieldFilter:{field:{fieldPath:'batch'},op:'EQUAL',value:{stringValue:rl.value.trim()}}}}});
   const docs=r.filter(x=>x.document);const codes=docs.map(x=>x.document.name.split('/').pop());const act=docs.filter(x=>x.document.fields.carId).length;
-  info.textContent=`${codes.length} adesivos no lote (${act} já ativados).`;render(codes);}
-function render(codes){sheet.innerHTML='';for(const c of codes){const d=document.createElement('div');d.className='st';
+  const pins={};await Promise.all(codes.map(async c=>{try{pins[c]=(await api('/stickerSecrets/'+c)).fields.pin.stringValue}catch(e){}}));
+  info.textContent=`${codes.length} adesivos no lote (${act} já ativados).`;render(codes,pins);}
+function render(codes,pins={}){sheet.innerHTML='';for(const c of codes){const d=document.createElement('div');d.className='st';
   d.innerHTML=`<div class="b">Auto<span>Link</span></div><div class="t">Precisa falar com o<br><b>dono deste carro?</b></div><div class="q"></div><div class="c">Aponte a câmera do celular<br><b style="font-size:3.6mm;letter-spacing:.5mm">${c}</b></div>`;
-  sheet.appendChild(d);new QRCode(d.querySelector('.q'),{text:SITE+'?s='+c,width:300,height:300,colorDark:'#111',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});}}
+  sheet.appendChild(d);new QRCode(d.querySelector('.q'),{text:SITE+'?s='+c,width:300,height:300,colorDark:'#111',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});}
+  const br=document.createElement('div');br.className='pb';br.innerHTML='<h3>Cartões de ativação (vão DENTRO da embalagem, nunca no carro)</h3>';sheet.appendChild(br);
+  for(const c of codes){const d=document.createElement('div');d.className='card';d.innerHTML=`<div class="b">Auto<span>Link</span> · Ativação</div><div>Código: <b>${c}</b></div><div>PIN: <b class="pin">${pins[c]||'—'}</b></div><div class="mut">App AutoLink → seu carro → Ativar adesivo.<br>Guarde em segredo.</div>`;sheet.appendChild(d);}}
 main();
 </script></body></html>

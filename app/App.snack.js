@@ -101,13 +101,13 @@ function Home({ uid, go }) {
 }
 
 function Sticker({ car }) {
-  const [code, setCode] = useState(''); const [linked, setLinked] = useState(car.stickerCode);
+  const [code, setCode] = useState(''); const [pin, setPin] = useState(''); const [linked, setLinked] = useState(car.stickerCode);
   const activate = async () => {
-    const c = code.trim().toUpperCase(); if (!c) return;
+    const c = code.trim().toUpperCase(); if (!c || pin.length !== 6) return Alert.alert('Preencha o código e o PIN de 6 números');
     try {
       let st; try { st = unpack(await api('/stickers/' + c)); } catch (e) { return Alert.alert('Código não encontrado', 'Confira o código impresso no adesivo.'); }
       if (st.carId) return Alert.alert('Adesivo já ativado', 'Este adesivo já está vinculado a um carro.');
-      await update('stickers/' + c, { carId: car.id, ownerId: car.ownerId, activatedAt: new Date() });
+      try { await update('stickers/' + c, { carId: car.id, ownerId: car.ownerId, activatedAt: new Date(), activationPin: pin }); } catch (e) { return Alert.alert('PIN incorreto', 'Confira o PIN no cartão de ativação que veio com o adesivo.'); }
       await update('cars/' + car.id, { stickerCode: c });
       car.stickerCode = c; setLinked(c); Alert.alert('Adesivo ativado! ✅', 'Quem escanear o adesivo agora fala com você.');
     } catch (e) { Alert.alert('Erro', e.message); }
@@ -116,8 +116,9 @@ function Sticker({ car }) {
   return (
     <View style={s.card}>
       <Text style={{ fontWeight: '700', marginBottom: 6 }}>Ativar adesivo AutoLink</Text>
-      <Text style={[s.muted, { marginBottom: 8 }]}>Digite o código impresso no seu adesivo (ex: AL-7K3P9X).</Text>
+      <Text style={[s.muted, { marginBottom: 8 }]}>Use o cartão de ativação que veio com o adesivo: código (ex: AL-7K3P9X) e PIN de 6 números.</Text>
       <TextInput style={s.input} placeholder="AL-XXXXXX" value={code} onChangeText={t => setCode(t.toUpperCase())} autoCapitalize="characters" autoCorrect={false} spellCheck={false} maxLength={9} />
+      <TextInput style={s.input} placeholder="PIN (6 números)" value={pin} onChangeText={t => setPin(t.replace(/\D/g, ''))} keyboardType="number-pad" maxLength={6} secureTextEntry />
       <Btn label="Ativar adesivo" onPress={activate} />
     </View>
   );

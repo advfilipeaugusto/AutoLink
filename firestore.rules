@@ -7,13 +7,15 @@ service cloud.firestore {
     match /reports/{r} { allow create: if request.resource.data.ownerId == me(); }
     function isAdmin() { return request.auth != null && exists(/databases/$(db)/documents/admins/$(me())); }
     match /admins/{uid} { allow get: if me() == uid; }
+    match /stickerSecrets/{code} { allow read, write: if isAdmin(); }
     match /stickers/{code} {
       allow get: if request.auth != null;
       allow list, create, delete: if isAdmin();
       allow update: if isAdmin() || (resource.data.get('carId', null) == null
         && request.resource.data.ownerId == me()
         && get(/databases/$(db)/documents/cars/$(request.resource.data.carId)).data.ownerId == me()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['carId', 'ownerId', 'activatedAt']));
+        && request.resource.data.activationPin == get(/databases/$(db)/documents/stickerSecrets/$(code)).data.pin
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['carId', 'ownerId', 'activatedAt', 'activationPin']));
     }
     match /cars/{carId} {
       allow get: if request.auth != null;
