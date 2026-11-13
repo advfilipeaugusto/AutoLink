@@ -270,7 +270,7 @@ function Garage(){
   <input id="my" placeholder="Ano (ex: 2018)" inputmode="numeric" maxlength="4">
   <p class="muted" style="margin:-4px 0 10px">Marca, modelo e ano ajudam a achar peças compatíveis no Mercado.</p>
   <button class="btn">Adicionar</button></form>
-  <h2>👨‍👩‍👧 Carro da família</h2><div class="card"><b>Entrar em um carro compartilhado</b><p class="muted">Peça o código de convite para o dono do carro (ele gera em Garagem → carro → Família).</p>
+  <h2>👨‍👩‍👧 Carro da família</h2><div class="card"><b>Entrar em um carro compartilhado</b><p class="muted">Peça o código de convite para o dono do carro. Ele gera em Garagem → carro → Família. O código vale por 2 dias.</p>
   <div style="display:flex;gap:8px"><input id="jc" placeholder="Código (ex: F7K2QX)" maxlength="6" autocapitalize="characters" style="margin:0"><button class="chip" id="jb">Entrar</button></div></div>`;
   $('#jb').onclick=()=>joinFamily($('#jc').value);
   const pl=$('#pl');pl.oninput=()=>pl.value=pl.value.toUpperCase().replace(/[^A-Z0-9]/g,'');

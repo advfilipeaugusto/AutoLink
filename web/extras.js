@@ -501,8 +501,19 @@ function familyBox(car) {
   el('fInv').onclick = async () => {
     const code = famCode(), exp = new Date(Date.now() + 48 * 3600e3);
     try { await api('/invites/' + code, 'PATCH', { fields: fields({ carId: car.id, ownerId: S.uid, carName: car.name, expiresAt: exp }) });
-      const txt = `Te convidei para o carro "${car.name}" no AutoLink. Abra o app → Garagem → Carro da família e digite o código: ${code} (vale 48 horas). ${new URL('app.html', location.href).href}`;
-      el('fCode').innerHTML = `<div style="margin-top:10px;text-align:center"><div class="muted">Código de convite (vale 48 h)</div><div class="code">${code}</div>
+      const link = new URL('app.html', location.href).href;
+      const txt = `Oi! Te convidei para receber os avisos do meu carro "${car.name}" no AutoLink 🚗
+
+Com isso, se alguém escanear o adesivo do carro (ex: carro bloqueando garagem, farol aceso), você também recebe a mensagem e pode responder.
+
+Como entrar (é grátis):
+1. Abra o app AutoLink: ${link}
+2. Crie sua conta e complete o cadastro (se ainda não tiver)
+3. Vá em Garagem → "Carro da família"
+4. Digite o código: ${code}
+
+⏰ O código vale por 2 dias. Depois disso, me peça um novo.`;
+      el('fCode').innerHTML = `<div style="margin-top:10px;text-align:center"><div class="muted">Código de convite</div><div class="code">${code}</div><div class="muted" style="margin-bottom:6px">⏰ Vale por 2 dias. Depois disso, gere um novo.<br>O familiar precisa ter o app AutoLink (é grátis): a mensagem explica como entrar.</div>
         <a class="btn" style="display:block;text-decoration:none;margin-top:8px;background:#25d366;color:#fff" target="_blank" href="https://wa.me/?text=${encodeURIComponent(txt)}">Enviar pelo WhatsApp</a></div>`;
     } catch (e) { alert('Erro: ' + e.message); }
   };
@@ -517,7 +528,7 @@ async function joinFamily(code) {
   code = String(code || '').trim().toUpperCase(); if (code.length !== 6) return toast('Digite o código de 6 letras');
   try {
     let inv; try { inv = unpack(await api('/invites/' + code)); } catch (e) { return alert('Código não encontrado.'); }
-    if (+inv.expiresAt < Date.now()) return alert('Este código expirou. Peça um novo ao dono do carro.');
+    if (+inv.expiresAt < Date.now()) return alert('Este código venceu (ele vale 2 dias). Peça um novo ao dono do carro.');
     if (inv.ownerId === S.uid) return alert('Este carro já é seu.');
     const car = unpack(await api('/cars/' + inv.carId)); const mem = Array.isArray(car.members) ? car.members : [];
     if (mem.includes(S.uid)) return alert('Você já faz parte deste carro.');
@@ -560,28 +571,31 @@ async function Calendar() {
 
 // ---------- Mercado (busca, filtros e compatibilidade) ----------
 const MCATS = [['🔩', 'Peças'], ['🚗', 'Compra e venda'], ['🛡️', 'Seguros'], ['🔑', 'Aluguel de carros'], ['🔧', 'Oficinas'], ['🧽', 'Lava-jatos'], ['🚛', 'Guincho 24h'], ['🎧', 'Acessórios'], ['📡', 'Rastreador GPS'], ['⛽', 'Postos'], ['⚡', 'Postos elétricos'], ['🅿️', 'Estacionamentos'], ['🤝', 'Parceiros'], ['📋', 'Despachante'], ['🔍', 'Perito automotivo'], ['🎨', 'Funilaria e pintura'], ['🔊', 'Som e película'], ['✅', 'Vistoria']];
+const CAT_DESC = { 'Peças': 'Peças novas e usadas, originais e paralelas.', 'Lava-jatos': 'Lavagem simples, completa, higienização, polimento e enceramento.', 'Oficinas': 'Mecânica geral, elétrica, suspensão, freios e revisão.',
+  'Seguros': 'Cotação de seguro auto com corretoras parceiras.', 'Guincho 24h': 'Reboque e socorro mecânico a qualquer hora.', 'Compra e venda': 'Carros à venda com histórico do AutoLink.', 'Aluguel de carros': 'Locadoras e aluguel entre pessoas.' };
 async function Market() {
-  const cars = await allCars().catch(() => []);
-  const label = c => [c.brand, c.model, c.year].filter(Boolean).join(' ') || c.name;
   m.innerHTML = `<h2>🛒 Mercado</h2>
    <div style="position:relative"><input id="mq" placeholder="Buscar peças, serviços, lojas..." style="padding-left:42px"><span style="position:absolute;left:14px;top:13px;font-size:18px">🔎</span></div>
-   <div class="card" style="display:flex;gap:10px;align-items:center;padding:10px 12px"><span style="font-size:22px">🚗</span><div style="flex:1;min-width:0"><div class="muted">Compatível com</div>
-    <select id="mcar" class="sel" style="margin:4px 0 0;padding:8px 10px"><option value="">Todos os carros</option>${cars.map(c => `<option value="${c.id}">${esc(label(c))}</option>`).join('')}</select></div></div>
-   ${cars.some(c => !c.brand) ? '<p class="muted" style="margin:-4px 0 10px">💡 Informe marca, modelo e ano do carro para ver só peças compatíveis.</p>' : ''}
-   <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:6px" id="mf">${['📍 Mais perto', '💲 Menor preço', '⭐ Melhor avaliados', '✔️ Verificados', '🚚 Entrega', '🕐 Aberto agora'].map(f => `<button class="chip" style="white-space:nowrap">${f}</button>`).join('')}</div>
-   <h2 style="margin-top:12px">Categorias</h2><div class="grid">${MCATS.map(([e, l]) => `<button class="sc" data-c="${l}"><span class="ic" style="font-size:28px">${e}</span>${l}</button>`).join('')}</div>
-   <div class="warn" style="text-align:center">🚧 O Mercado está em construção. Busca, filtros e compatibilidade já estão prontos para quando as lojas entrarem.</div>`;
-  const carTxt = () => { const c = cars.find(x => x.id === el('mcar').value); return c ? ' compatível com ' + label(c) : ''; };
-  el('mq').onkeydown = e => { if (e.key === 'Enter' && el('mq').value.trim()) toast(`🚧 Busca por "${el('mq').value.trim()}"${carTxt()}: em breve!`); };
-  el('mf').querySelectorAll('.chip').forEach(b => b.onclick = () => { b.classList.toggle('on'); b.style.background = b.classList.contains('on') ? 'var(--or)' : ''; b.style.color = b.classList.contains('on') ? '#111' : ''; });
-  m.querySelectorAll('.sc[data-c]').forEach(b => b.onclick = () => b.dataset.c === 'Lava-jatos' ? go(Category, 'Lava-jatos') : toast('🚧 ' + b.dataset.c + carTxt() + ': em construção. Em breve!'));
+   <h2 style="margin-top:12px">Categorias</h2><div class="grid">${MCATS.map(([e, l]) => `<button class="sc" data-c="${l}" data-e="${e}"><span class="ic" style="font-size:28px">${e}</span>${l}</button>`).join('')}</div>
+   <div class="warn" style="text-align:center">🚧 O Mercado está em construção. Toque numa categoria para ver como vai funcionar.</div>`;
+  el('mq').onkeydown = e => { if (e.key === 'Enter' && el('mq').value.trim()) toast(`🚧 Busca por "${el('mq').value.trim()}": em breve!`); };
+  m.querySelectorAll('.sc[data-c]').forEach(b => b.onclick = () => go(Category, { name: b.dataset.c, e: b.dataset.e }));
 }
-function Category(name) {
-  m.innerHTML = `<h2>🧽 ${esc(name)}</h2><p class="muted">Lava-jatos parceiros perto de você: lavagem simples, completa, higienização, polimento e enceramento.</p>
-   <div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:10px">${['📍 Mais perto', '💲 Menor preço', '⭐ Melhor avaliados', '🏠 Busca em casa'].map(f => `<button class="chip" style="white-space:nowrap">${f}</button>`).join('')}</div>
-   <div class="card" style="text-align:center;padding:24px"><div style="font-size:40px">🧽</div><b>Ainda não há lava-jatos parceiros na sua região</b><p class="muted">Estamos cadastrando os primeiros parceiros.</p></div>
-   <button class="btn" id="lj">Tenho um lava-jato: quero participar</button>
-   <button class="link" id="li">Indicar um lava-jato que eu conheço</button>`;
-  el('lj').onclick = () => go(Advertise, 'sell');
-  el('li').onclick = () => go(Advertise, 'ad');
+const CAT_FILTERS = { 'Peças': ['💲 Menor preço', '🆕 Novas', '♻️ Usadas', '✔️ Original', '🚚 Entrega', '⭐ Melhor avaliados'], 'Compra e venda': ['💲 Até R$ 30 mil', '💲 R$ 30–60 mil', '💲 Acima de R$ 60 mil', '📅 Mais novos', '📍 Mais perto'] };
+async function Category(arg) {
+  const name = arg.name || arg, e = arg.e || '🛒';
+  const cars = await allCars().catch(() => []); const label = c => [c.brand, c.model, c.year].filter(Boolean).join(' ') || c.name;
+  const parts = name === 'Peças' || name === 'Acessórios' || name === 'Som e película' || name === 'Rastreador GPS';
+  const filters = CAT_FILTERS[name] || ['📍 Mais perto', '💲 Menor preço', '⭐ Melhor avaliados', '✔️ Verificados', '🕐 Aberto agora'].concat(name === 'Lava-jatos' ? ['🏠 Busca em casa'] : []);
+  m.innerHTML = `<h2>${e} ${esc(name)}</h2>${CAT_DESC[name] ? `<p class="muted">${CAT_DESC[name]}</p>` : ''}
+   <div style="position:relative"><input id="cq" placeholder="Buscar em ${esc(name)}..." style="padding-left:42px"><span style="position:absolute;left:14px;top:13px;font-size:18px">🔎</span></div>
+   ${parts ? `<div class="card" style="display:flex;gap:10px;align-items:center;padding:10px 12px"><span style="font-size:22px">🚗</span><div style="flex:1;min-width:0"><div class="muted">Compatível com</div>
+    <select id="ccar" class="sel" style="margin:4px 0 0;padding:8px 10px"><option value="">Todos os carros</option>${cars.map(c => `<option value="${c.id}">${esc(label(c))}</option>`).join('')}</select></div></div>` : ''}
+   <div class="muted" style="margin:4px 0 6px">Filtros</div>
+   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px" id="cf">${filters.map(f => `<button class="chip">${f}</button>`).join('')}</div>
+   <div class="card" style="text-align:center;padding:24px"><div style="font-size:40px">${e}</div><b>Ainda não há parceiros de ${esc(name.toLowerCase())} na sua região</b><p class="muted">Estamos cadastrando os primeiros.</p></div>
+   <button class="btn" id="cj">Quero participar como parceiro</button><button class="link" id="ci">Indicar um local que eu conheço</button>`;
+  el('cf').querySelectorAll('.chip').forEach(b => b.onclick = () => { const on = b.classList.toggle('on'); b.style.background = on ? 'var(--or)' : ''; b.style.color = on ? '#111' : ''; });
+  el('cq').onkeydown = ev => { if (ev.key === 'Enter' && el('cq').value.trim()) toast('🚧 Busca em ' + name + ': em breve!'); };
+  el('cj').onclick = () => go(Advertise, 'sell'); el('ci').onclick = () => go(Advertise, 'ad');
 }
