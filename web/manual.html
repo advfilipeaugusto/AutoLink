@@ -1,0 +1,87 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Manual · AutoLink</title><link rel="icon" href="icon3-192.png"><meta name="theme-color" content="#0b0b0c">
+<style>
+:root{--or:#FF6B00;--card:#17171a;--line:#2a2a2f;--mut:#9a9aa3}*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Arial,sans-serif;background:#0b0b0c;color:#ececef;line-height:1.55}
+header{position:sticky;top:0;background:rgba(11,11,12,.9);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:12px 16px;border-bottom:1px solid #222;display:flex;align-items:center;gap:10px;z-index:3}
+header a{color:var(--or);font-size:32px;text-decoration:none;line-height:1}header .b{flex:1;text-align:center;margin-right:24px}header .b b{font-size:20px}header .b span{color:var(--or)}header img{display:block;height:18px;margin:2px auto 0}
+main{max-width:720px;margin:auto;padding:16px 16px 60px}h1{font-size:26px;margin:10px 0 4px}h2{font-size:20px;color:var(--or);margin:30px 0 10px;scroll-margin-top:80px}h3{font-size:16px;margin:16px 0 4px}
+.muted{color:var(--mut);font-size:14px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin:10px 0}
+.toc{display:grid;grid-template-columns:1fr 1fr;gap:8px}.toc a{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:#ececef;text-decoration:none;font-size:14px;font-weight:600}
+ol,ul{padding-left:20px}li{margin:4px 0}.tip{border-left:4px solid var(--or);background:#ff6b0012;padding:10px 14px;border-radius:10px;margin:10px 0;font-size:15px}
+svg{display:block;width:100%;height:auto;margin:8px 0}
+</style></head><body>
+<header><a href="app.html" aria-label="Voltar">‹</a><div class="b"><b>Auto<span>Link</span></b><img src="logo-car-white.png" alt=""></div></header>
+<main>
+<h1>📘 Manual do AutoLink</h1><p class="muted">Tudo o que o app faz, explicado passo a passo.</p>
+<div class="toc">
+<a href="#adesivo">📍 Onde colar o adesivo</a><a href="#comecar">🚀 Primeiros passos</a><a href="#ativar">🏷️ Ativar adesivo</a><a href="#conversas">💬 Conversas</a>
+<a href="#seguranca">🛡️ Segurança</a><a href="#ausencia">⏳ Ausência</a><a href="#alertas">🚨 Alertas da região</a><a href="#acidente">🚑 Acidente</a>
+<a href="#manut">🔧 Manutenção</a><a href="#docs">📄 Documentos</a><a href="#repo">🔁 Danifiquei / perdi QR</a><a href="#empresa">🏢 Empresa</a>
+<a href="#avisar">📷 Avisar outro motorista</a><a href="#config">⚙️ Configurações</a></div>
+
+<h2 id="adesivo">📍 Onde colar o adesivo (padrão AutoLink)</h2>
+<p>Para que qualquer pessoa encontre o adesivo rápido, todos os carros AutoLink usam o <b>mesmo lugar</b>:</p>
+<div class="card"><b>Adesivo principal: perto da placa traseira</b>
+<svg viewBox="0 0 320 190"><rect x="20" y="20" width="280" height="120" rx="30" fill="#222" stroke="#444" stroke-width="3"/><rect x="40" y="35" width="240" height="40" rx="10" fill="#333"/>
+<rect x="38" y="85" width="44" height="18" rx="5" fill="#c00"/><rect x="238" y="85" width="44" height="18" rx="5" fill="#c00"/>
+<rect x="120" y="100" width="80" height="26" rx="3" fill="#fff"/><text x="160" y="118" font-size="12" font-family="Arial" font-weight="700" text-anchor="middle" fill="#111">ABC1D23</text>
+<rect x="208" y="98" width="30" height="30" rx="4" fill="#fff" stroke="#FF6B00" stroke-width="3"/><path d="M213 103h8v8h-8zM225 103h8v8h-8zM213 115h8v8h-8z" fill="#111"/>
+<path d="M225 152 l0 -20" stroke="#FF6B00" stroke-width="3"/><text x="205" y="182" font-size="13" font-family="Arial" fill="#FF6B00" font-weight="700">aqui</text>
+<rect x="40" y="140" width="40" height="25" rx="6" fill="#111"/><rect x="240" y="140" width="40" height="25" rx="6" fill="#111"/></svg>
+<p class="muted">Cole <b>ao lado direito da placa traseira</b>, em superfície lisa e limpa, sem cobrir a placa (cobrir a placa é infração de trânsito).</p></div>
+<div class="card"><b>Segundo adesivo (opcional): espelho do motorista</b>
+<svg viewBox="0 0 320 150"><path d="M60 40 q100 -30 200 0 v50 q-100 30 -200 0z" fill="#222" stroke="#444" stroke-width="3"/><path d="M75 50 q85 -22 170 0 v30 q-85 22 -170 0z" fill="#5a6b80"/>
+<rect x="150" y="96" width="26" height="26" rx="4" fill="#fff" stroke="#FF6B00" stroke-width="3"/><path d="M154 100h7v7h-7zM165 100h7v7h-7zM154 111h7v7h-7z" fill="#111"/>
+<path d="M190 130 l-10 -10" stroke="#FF6B00" stroke-width="3"/><text x="192" y="142" font-size="13" font-family="Arial" fill="#FF6B00" font-weight="700">embaixo</text>
+<rect x="250" y="70" width="40" height="14" rx="6" fill="#333"/></svg>
+<p class="muted">Na <b>parte de baixo do espelho retrovisor do lado do motorista</b>, por fora. Fica visível para quem está ao lado do carro.</p></div>
+<div class="tip">💡 <b>Dicas para colar:</b> limpe o local com álcool e deixe secar · cole em dia seco, longe do sol forte · pressione do centro para as bordas por 30 segundos · espere 24 h antes de lavar o carro.</div>
+
+<h2 id="comecar">🚀 Primeiros passos</h2>
+<ol><li>Abra o app e toque em <b>Criar conta</b> (e-mail e senha).</li><li>Complete o <b>cadastro</b>: nome, CPF ou CNPJ, telefone, endereço e um <b>contato de emergência</b> da família. CPF/CNPJ e nome não podem ser alterados depois.</li>
+<li>Em <b>Garagem</b>, cadastre seu carro (nome e placa).</li><li>Instale o app na tela inicial: no iPhone, Safari → Compartilhar → "Adicionar à Tela de Início". No Android, Chrome → ⋮ → "Instalar app".</li></ol>
+
+<h2 id="ativar">🏷️ Ativar o adesivo</h2>
+<ol><li>Pegue o <b>cartão de ativação</b> que veio na embalagem (código + PIN). Guarde o PIN em segredo.</li><li>Garagem → toque no carro → <b>Ativar adesivo</b>.</li><li>Digite o código (ex: AL-7K3P9X) e o PIN de 6 números.</li></ol>
+<p class="muted">Sem o PIN ninguém consegue ativar seu adesivo, nem se escanear o QR na rua. Para ver seu QR e o código: menu ☰ → <b>Meu QR code</b>.</p>
+
+<h2 id="conversas">💬 Conversas</h2>
+<ul><li>Quando alguém escaneia seu adesivo, a mensagem chega no app. O <b>sino 🔔</b> no topo mostra quantas mensagens novas existem, e cada carro mostra o seu número.</li>
+<li>Abra a conversa para responder. Há respostas rápidas: "Já estou indo!", "Me dá 5 minutos"...</li><li>Quem mandou vê <b>✓✓ Visto pelo dono</b> quando você abre a conversa.</li>
+<li>Para pausar o adesivo (ex: carro na oficina): Garagem → carro → desligue <b>QR ativo</b>.</li></ul>
+
+<h2 id="seguranca">🛡️ Segurança</h2>
+<ul><li>Ninguém vê seu nome, telefone ou e-mail.</li><li><b>✅ Pessoa identificada:</b> quem escaneou pelo app AutoLink com cadastro completo. <b>Pessoa não identificada:</b> escaneou só com a câmera.</li>
+<li><b>Nunca vá ao carro sozinho, à noite ou em local isolado</b> por causa de uma mensagem. Responda pelo chat. Desconfie de quem pede para você descer com pressa.</li>
+<li>🚫 <b>Bloquear</b> e ⚠️ <b>Denunciar</b> ficam no topo da conversa. Para desfazer, use 🔓 <b>Desbloquear</b>.</li></ul>
+
+<h2 id="ausencia">⏳ Mensagem de ausência</h2>
+<p>Funcionalidades → <b>Ausência</b>. Escolha uma mensagem pronta ou escreva a sua e defina por quanto tempo (até <b>12 horas</b>). Quem escanear vê na hora "🤖 O dono está ausente". Na tela inicial aparece um <b>cronômetro</b> com o tempo restante e o botão Encerrar. Quando acabar, o app avisa para renovar.</p>
+
+<h2 id="alertas">🚨 Alertas da região</h2>
+<p>Funcionalidades → <b>Criar alerta</b>: escolha o tipo (incêndio, enchente, acidente, via bloqueada, roubo), descreva e envie com a localização. A equipe AutoLink analisa antes de publicar. Quem estiver a até <b>300 m</b> vê um aviso vermelho piscando. Em emergência, ligue 190, 192 ou 193.</p>
+
+<h2 id="acidente">🚑 Acidente</h2>
+<p>Funcionalidades → <b>Acidente</b>: tire uma foto, descreva e (se quiser) inclua a localização. A equipe analisa e <b>avisa seu contato de emergência</b>. Acompanhe em "Meus registros".</p>
+
+<h2 id="manut">🔧 Manutenção</h2>
+<p>Registre troca de óleo, revisão, pneus, IPVA, licenciamento e mais, com data, km e valor. Defina uma data de <b>lembrete</b>: ela aparece na tela inicial 15 dias antes.</p>
+
+<h2 id="docs">📄 Documentos</h2>
+<p>Guarde CNH, CRLV, apólice de seguro, notas e laudos em <b>PDF ou foto</b> (até 5 MB cada). Toque em Abrir para ver a qualquer momento.</p>
+
+<h2 id="repo">🔁 Danifiquei ou perdi meu QR</h2>
+<p>Funcionalidades → <b>Danifiquei / perdi QR</b>. Escolha o carro e o motivo. Se foi <b>perdido ou roubado</b>, o QR antigo é pausado na hora. A equipe envia um adesivo novo ao seu endereço; ative com o PIN do cartão novo.</p>
+
+<h2 id="empresa">🏢 Empresa</h2>
+<p>Para frotas: ligue <b>Veículo de empresa</b> na tela do carro e quem escanear verá <b>"Como estou dirigindo?"</b> para dar nota de 1 a 5. Outras funções para empresas estão chegando: fale conosco em Funcionalidades → Empresa.</p>
+
+<h2 id="avisar">📷 Avisar outro motorista</h2>
+<p>Toque no <b>botão laranja de escanear</b> no centro da barra de baixo e aponte para o adesivo AutoLink de outro carro. As conversas que você iniciar ficam em Funcionalidades → <b>Histórico</b>.</p>
+
+<h2 id="config">⚙️ Configurações</h2>
+<p>Menu ☰ → Configurações: <b>Meu perfil</b>, tema claro/escuro, <b>letra maior</b>, som dos avisos, avisos do celular, termos e <b>apagar minha conta</b>. Toque na sua <b>foto</b> no topo do menu para trocar.</p>
+
+<div class="card" style="margin-top:30px;text-align:center">Ficou com dúvida? Menu ☰ → <b>Central de ajuda</b>.<br><a href="app.html" style="color:var(--or)">‹ Voltar ao app</a></div>
+</main></body></html>

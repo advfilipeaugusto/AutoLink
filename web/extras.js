@@ -371,19 +371,22 @@ function awayTimer(car) {
 
 // ---------- Foto do perfil ----------
 async function drawAvatar() {
-  const b = el('dAv'); if (!b) return;
+  const b = el('dAv'), inp = el('dAvI'); if (!b || !inp) return;
   if (S && !PROFILE) await loadProfile();
   const ph = PROFILE && PROFILE.photo;
-  b.style.backgroundImage = ph ? `url(${ph})` : ''; b.textContent = ph ? '' : '📷';
-  b.onclick = () => { if (!S || !PROFILE) return toast('Complete seu cadastro primeiro');
-    const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*';
-    i.onchange = async () => { const f = i.files[0]; if (!f) return; try { const d = await squareImage(f, 240); await update('profiles/' + S.uid, { photo: d }); PROFILE.photo = d; drawAvatar(); toast('Foto atualizada ✅'); } catch (e) { alert('Erro: ' + e.message); } };
-    i.click(); };
+  b.style.backgroundImage = ph ? `url(${ph})` : '';
+  b.dataset.empty = ph ? '' : '1';
+  inp.onclick = e => { if (!S || !PROFILE) { e.preventDefault(); toast('Complete seu cadastro primeiro'); } };
+  inp.onchange = async () => { const f = inp.files[0]; inp.value = ''; if (!f) return;
+    toast('Enviando foto...');
+    try { const d = await squareImage(f, 240); await update('profiles/' + S.uid, { photo: d }); PROFILE.photo = d; drawAvatar(); toast('Foto atualizada ✅'); }
+    catch (e) { alert('Não foi possível usar esta foto.\n\n' + (e && e.message ? e.message : 'Tente outra foto ou tire uma nova.')); } };
 }
 function squareImage(file, size) {
   return new Promise((ok, no) => { const img = new Image(); img.onload = () => { const c = document.createElement('canvas'); c.width = c.height = size; const k = Math.min(img.width, img.height);
     c.getContext('2d').drawImage(img, (img.width - k) / 2, (img.height - k) / 2, k, k, 0, 0, size, size); URL.revokeObjectURL(img.src); ok(c.toDataURL('image/jpeg', .75)); };
-    img.onerror = no; img.src = URL.createObjectURL(file); });
+    img.onerror = () => { const r = new FileReader(); r.onload = () => { const i2 = new Image(); i2.onload = img.onload.bind(null); i2.onerror = () => no(new Error('Formato de imagem não suportado. Tente uma foto JPG ou PNG.')); img.src = r.result; }; r.onerror = () => no(new Error('Não foi possível ler o arquivo.')); r.readAsDataURL(file); };
+    img.src = URL.createObjectURL(file); });
 }
 
 // ---------- Configurações ----------
