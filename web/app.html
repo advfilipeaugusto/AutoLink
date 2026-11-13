@@ -123,6 +123,7 @@ input[type=date],input[type=time]{min-height:50px}
 input[type=date],input[type=time]{display:block;width:100%;max-width:100%;min-width:0;-webkit-appearance:none;appearance:none;text-align:left}
 .card{max-width:100%;overflow-wrap:anywhere}
 .hqr{position:absolute;top:14px;right:14px;width:42px;height:42px;border-radius:12px;background:var(--or);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px #ff6b0055}.hqr svg{width:24px;height:24px}
+.b.hid{opacity:.45;border:1px dashed var(--mut)}.b[data-mid]{cursor:pointer}
 </style></head><body>
 <header><button id="menu" aria-label="Menu" style="padding:4px 6px 4px 0;position:relative"><span class="rdot" id="menuDot" hidden style="position:absolute;top:0;right:2px"></span><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button id="back" hidden aria-label="Voltar" style="font-size:34px;line-height:1;padding:0 8px 4px 2px;font-weight:400">‹</button><div class="brand"><div class="t">Auto<span>Link</span></div><img class="lc lcw" src="logo-car-white.png" alt=""><img class="lc lcb" src="logo-car.png" alt=""></div><span style="flex:1"></span><button id="famI" hidden aria-label="Carro da família" style="font-size:22px;padding:4px 6px;position:relative">👨‍👩‍👧</button><button id="srch" hidden aria-label="Buscar" style="color:var(--tx);padding:4px"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button><button id="bell" hidden aria-label="Notificações" style="position:relative;color:var(--tx);padding:4px"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4zM10 21h4"/></svg><span class="nb" id="bellN"></span></button><button id="out" hidden>Sair</button></header>
 <main id="m"></main>
@@ -259,7 +260,7 @@ function Home(){
     let x0=null;hc.ontouchstart=e=>x0=e.touches[0].clientX;hc.ontouchend=e=>{if(x0===null)return;const dx=e.changedTouches[0].clientX-x0;x0=null;if(Math.abs(dx)>40){e.preventDefault();idx=(idx+(dx<0?1:cars.length-1))%cars.length;drawHero();}};};
   const load=async()=>{
     cars=await allCars();if(idx>=cars.length)idx=0;
-    const chats=(await allChats(cars)).filter(c=>!c.blocked).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+    const chats=(await allChats(cars)).filter(c=>!c.blocked&&!c.hiddenOwner).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
     famIcon(cars);setUnread(chats);if(!window._autoIdx){window._autoIdx=1;const j=cars.findIndex(x=>UNREAD[x.id]);if(j>=0)idx=j;}drawHero();
     const box=document.getElementById('alerts');if(!box)return;
     const recent=chats.filter(c=>c.updatedAt&&Date.now()-c.updatedAt<48*3600e3&&!String(c.lastMsg||'').startsWith('Você:'));
@@ -340,23 +341,30 @@ function Car(car){
       if(s.carId)return alert('Este adesivo já está vinculado a um carro.');
       try{await update('stickers/'+c,{carId:car.id,ownerId:S.uid,activatedAt:new Date(),activationPin:p});}catch(err){return alert('PIN incorreto. Confira o PIN no cartão de ativação.');}
       await update('cars/'+car.id,{stickerCode:c,active:true});car.stickerCode=c;car.active=true;alert('Adesivo ativado! ✅ Quem escanear o adesivo agora fala com você.');go(Car,car,false);};}
-  const list=async()=>{const chats=(await find('chats',[['carId',car.id],['ownerId',car.ownerId]])).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
-    const box=$('#chats');if(!box)return;box.innerHTML=chats.length?'':'<p class="muted">Nenhuma mensagem ainda.</p>';
-    for(const c of chats){const b=document.createElement('button');b.className='card';
+  let showDel=false;
+  const list=async()=>{const all=(await find('chats',[['carId',car.id],['ownerId',car.ownerId]])).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+    const del=all.filter(c=>c.hiddenOwner),chats=showDel?del:all.filter(c=>!c.hiddenOwner);
+    const box=$('#chats');if(!box)return;box.innerHTML=chats.length?'':`<p class="muted">${showDel?'Nenhuma conversa apagada.':'Nenhuma mensagem ainda.'}</p>`;
+    if(del.length||showDel){const t=document.createElement('button');t.className='link';t.style.cssText='margin:0 0 10px;font-size:13px;text-align:left';t.textContent=showDel?'‹ Voltar às conversas':'🗑️ Conversas apagadas ('+del.length+')';t.onclick=()=>{showDel=!showDel;list();};box.prepend(t);}
+    for(const c of chats){const row=document.createElement('div');row.style.cssText='display:flex;gap:6px;align-items:stretch';
+      const x=document.createElement('button');x.className='chip';x.style.cssText='margin-bottom:10px;border-radius:14px';x.textContent=showDel?'↩️':'🗑️';x.setAttribute('aria-label',showDel?'Restaurar':'Apagar');
+      x.onclick=async()=>{if(!confirm(showDel?'Restaurar esta conversa?':'Apagar esta conversa? Você pode restaurar depois em "Conversas apagadas".'))return;
+        try{await update('chats/'+c.id,{hiddenOwner:!showDel});list();}catch(e){alert('Erro: '+e.message);}};
+      const b=document.createElement('button');b.className='card';b.style.flex='1';
       b.innerHTML=`<div>${c.blocked?'🚫 ':''}${esc(c.lastMsg)}${alChatOpen(c)?'':' <span class="pill" style="margin-left:6px;background:#3a3a40;color:var(--mut)">visitante sem tempo</span>'}</div><div class="muted">${c.updatedAt?c.updatedAt.toLocaleString('pt-BR'):''}</div>`;
-      b.onclick=()=>go(Chat,{car,chatId:c.id});box.appendChild(b);}};
-  poll(()=>list().catch(()=>{}));
+      b.onclick=()=>go(Chat,{car,chatId:c.id});row.appendChild(b);row.appendChild(x);box.appendChild(row);}};
+  poll(()=>list().catch(()=>{}),6000);
 }
 
 function Chat({car,chatId}){
-  let chat=null;
+  let chat=null,showHid=false;
   m.innerHTML=`<div class="row"><h2 style="margin:0">${esc(car.name)}</h2><div id="acts"></div></div><div id="bl"></div><p class="muted" id="ttlN" style="margin:0 0 6px"></p><div id="msgs"></div>
   <div class="composer"><div class="q">${['Já estou indo!','Me dá 5 minutos','Obrigado pelo aviso!'].map(q=>`<button class="chip">${q}</button>`).join('')}</div>
   <form class="in" id="f"><input id="t" placeholder="Responder..." maxlength="500" autocomplete="off"><button class="btn">Enviar</button></form></div>`;
   const box=$('#msgs');let last='';
   const load=async()=>{
     chat=unpack(await api('/chats/'+chatId));
-    const tn=document.getElementById('ttlN');if(tn)tn.innerHTML=alChatOpen(chat)?`⏳ Quem escaneou pode escrever por mais <b>${alLeft(chat)} min</b>.`:'⏱️ O tempo de 20 min de quem escaneou acabou: ela não pode mais escrever, mas vê suas respostas.';
+    const tn=document.getElementById('ttlN');if(tn)tn.innerHTML=alChatOpen(chat)?(chat.repliedAt?'💬 Você respondeu: a conversa fica aberta por 2 horas e vocês podem trocar telefone. ':'')+`⏳ Quem escaneou pode escrever por mais <b>${alLeftTxt(chat)}</b>.`:'⏱️ O tempo de quem escaneou acabou: ela não pode mais escrever, mas vê suas respostas.';
     if(!chat.seenAt||(chat.updatedAt&&+chat.updatedAt>+chat.seenAt))update('chats/'+chatId,{seenAt:new Date()}).catch(()=>{});
     if(car.ownerId!==S.uid){$('#acts').innerHTML='';}else $('#acts').innerHTML=chat.blocked?'<button class="chip" id="ub">🔓 Desbloquear</button>':'<button class="chip" id="bk">🚫 Bloquear</button> <button class="chip" id="rp">⚠️ Denunciar</button>';
     if(chat.blocked&&$('#ub'))$('#ub').onclick=async()=>{if(!confirm('Desbloquear? Essa pessoa poderá te mandar mensagens de novo.'))return;
@@ -365,9 +373,14 @@ function Chat({car,chatId}){
       +(chat.visitorVerified?'<div class="card" style="border-color:#22c55e55">✅ <b>Pessoa identificada</b><div class="muted">Usuário AutoLink com cadastro completo.</div></div>'
       :'<div class="warn" style="margin:0 0 10px">🛡️ <b>Pessoa não identificada.</b> Por segurança, responda pelo chat. Evite ir ao carro sozinho, à noite ou em local isolado. Desconfie de pedidos para você descer com pressa.</div>');
     if(!chat.blocked&&$('#bk')){$('#bk').onclick=()=>confirm('Bloquear? Essa pessoa não vai mais conseguir te mandar mensagens.')&&block();$('#rp').onclick=report;}
-    const ms=await find('messages',[],'at','/chats/'+chatId);
-    const html=ms.map(x=>`<div class="b ${x.from==='owner'?'me':'them'}">${esc(x.text)}</div>`).join('');
-    if(html!==last){last=html;box.innerHTML=html;scrollTo(0,document.body.scrollHeight);}};
+    const ms=await find('messages',[],'at','/chats/'+chatId);const hid=ms.filter(x=>x.hidden).length;
+    const html=ms.filter(x=>!x.hidden||showHid).map(x=>`<div class="b ${x.from==='owner'?'me':'them'} ${x.hidden?'hid':''}" data-mid="${x.id}">${x.hidden?'<small>🗑️ apagada · toque para restaurar</small><br>':''}${esc(x.text)}</div>`).join('')
+      +(hid?`<button class="link" id="shh" style="font-size:13px">${showHid?'Esconder mensagens apagadas':'🗑️ Ver '+hid+' mensagem(ns) apagada(s)'}</button>`:'');
+    if(html!==last){last=html;box.innerHTML=html;if(!showHid)scrollTo(0,document.body.scrollHeight);
+      box.querySelectorAll('[data-mid]').forEach(el=>el.onclick=async()=>{const m0=ms.find(x=>x.id===el.dataset.mid);const restore=!!m0.hidden;
+        if(!confirm(restore?'Restaurar esta mensagem?':'Apagar esta mensagem? Ela some da sua tela e você pode restaurar depois.'))return;
+        try{await api('/chats/'+chatId+'/messages/'+m0.id+'?updateMask.fieldPaths=hidden','PATCH',{fields:{hidden:{booleanValue:!restore}}});last='';load();}catch(e){alert('Erro: '+e.message);}});
+      const sh=document.getElementById('shh');if(sh)sh.onclick=()=>{showHid=!showHid;last='';load();};}};
   const block=async(silent)=>{try{await update('chats/'+chatId,{blocked:true});
     await api('/owners/'+S.uid+'/blocked/'+chat.visitorId+'?updateMask.fieldPaths=at','PATCH',{fields:fields({at:new Date()})});
     if(!silent)alert('Bloqueado. Essa pessoa não consegue mais te mandar mensagens.');load();}catch(err){alert('Erro: '+err.message);}};
@@ -375,9 +388,9 @@ function Chat({car,chatId}){
     const reason={1:'ofensa',2:'spam',3:'outro'}[String(r||'').trim()];if(!reason)return;
     try{await add('reports',{ownerId:S.uid,carId:car.id,chatId,visitorId:chat.visitorId,reason,at:new Date()});await block(true);alert('Denúncia enviada. A pessoa também foi bloqueada.');}catch(err){alert('Erro: '+err.message);}};
   const send=async t=>{t=t.trim();if(!t)return;
-    const bad=alCheck(t);if(bad){alert(alBlockedMsg(bad));add('blockedMsgs',{by:S.uid,byVerified:'dono',ownerId:car.ownerId,carId:car.id,carName:car.name,text:t,reason:bad,from:'owner',at:new Date()}).catch(()=>{});return;}
+    const bad=alCheck(t,true);if(bad){alert(alBlockedMsg(bad));add('blockedMsgs',{by:S.uid,byVerified:'dono',ownerId:car.ownerId,carId:car.id,carName:car.name,text:t,reason:bad,from:'owner',at:new Date()}).catch(()=>{});return;}
     $('#t').value='';
-    try{await add('chats/'+chatId+'/messages',{text:t,from:'owner',at:new Date()});await update('chats/'+chatId,{lastMsg:'Você: '+t,updatedAt:new Date()});load();}catch(err){alert('Erro: '+err.message);}};
+    try{await add('chats/'+chatId+'/messages',{text:t,from:'owner',at:new Date()});await update('chats/'+chatId,{lastMsg:'Você: '+t,updatedAt:new Date(),repliedAt:new Date()});load();}catch(err){alert('Erro: '+err.message);}};
   $('#f').onsubmit=e=>{e.preventDefault();send($('#t').value);};
   m.querySelectorAll('.q .chip').forEach(b=>b.onclick=()=>send(b.textContent));
   poll(()=>load().catch(()=>{}));

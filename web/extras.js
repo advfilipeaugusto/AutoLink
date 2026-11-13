@@ -335,7 +335,7 @@ function Company() {
 
 // ---------- Não lidas (sino + contador por carro) ----------
 let UNREAD = {}, UNREAD_LIST = [];
-function isUnread(c) { return !c.blocked && c.updatedAt && !String(c.lastMsg || '').startsWith('Você:') && (!c.seenAt || +c.updatedAt > +c.seenAt); }
+function isUnread(c) { return !c.blocked && !c.hiddenOwner && c.updatedAt && !String(c.lastMsg || '').startsWith('Você:') && (!c.seenAt || +c.updatedAt > +c.seenAt); }
 function setUnread(chats) {
   UNREAD = {}; UNREAD_LIST = chats.filter(isUnread);
   for (const c of UNREAD_LIST) UNREAD[c.carId] = (UNREAD[c.carId] || 0) + 1;

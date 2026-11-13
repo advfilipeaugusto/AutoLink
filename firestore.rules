@@ -3,13 +3,15 @@ service cloud.firestore {
   match /databases/{db}/documents {
     function me() { return request.auth.uid; }
     // Filtro de mensagens: bloqueia telefone, links e palavras ofensivas (o app mostra "Mensagem bloqueada")
-    function okText(t) {
-      let l = t.lower();
-      return !l.matches('.*[0-9]{4,5}[ .-]?[0-9]{4}.*')
-        && !l.matches('.*(https?:|www[.]|instagram).*')
-        && !l.matches('.*\\b(gostos|tes[aã]o|safad|pelad|nudes?|seu n[uú]mero|teu n[uú]mero|seu zap|seu whats|puta|puto|porra|caralho|buceta|boceta|foder|fode|vadia|vagabund|piranha|arrombad|viado|corno|idiota|imbecil|merda|desgra[cç]a|fdp|filho da puta|vai tomar no|vtnc|vou te matar).*');
+    function okWords(t) {
+      return !t.lower().matches('.*\\b(gostos|tes[aã]o|safad|pelad|nudes?|puta|puto|porra|caralho|buceta|boceta|foder|fode|vadia|vagabund|piranha|arrombad|viado|corno|idiota|imbecil|merda|desgra[cç]a|fdp|filho da puta|vai tomar no|vtnc|vou te matar).*');
     }
-    function chatOpen(c) { return c.get('createdAt', c.get('updatedAt', request.time)) > request.time - duration.value(20, 'm'); }
+    function okContact(t) {
+      let l = t.lower();
+      return !l.matches('.*[0-9]{4,5}[ .-]?[0-9]{4}.*') && !l.matches('.*(https?:|www[.]|instagram|seu n[uú]mero|teu n[uú]mero|seu zap|seu whats).*');
+    }
+    function chatOpen(c) { return c.get('createdAt', c.get('updatedAt', request.time)) > request.time - duration.value(20, 'm')
+      || c.get('repliedAt', timestamp.value(0)) > request.time - duration.value(2, 'h'); }
     match /blockedMsgs/{id} {
       allow create: if request.auth != null && request.resource.data.by == me();
       allow read, update, delete: if isAdmin();
@@ -48,7 +50,7 @@ service cloud.firestore {
     match /admins/{uid} { allow get: if me() == uid; }
     match /stickerSecrets/{code} { allow read, write: if isAdmin(); }
     match /stickers/{code} {
-      allow get: if request.auth != null;
+      allow get: if true;
       allow list, create, delete: if isAdmin();
       allow update: if isAdmin()
         || (resource.data.get('ownerId', null) == me() && request.resource.data.carId == null && request.resource.data.ownerId == null
@@ -87,7 +89,7 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource.data.ownerId == me();
     }
     match /cars/{carId} {
-      allow get: if request.auth != null;
+      allow get: if true;
       allow list: if resource.data.ownerId == me() || isAdmin() || me() in resource.data.get('members', []);
       allow create: if request.resource.data.ownerId == me();
       allow update, delete: if resource.data.ownerId == me() || isAdmin();
@@ -111,9 +113,11 @@ service cloud.firestore {
       match /messages/{m} {
         function chat() { return get(/databases/$(db)/documents/chats/$(chatId)).data; }
         allow read: if me() == chat().ownerId || me() == chat().visitorId || isMember(chat().carId) || isAdmin();
-        allow create: if request.resource.data.text is string && request.resource.data.text.size() <= 500 && okText(request.resource.data.text) &&
+        allow create: if request.resource.data.text is string && request.resource.data.text.size() <= 500 && okWords(request.resource.data.text) &&
           ((( me() == chat().ownerId || isMember(chat().carId)) && request.resource.data.from == 'owner') ||
-           (me() == chat().visitorId && request.resource.data.from == 'visitor' && chat().get('blocked', false) == false && chatOpen(chat())));
+           (me() == chat().visitorId && request.resource.data.from == 'visitor' && chat().get('blocked', false) == false && chatOpen(chat())
+            && (chat().get('repliedAt', null) != null || okContact(request.resource.data.text))));
+        allow update: if (me() == chat().ownerId || isMember(chat().carId)) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hidden']);
       }
     }
   }
