@@ -11,7 +11,7 @@ button{background:#FF6B00;color:#111;border:0;border-radius:10px;padding:12px 18
 #hub{padding:16px;max-width:900px;margin:auto}.hubg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
 .hubg button{position:relative;margin:0;background:#fff;color:#111;border:1px solid #eee;border-radius:18px;padding:22px 18px;text-align:left;display:flex;flex-direction:column;gap:6px;box-shadow:0 2px 10px #0000000d;font-weight:400}
 .hubg button:hover{border-color:#FF6B00}.hubg .e{font-size:34px}.hubg b{font-size:18px}.hubg small{color:#777;font-size:13px}.hubg .bd:not(:empty){top:12px;right:12px;font-size:13px;padding:2px 8px}
-header{display:flex;align-items:center;gap:10px}header img.lgc{height:30px;width:auto;border-radius:0}.lg{line-height:1}.lg small{display:block;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#FF6B00;font-weight:800;margin-bottom:2px}
+header{display:flex;align-items:center;gap:10px}header img.lgc{height:22px;width:auto;border-radius:0;display:block;margin-top:3px}.lg{display:flex;flex-direction:column;align-items:flex-start}.lg{line-height:1}.lg small{display:block;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#FF6B00;font-weight:800;margin-bottom:2px}
 #hb{background:none;color:#FF6B00;font-size:30px;padding:0 6px 0 0;margin:0;font-weight:400}
 #tabs{display:flex;gap:6px;overflow-x:auto;background:#111;padding:0 12px 10px;position:sticky;top:0;z-index:5}#tabs button{background:#222;color:#ddd;margin:0;padding:10px 14px;font-size:14px;white-space:nowrap;position:relative}#tabs button.on{background:#FF6B00;color:#111}
 .bd:not(:empty){position:absolute;top:-6px;right:-6px;background:#e11d48;color:#fff;border-radius:10px;font-size:11px;padding:1px 6px}
@@ -30,7 +30,7 @@ button.x{position:absolute;top:10px;right:10px;width:36px;height:36px;padding:0;
 .card .b{font-weight:900;margin-bottom:1mm}.card .b span{color:#FF6B00}.card .pin{font-size:5mm;letter-spacing:1mm}.card .mut{color:#666;font-size:2.6mm;margin-top:1mm}
 @media print{header,#hub,.box{display:none!important}main{padding:0;max-width:none}body{background:#fff}@page{size:A4;margin:8mm}}
 </style></head><body>
-<header><button id="hb" hidden onclick="home()">‹</button><img src="logo-car-white.png" alt="" class="lgc"><div class="lg"><small>Adm</small><div>Auto<span>Link</span></div></div></header><div id="hub" hidden></div><main id="m">Carregando...</main>
+<header><button id="hb" hidden onclick="home()" aria-label="Voltar">‹</button><div class="lg"><small>Adm</small><div>Auto<span>Link</span></div><img src="logo-car-white.png" alt="" class="lgc"></div></header><div id="hub" hidden></div><main id="m">Carregando...</main>
 <script>
 const KEY='AIzaSyBSGj1H273wiXM-VgpkytnC3kX6yQlt8_I',BASE='https://firestore.googleapis.com/v1/projects/autolink-1aa51/databases/(default)/documents',DOC='projects/autolink-1aa51/databases/(default)/documents';
 const SITE=location.origin+location.pathname.replace('admin.html','');

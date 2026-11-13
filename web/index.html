@@ -4,7 +4,7 @@ body{margin:0;font-family:system-ui,sans-serif;background:#f5f5f5;color:#111}hea
 main{padding:16px;max-width:520px;margin:auto}.q{display:block;width:100%;padding:14px;margin:8px 0;border:2px solid #111;border-radius:12px;background:#fff;color:#111;font-size:16px;font-weight:600;text-align:left}.q:active{background:#FF6B00}
 #msgs{min-height:200px}.b{padding:10px;border-radius:12px;margin:4px 0;max-width:80%}.me{background:#FF6B00;color:#111;margin-left:auto}.them{background:#111;color:#fff}
 form{display:flex;gap:8px}input{flex:1;padding:12px;border-radius:8px;border:1px solid #ddd;font-size:16px}button.s{background:#FF6B00;color:#111;border:0;border-radius:8px;padding:0 16px;font-weight:700}
-.muted{color:#777;font-size:13px}</style></head><body><header><a id="bk" href="app.html" hidden style="color:#FF6B00;text-decoration:none;font-size:16px;font-weight:700;margin-right:4px">‹ App</a><img src="logo-car-white.png" alt="" style="width:auto;height:26px;border-radius:0"><div>Auto<span>Link</span></div></header><main id="app">Carregando...</main>
+.muted{color:#777;font-size:13px}</style></head><body><header><a id="bk" href="app.html" hidden aria-label="Voltar" style="color:#FF6B00;text-decoration:none;font-size:34px;line-height:1;font-weight:400;margin-right:6px">‹</a><img src="logo-car-white.png" alt="" style="width:auto;height:26px;border-radius:0"><div>Auto<span>Link</span></div></header><main id="app">Carregando...</main>
 <script>
 if(new URLSearchParams(location.search).get('from')==='app'||navigator.standalone||matchMedia('(display-mode: standalone)').matches)document.getElementById('bk').hidden=false;
 const KEY='AIzaSyBSGj1H273wiXM-VgpkytnC3kX6yQlt8_I', BASE='https://firestore.googleapis.com/v1/projects/autolink-1aa51/databases/(default)/documents';
@@ -38,6 +38,7 @@ async function send(text){
       chatId=c.id; localStorage.setItem('chat_'+carId,chatId); showChat();
     } else await api('/chats/'+chatId+'?updateMask.fieldPaths=lastMsg&updateMask.fieldPaths=updatedAt','PATCH',{fields:fields({lastMsg:text,updatedAt:now})});
     await api('/chats/'+chatId+'/messages','POST',{fields:fields({text,from:'visitor',at:now})});
+    try{const h=JSON.parse(localStorage.getItem('al_hist')||'[]').filter(x=>x.carId!==carId);h.push({carId,chatId,carName:car.name,lastMsg:text,at:Date.now()});localStorage.setItem('al_hist',JSON.stringify(h.slice(-100)));}catch(e){}
     if(car.notifyTopic) fetch('https://ntfy.sh/'+car.notifyTopic,{method:'POST',headers:{Title:'AutoLink',Tags:'car',Priority:'high'},body:'Nova mensagem sobre o '+car.name}).catch(()=>{});
     load();
   }catch(e){ alert(/permission|PERMISSION/.test(e.message)?'O dono deste carro não está recebendo mensagens suas.':'Não foi possível enviar: '+e.message); }

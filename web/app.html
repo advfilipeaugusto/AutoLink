@@ -91,23 +91,23 @@ textarea{width:100%;padding:14px;border-radius:12px;border:1px solid var(--line)
 .pill{margin-left:auto;font-size:11px;font-weight:800;background:#ff6b0022;color:var(--or);border-radius:20px;padding:3px 9px}
 .dacc{margin:14px 18px 0;padding:14px;border-radius:14px;background:var(--bg);border:1px solid var(--line)}.dacc b{display:block;font-size:14px;word-break:break-all}.dacc .chip{display:block}
 .faq summary{list-style:none;cursor:pointer}.faq summary::-webkit-details-marker{display:none}.faq summary:after{content:'+';float:right;color:var(--or);font-weight:800}.faq[open] summary:after{content:'–'}
-header img.lc{height:26px;width:auto;border-radius:0}.dh img.lcd{height:34px;width:auto;border-radius:0}
+header .brand{display:flex;flex-direction:column;align-items:center;line-height:1}header .brand .t{flex:none;font-size:19px}header img.lc{height:20px;width:auto;border-radius:0;margin-top:2px}.dh img.lcd{height:34px;width:auto;border-radius:0}
 .logo-big{width:auto;height:auto;box-shadow:none;text-align:center;margin:30px auto 6px}.logo-big img{width:230px;max-width:70%}
 .lcb{display:none!important}:root[data-theme=light] .lcb{display:inline!important}:root[data-theme=light] .lcw{display:none!important}
 .logo-big .lcb,.logo-big .lcw{margin:auto}
 #tabs{display:block!important;padding:0 0 calc(env(safe-area-inset-bottom) + 4px)}#tabs[hidden]{display:none!important}
-#tabs button.adbar{flex-direction:row;justify-content:flex-start;font-weight:400;color:var(--tx);display:flex;align-items:center;gap:10px;margin:0;padding:9px 14px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,#ff6b001a,transparent);width:100%;border-left:0;border-right:0;border-top:0;color:var(--tx);text-align:left;font-size:13px}
-#tabs .adbar b{font-size:13px}#tabs .adbar .muted{font-size:11px}#tabs .adbar .tag{margin-left:auto;font-size:10px;font-weight:800;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+#tabs button.adbar{flex-direction:row;justify-content:flex-start;font-weight:400;color:var(--tx);display:flex;align-items:center;gap:12px;margin:0;padding:15px 16px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,#ff6b001a,transparent);width:100%;border-left:0;border-right:0;border-top:0;color:var(--tx);text-align:left;font-size:13px}
+#tabs .adbar b{font-size:16px}#tabs .adbar .muted{font-size:13px}#tabs .adbar .tag{margin-left:auto;font-size:10px;font-weight:800;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
 #tabs .trow{display:grid;grid-template-columns:repeat(5,1fr);align-items:end;padding:6px 6px 0}
 #tabs .trow button{background:none;border:0;color:#8a8a93;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 0}
 #tabs .trow button.on{color:var(--or)}#tabs .trow button svg{width:24px;height:24px}
 #tabs .scan{position:relative;top:-6px}#tabs .scan span{width:62px;height:62px}
-main{padding-bottom:calc(env(safe-area-inset-bottom) + 150px)}
+main{padding-bottom:calc(env(safe-area-inset-bottom) + 175px)}
 </style></head><body>
-<header><button id="menu" aria-label="Menu" style="padding:4px 6px 4px 0"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button id="back" hidden>‹ Voltar</button><img class="lc lcw" src="logo-car-white.png" alt=""><img class="lc lcb" src="logo-car.png" alt=""><div class="t">Auto<span>Link</span></div><button id="out" hidden>Sair</button></header>
+<header><button id="menu" aria-label="Menu" style="padding:4px 6px 4px 0"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button id="back" hidden aria-label="Voltar" style="font-size:34px;line-height:1;padding:0 8px 4px 2px;font-weight:400">‹</button><div class="brand"><div class="t">Auto<span>Link</span></div><img class="lc lcw" src="logo-car-white.png" alt=""><img class="lc lcb" src="logo-car.png" alt=""></div><span style="flex:1"></span><button id="out" hidden>Sair</button></header>
 <main id="m"></main>
 <nav id="tabs" hidden></nav>
-<div id="drawer" hidden><div class="dbg"></div><aside><div class="dh"><img class="lcd lcw" src="logo-car-white.png" alt=""><img class="lcd lcb" src="logo-car.png" alt=""><div><b>Auto<span style="color:var(--or)">Link</span></b><div class="muted" id="dEmail"></div></div></div><div id="dItems"></div><div class="muted" style="margin-top:auto;padding:16px">Versão 1.0 · beta</div></aside></div><div id="toast"></div>
+<div id="drawer" hidden><div class="dbg"></div><aside><div class="dh" style="flex-direction:column;align-items:flex-start;gap:4px"><b>Auto<span style="color:var(--or)">Link</span></b><img class="lcd lcw" src="logo-car-white.png" alt=""><img class="lcd lcb" src="logo-car.png" alt=""><div class="muted" id="dEmail"></div></div><div id="dItems"></div><div class="muted" style="margin-top:auto;padding:16px">Versão 1.0 · beta</div></aside></div><div id="toast"></div>
 <div id="scan"><video playsinline muted></video><div class="frame"></div><div class="tx" id="scanTx">Aponte para o QR code do adesivo AutoLink</div><button class="close" id="scanX" aria-label="Fechar">✕</button></div>
 <script>
 const KEY='AIzaSyBSGj1H273wiXM-VgpkytnC3kX6yQlt8_I';
@@ -160,11 +160,16 @@ function tabs(view,arg){const t=document.getElementById('tabs');if(!S||!TOP().in
   t.innerHTML=`<button class="adbar" id="adb">${ic('mega','#FF6B00')}<div><b>Anuncie aqui</b><div class="muted">Alcance milhares de motoristas</div></div><span class="tag">AD</span></button><div class="trow">`
    +B('home','home','Início')+B('garage','car','Garagem')+`<button class="scan" data-t="scan" aria-label="Escanear QR"><span>${ic('scan','#111',2.4)}</span></button>`+B('mercado','store','Mercado')+B('comunidade','users','Comunidade')+'</div>';
   t.querySelector('#adb').onclick=()=>go(Advertise);
-  t.querySelector('#adb svg').style.cssText='width:22px;height:22px;flex:none';
+  t.querySelector('#adb svg').style.cssText='width:28px;height:28px;flex:none';
   t.querySelectorAll('.trow button').forEach(b=>b.onclick=()=>{const k=b.dataset.t;k==='scan'?startScan():k==='home'?go(Home):k==='garage'?go(Garage):go(Soon,k);});}
 function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),2200);}
 const SOON='🚧 Funcionalidade em construção. Em breve!';
-function Soon(k){const T={mercado:['🛒','Mercado','Peças, acessórios, compra e venda de veículos.'],comunidade:['👥','Comunidade','Fórum de motoristas, dicas e alertas da região.']}[k]||['🚧','Em breve',''];
+function Soon(k){
+  if(k==='mercado'){m.innerHTML=`<h2>Mercado</h2><p class="muted">Tudo para o seu carro em um só lugar.</p><div class="grid" style="margin-top:14px">
+   ${[['🔩','Peças'],['🚗','Compra e venda'],['🛡️','Seguros'],['🔑','Aluguel de carros'],['🔧','Oficinas'],['🧽','Lava-jato'],['🚛','Guincho 24h'],['🎧','Acessórios'],['⛽','Postos'],['🅿️','Estacionamentos'],['🛞','Pneus'],['📋','Despachante']]
+    .map(([e,l])=>`<button class="sc"><span class="ic" style="font-size:28px">${e}</span>${l}</button>`).join('')}</div>
+   <div class="warn" style="text-align:center">🚧 O Mercado está em construção. Em breve!</div>`;
+   m.querySelectorAll('.sc').forEach(b=>b.onclick=()=>toast('🚧 '+b.textContent.trim()+': em construção. Em breve!'));return;}const T={mercado:['🛒','Mercado','Peças, acessórios, compra e venda de veículos.'],comunidade:['👥','Comunidade','Fórum de motoristas, dicas e alertas da região.']}[k]||['🚧','Em breve',''];
   m.innerHTML=`<div class="soon"><div class="big">${T[0]}</div><h2>${T[1]}</h2><p class="muted">${T[2]}</p><div class="warn" style="text-align:center">🚧 Funcionalidade em construção.<br>Estamos preparando isso para você!</div></div>`;}
 back.onclick=()=>{stack.pop();const [v,a]=stack[stack.length-1]||[Home];go(v,a,false);};
 out.onclick=()=>{if(confirm('Sair da conta?')){S=null;store.set(null);stack.length=0;go(Auth,'signin');}};
@@ -173,7 +178,7 @@ out.onclick=()=>{if(confirm('Sair da conta?')){S=null;store.set(null);stack.leng
 function Auth(mode='signin'){
   stack.length=0;back.hidden=true;out.hidden=true;
   const title={signin:'Entrar',signup:'Criar conta',reset:'Recuperar senha'}[mode];
-  m.innerHTML=`<div class="logo-big"><img class="lcw" src="logo-car-white.png" alt=""><img class="lcb" src="logo-car.png" alt=""><div class="t" style="font-size:30px;font-weight:900;margin-top:6px">Auto<span style="color:var(--or)">Link</span></div></div><h2 style="text-align:center;font-size:24px">${title}</h2>
+  m.innerHTML=`<div class="logo-big"><div class="t" style="font-size:32px;font-weight:900;margin-bottom:8px">Auto<span style="color:var(--or)">Link</span></div><img class="lcw" src="logo-car-white.png" alt=""><img class="lcb" src="logo-car.png" alt=""></div><h2 style="text-align:center;font-size:24px">${title}</h2>
   <form id="f"><input id="e" type="email" placeholder="E-mail" autocomplete="email" autocapitalize="off" required>
   ${mode!=='reset'?`<input id="p" type="password" placeholder="Senha (mínimo 6 caracteres)" autocomplete="${mode==='signup'?'new-password':'current-password'}" required>`:''}
   <button class="btn" id="go">${title}</button></form>
@@ -199,12 +204,13 @@ function Home(){
   m.innerHTML=`<div id="danger"></div><div id="hero"><div class="hero"><div class="muted">Carregando...</div></div></div>
   <h2>Avisos sobre meu carro</h2><div id="alerts"><div class="card muted">Carregando...</div></div>
   <h2>Atalhos</h2><div class="grid">
-   ${[['alerta','siren','Criar alerta','#ef4444'],['qr','qr','Meu QR'],['man','wrench','Manutenção'],['doc','doc','Documentos'],['perdi','car','Perdi meu carro','#f59e0b'],['mapa','pin','Mapa','#3b82f6'],['parc','shield','Parceiros','#22c55e']]
+   ${[['alerta','siren','Criar alerta','#ef4444'],['qr','qr','Meu QR'],['hist','msg','Histórico'],['man','wrench','Manutenção'],['doc','doc','Documentos'],['perdi','car','Perdi meu carro','#f59e0b'],['mapa','pin','Mapa','#3b82f6'],['parc','shield','Parceiros','#22c55e']]
      .map(([k,i,l,c])=>`<button class="sc" data-k="${k}"><span class="ic">${ic(i,c||'#FF6B00')}</span>${l}</button>`).join('')}</div>
   ${installTip()}`;
   let cars=[],idx=0;
   m.querySelectorAll('.sc').forEach(b=>b.onclick=()=>{const k=b.dataset.k;
     if(k==='alerta')return go(NewAlert);
+    if(k==='hist')return go(History);
     if(k==='qr')return cars.length?go(Car,cars[idx]):go(Garage);
     toast(SOON);});
   const carSvg=`<svg class="car" viewBox="0 0 120 60" fill="none" stroke="#FF6B00" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 44H8c-2 0-3-1-3-3v-7c0-2 1-3 3-4l14-4 12-9c3-2 7-3 11-3h22c5 0 9 2 12 5l9 8 14 2c4 1 7 4 7 8v4c0 2-1 3-3 3h-6"/><path d="M38 44h40"/><circle cx="26" cy="44" r="8"/><circle cx="90" cy="44" r="8"/><path d="M36 26h50"/></svg>`;
@@ -247,6 +253,18 @@ function Garage(){
     catch(err){alert('Erro: '+err.message);bt.disabled=false;bt.textContent='Adicionar';}};
 }
 
+function History(){
+  const H=()=>{try{return JSON.parse(localStorage.getItem('al_hist')||'[]')}catch(e){return[]}};
+  const draw=()=>{const l=H().sort((a,b)=>(b.at||0)-(a.at||0));
+    m.innerHTML=`<h2>Histórico de contatos</h2><p class="muted">Carros que você avisou escaneando o QR code.</p><div id="hl"></div>`;
+    const box=$('#hl');if(!l.length){box.innerHTML='<div class="card muted">Você ainda não falou com nenhum dono de carro.<br>Toque no botão laranja de escanear para avisar alguém.</div>';return;}
+    for(const h of l){const r=document.createElement('div');r.className='card';r.style.cssText='display:flex;gap:12px;align-items:center';
+      r.innerHTML=`<span class="alert"><span class="ic or">${ic('car','#FF6B00')}</span></span><div style="flex:1;min-width:0"><b>${esc(h.carName||'Carro')}</b><div class="muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(h.lastMsg||'')}</div><div class="muted">${h.at?new Date(h.at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}</div></div><button class="chip" data-o>Abrir</button><button class="chip" data-d aria-label="Apagar">🗑</button>`;
+      r.querySelector('[data-o]').onclick=()=>location.href='index.html?c='+encodeURIComponent(h.carId)+'&from=app';
+      r.querySelector('[data-d]').onclick=()=>{if(!confirm('Apagar esta conversa do seu histórico?'))return;
+        try{localStorage.setItem('al_hist',JSON.stringify(H().filter(x=>x.carId!==h.carId)));localStorage.removeItem('chat_'+h.carId);}catch(e){}draw();};
+      box.appendChild(r);}};
+  draw();}
 function Car(car){
   m.innerHTML=`<h2>${esc(car.name)}</h2><div id="st"></div>
   <div class="row"><span>QR ativo (recebendo mensagens)</span><label class="sw"><input type="checkbox" id="act" ${car.active?'checked':''}><span></span></label></div>
@@ -337,7 +355,7 @@ function theme(t){if(t)try{localStorage.setItem('al_theme',t)}catch(e){};const c
   document.querySelector('meta[name=theme-color]').content=cur==='light'?'#ffffff':'#0b0b0c';return cur;}
 function openMenu(){const d=document.getElementById('drawer');d.hidden=false;document.getElementById('dEmail').textContent=S?.email||'Não conectado';
   const cur=theme();const I=(k,i,l,x='')=>`<button class="di" data-k="${k}">${ic(i)}<span>${l}</span>${x}</button>`;
-  document.getElementById('dItems').innerHTML=I('theme','doc','Tema',`<span class="tg"><i class="${cur==='light'?'on':''}">☀️</i><i class="${cur==='dark'?'on':''}">🌙</i></span>`)
+  document.getElementById('dItems').innerHTML=I('home','home','Início')+I('theme','doc','Tema',`<span class="tg"><i class="${cur==='light'?'on':''}">☀️</i><i class="${cur==='dark'?'on':''}">🌙</i></span>`)
    +I('config','wrench','Configurações')+I('plan','shield','Meu plano','<span class="pill">Grátis</span>')
    +I('ads','mega','Quero anunciar no AutoLink')+I('share','users','Indicar o AutoLink')+I('help','msg','Central de ajuda')+I('terms','doc','Termos e privacidade')
    +`<div class="dacc">${S?`<div class="muted">Conectado como</div><b>${esc(S.email||'')}</b><button class="chip" id="dOut" style="margin-top:10px">Sair da conta</button>`:''}</div>`;
@@ -348,6 +366,7 @@ function openMenu(){const d=document.getElementById('drawer');d.hidden=false;doc
     if(k==='share'){const u=new URL('app.html',location.href).href,t='Conheça o AutoLink: com um adesivo QR no carro, qualquer pessoa te avisa se seu carro estiver bloqueando uma garagem, com farol aceso e mais. Sem expor seu telefone.';
       if(navigator.share)navigator.share({title:'AutoLink',text:t,url:u}).catch(()=>{});else{navigator.clipboard?.writeText(t+' '+u);toast('Link copiado! Cole e envie para seus amigos.');}return;}
     if(!S)return;
+    if(k==='home')return go(Home);
     if(k==='plan')go(Plan);if(k==='ads')go(Advertise);if(k==='help')go(Help);});
   const o=document.getElementById('dOut');if(o)o.onclick=()=>{d.hidden=true;out.onclick();};
   d.querySelector('.dbg').onclick=()=>d.hidden=true;}
@@ -418,6 +437,7 @@ function NewAlert(){
     catch(e){alert('Erro: '+e.message);b.disabled=false;b.textContent='Enviar alerta para análise';}};
 }
 async function nearAlerts(){
+  try{const st=await navigator.permissions?.query({name:'geolocation'});if(!st||st.state!=='granted')return;}catch(e){return;}
   let pos;try{pos=await gps();}catch(e){return;}
   let list=[];try{list=await find('alerts',[['status','approved']]);}catch(e){return;}
   const now=Date.now();
