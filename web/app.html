@@ -166,7 +166,7 @@ function toast(t){const e=document.getElementById('toast');e.textContent=t;e.cla
 const SOON='🚧 Funcionalidade em construção. Em breve!';
 function Soon(k){
   if(k==='mercado'){m.innerHTML=`<h2>Mercado</h2><p class="muted">Tudo para o seu carro em um só lugar.</p><div class="grid" style="margin-top:14px">
-   ${[['🔩','Peças'],['🚗','Compra e venda'],['🛡️','Seguros'],['🔑','Aluguel de carros'],['🔧','Oficinas'],['🧽','Lava-jato'],['🚛','Guincho 24h'],['🎧','Acessórios'],['⛽','Postos'],['⚡','Postos elétricos'],['🅿️','Estacionamentos'],['📋','Despachante'],['🔍','Perito automotivo']]
+   ${[['🔩','Peças'],['🚗','Compra e venda'],['🛡️','Seguros'],['🔑','Aluguel de carros'],['🔧','Oficinas'],['🧽','Lava-jato'],['🚛','Guincho 24h'],['🎧','Acessórios'],['⛽','Postos'],['⚡','Postos elétricos'],['🅿️','Estacionamentos'],['📋','Despachante'],['🔍','Perito automotivo'],['🎨','Funilaria e pintura'],['🔊','Som e película'],['✅','Vistoria']]
     .map(([e,l])=>`<button class="sc"><span class="ic" style="font-size:28px">${e}</span>${l}</button>`).join('')}</div>
    <div class="warn" style="text-align:center">🚧 O Mercado está em construção. Em breve!</div>`;
    m.querySelectorAll('.sc').forEach(b=>b.onclick=()=>toast('🚧 '+b.textContent.trim()+': em construção. Em breve!'));return;}
