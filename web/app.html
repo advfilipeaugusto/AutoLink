@@ -1,9 +1,9 @@
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
 <title>AutoLink</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js" defer></script>
 <link rel="manifest" href="manifest.json"><link rel="icon" href="logo.svg"><link rel="apple-touch-icon" href="icon2-180.png">
-<meta name="theme-color" content="#0b0b0c"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b0b0c"><script>try{if(localStorage.getItem("al_theme")==="light")document.documentElement.dataset.theme="light"}catch(e){}</script><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="AutoLink">
 <style>
 :root{--bg:#0b0b0c;--card:#17171a;--card2:#1f1f23;--line:#2a2a2f;--tx:#f4f4f5;--mut:#9a9aa3;--or:#FF6B00;--or2:#ff8a33;--ok:#22c55e;--red:#ef4444}
@@ -68,10 +68,31 @@ input:focus{border-color:var(--or)}input::placeholder{color:#6b6b73}
 #scan .frame{position:absolute;top:50%;left:50%;width:70vw;max-width:300px;aspect-ratio:1;transform:translate(-50%,-50%);border:4px solid var(--or);border-radius:28px;box-shadow:0 0 0 9999px #000a}
 #scan .tx{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top) + 70px);color:#fff;text-align:center;font-weight:700;font-size:17px;padding:0 20px}
 #scan .close{position:absolute;top:calc(env(safe-area-inset-top) + 14px);right:14px;width:44px;height:44px;border-radius:50%;border:0;background:#fff;color:#111;font-size:20px}
+
+#menu{color:var(--tx)!important}
+#drawer{position:fixed;inset:0;z-index:25}#drawer .dbg{position:absolute;inset:0;background:#0009;animation:fi .2s}
+#drawer aside{position:absolute;top:0;bottom:0;left:0;width:82%;max-width:320px;background:var(--card);border-right:1px solid var(--line);padding:calc(env(safe-area-inset-top) + 16px) 0 env(safe-area-inset-bottom);display:flex;flex-direction:column;animation:si .22s}
+@keyframes si{from{transform:translateX(-100%)}}@keyframes fi{from{opacity:0}}
+.dh{display:flex;gap:12px;align-items:center;padding:4px 18px 18px;border-bottom:1px solid var(--line);margin-bottom:8px}.dh img{width:44px;height:44px;border-radius:12px}.dh b{font-size:20px}
+.di{display:flex;align-items:center;gap:14px;width:100%;background:none;border:0;color:var(--tx);font-size:16px;font-weight:600;padding:14px 18px;text-align:left}.di svg{width:22px;height:22px;color:var(--mut)}.di:active{background:var(--card2)}
+.di .tg{margin-left:auto;display:flex;background:var(--bg);border-radius:10px;padding:3px;gap:2px}.di .tg i{font-style:normal;font-size:13px;padding:5px 10px;border-radius:8px;color:var(--mut)}.di .tg i.on{background:var(--or);color:#111}
+/* Alerta perto */
+.danger{text-decoration:none;display:flex;gap:12px;align-items:center;background:#dc2626;color:#fff;border-radius:18px;padding:14px 16px;margin:4px 0 12px;animation:blink 1.1s infinite;box-shadow:0 0 0 0 #dc262699;border:0;width:100%;text-align:left;font:inherit}
+.danger .ic{width:40px;height:40px;border-radius:12px;background:#fff3;display:flex;align-items:center;justify-content:center;font-size:22px;flex:none}.danger b{font-size:16px}.danger small{opacity:.9}
+@keyframes blink{0%,100%{background:#dc2626;box-shadow:0 0 0 0 #dc262699}50%{background:#ff3b3b;box-shadow:0 0 0 10px #dc262600}}
+.types{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}.types button{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 4px;color:var(--tx);font-size:13px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:4px}.types button span{font-size:26px}.types button.on{border-color:var(--or);background:#ff6b0022}
+textarea{width:100%;padding:14px;border-radius:12px;border:1px solid var(--line);font:inherit;font-size:16px;margin-bottom:10px;background:var(--card);color:var(--tx);min-height:90px;resize:vertical}
+.gps{display:flex;gap:10px;align-items:center;margin-bottom:12px}
+/* Tema claro */
+:root[data-theme=light]{--bg:#f4f4f6;--card:#ffffff;--card2:#f0f0f3;--line:#e4e4e9;--tx:#111114;--mut:#6b6b75}
+:root[data-theme=light] header{background:rgba(255,255,255,.85);border-bottom-color:#0000000d}
+:root[data-theme=light] #tabs{background:rgba(255,255,255,.92)}:root[data-theme=light] .composer{background:rgba(244,244,246,.92)}
+:root[data-theme=light] #toast{background:#111;color:#fff}:root[data-theme=light] .them{background:#e9e9ee}
 </style></head><body>
-<header><button id="back" hidden>‹ Voltar</button><img src="logo.svg" alt=""><div class="t">Auto<span>Link</span></div><button id="out" hidden>Sair</button></header>
+<header><button id="menu" aria-label="Menu" style="padding:4px 6px 4px 0"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button id="back" hidden>‹ Voltar</button><img src="logo.svg" alt=""><div class="t">Auto<span>Link</span></div><button id="out" hidden>Sair</button></header>
 <main id="m"></main>
-<nav id="tabs" hidden></nav><div id="toast"></div>
+<nav id="tabs" hidden></nav>
+<div id="drawer" hidden><div class="dbg"></div><aside><div class="dh"><img src="logo.svg" alt=""><div><b>Auto<span style="color:var(--or)">Link</span></b><div class="muted" id="dEmail"></div></div></div><div id="dItems"></div><div class="muted" style="margin-top:auto;padding:16px">Versão 1.0 · beta</div></aside></div><div id="toast"></div>
 <div id="scan"><video playsinline muted></video><div class="frame"></div><div class="tx" id="scanTx">Aponte para o QR code do adesivo AutoLink</div><button class="close" id="scanX" aria-label="Fechar">✕</button></div>
 <script>
 const KEY='AIzaSyBSGj1H273wiXM-VgpkytnC3kX6yQlt8_I';
@@ -117,7 +138,7 @@ const stack=[];
 const TOP=()=>[Home,Garage,Soon];
 function go(view,arg,push=true){clearInterval(timer);
   if(TOP().includes(view)){stack.length=0;stack.push([view,arg]);}else if(push)stack.push([view,arg]);
-  back.hidden=stack.length<=1;out.hidden=!(S&&view===Home);scrollTo(0,0);tabs(view,arg);view(arg);}
+  back.hidden=stack.length<=1;out.hidden=true;scrollTo(0,0);tabs(view,arg);view(arg);}
 function tabs(view,arg){const t=document.getElementById('tabs');if(!S||!TOP().includes(view)){t.hidden=true;return;}t.hidden=false;
   const cur=view===Home?'home':view===Garage?'garage':arg;
   const B=(k,i,l)=>`<button data-t="${k}" class="${cur===k?'on':''}">${ic(i)}${l}</button>`;
@@ -157,16 +178,16 @@ function installTip(){
 }
 
 function Home(){
-  m.innerHTML=`<div id="hero"><div class="hero"><div class="muted">Carregando...</div></div></div>
+  m.innerHTML=`<div id="danger"></div><div id="hero"><div class="hero"><div class="muted">Carregando...</div></div></div>
   <h2>Avisos sobre meu carro</h2><div id="alerts"><div class="card muted">Carregando...</div></div>
   <h2>Atalhos</h2><div class="grid">
-   ${[['avisar','bell','Avisar carro'],['qr','qr','Meu QR'],['man','wrench','Manutenção'],['doc','doc','Documentos'],['rep','siren','Reportar','#ef4444'],['mapa','pin','Mapa','#3b82f6'],['parc','shield','Parceiros','#22c55e']]
+   ${[['alerta','siren','Criar alerta','#ef4444'],['qr','qr','Meu QR'],['man','wrench','Manutenção'],['doc','doc','Documentos'],['mapa','pin','Mapa','#3b82f6'],['parc','shield','Parceiros','#22c55e']]
      .map(([k,i,l,c])=>`<button class="sc" data-k="${k}"><span class="ic">${ic(i,c||'#FF6B00')}</span>${l}</button>`).join('')}</div>
   <div class="ad"><span class="alert"><span class="ic or">${ic('mega','#FF6B00')}</span></span><div><b>Anuncie aqui</b><div class="muted">Alcance milhares de motoristas · Em breve</div></div><span class="tag">AD</span></div>
   ${installTip()}`;
   let cars=[],idx=0;
   m.querySelectorAll('.sc').forEach(b=>b.onclick=()=>{const k=b.dataset.k;
-    if(k==='avisar')return startScan();
+    if(k==='alerta')return go(NewAlert);
     if(k==='qr')return cars.length?go(Car,cars[idx]):go(Garage);
     toast(SOON);});
   m.querySelector('.ad').onclick=()=>toast(SOON);
@@ -190,6 +211,7 @@ function Home(){
       b.innerHTML=`<span class="ic or">${ic('msg','#FF6B00')}</span><div style="min-width:0"><b style="font-size:15px">${esc(c.lastMsg)}</b><div class="muted">${esc(car.name)} · ${c.updatedAt.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div></div>`;
       b.onclick=()=>{stack.length=0;stack.push([Home]);go(Chat,{car,chatId:c.id});};box.appendChild(b);}};
   poll(()=>load().catch(()=>{}),8000);
+  nearAlerts();
 }
 
 function Garage(){
@@ -280,8 +302,9 @@ async function startScan(){
   box.style.display='block';v.srcObject=stream;await v.play().catch(()=>{});scanning=true;
   const c=document.createElement('canvas'),ctx=c.getContext('2d',{willReadFrequently:true});
   const tick=()=>{if(!scanning)return;
-    if(v.readyState>=2&&window.jsQR){const w=v.videoWidth,h=v.videoHeight,k=Math.min(1,640/Math.max(w,h));c.width=w*k;c.height=h*k;ctx.drawImage(v,0,0,c.width,c.height);
-      const r=jsQR(ctx.getImageData(0,0,c.width,c.height).data,c.width,c.height,{inversionAttempts:'dontInvert'});
+    if(v.readyState>=2){const w=v.videoWidth,h=v.videoHeight,k=Math.min(1,800/Math.max(w,h));c.width=w*k;c.height=h*k;ctx.drawImage(v,0,0,c.width,c.height);
+      let r=null;if(window.jsQR)r=jsQR(ctx.getImageData(0,0,c.width,c.height).data,c.width,c.height,{inversionAttempts:'attemptBoth'});
+      else if(!window._jsqrWarn){window._jsqrWarn=1;tx.textContent='Carregando leitor... verifique sua internet.';}
       if(r&&r.data){const u=handleQR(r.data);if(u){stopScan();location.href=u;return;}tx.textContent='Esse QR code não é de um adesivo AutoLink.';}}
     requestAnimationFrame(tick);};
   tick();}
@@ -291,8 +314,59 @@ function handleQR(text){try{const u=new URL(text);const here=new URL('./',locati
   if(u.origin===here.origin&&u.pathname.startsWith(here.pathname)&&(u.searchParams.get('s')||u.searchParams.get('c'))){
     const q=u.searchParams.get('s')?'s='+encodeURIComponent(u.searchParams.get('s')):'c='+encodeURIComponent(u.searchParams.get('c'));return 'index.html?'+q+'&from=app';}}catch(e){}return null;}
 
+
+// ---------- Menu lateral ----------
+function theme(t){if(t)try{localStorage.setItem('al_theme',t)}catch(e){};const cur=(()=>{try{return localStorage.getItem('al_theme')}catch(e){}})()||'dark';
+  if(cur==='light')document.documentElement.dataset.theme='light';else delete document.documentElement.dataset.theme;
+  document.querySelector('meta[name=theme-color]').content=cur==='light'?'#ffffff':'#0b0b0c';return cur;}
+function openMenu(){const d=document.getElementById('drawer');d.hidden=false;document.getElementById('dEmail').textContent=S?.email||'';
+  const cur=theme();const I=(k,i,l,x='')=>`<button class="di" data-k="${k}">${ic(i)}${l}${x}</button>`;
+  document.getElementById('dItems').innerHTML=I('theme','doc','Tema',`<span class="tg"><i class="${cur==='light'?'on':''}">☀️ Claro</i><i class="${cur==='dark'?'on':''}">🌙 Escuro</i></span>`)
+   +(S?I('home','home','Início')+I('garage','car','Minha garagem')+I('alerta','siren','Criar alerta regional')+I('install','qr','Instalar na tela inicial')+I('out','users','Sair da conta'):'');
+  d.querySelectorAll('.di').forEach(b=>b.onclick=()=>{const k=b.dataset.k;
+    if(k==='theme'){theme(cur==='light'?'dark':'light');return openMenu();}
+    d.hidden=true;if(k==='home')go(Home);if(k==='garage')go(Garage);if(k==='alerta')go(NewAlert);
+    if(k==='install')alert(/iphone|ipad/i.test(navigator.userAgent)?'No Safari: toque em Compartilhar (quadrado com seta ↑) e depois em "Adicionar à Tela de Início".':'No Chrome: toque nos 3 pontinhos ⋮ e depois em "Instalar app".');
+    if(k==='out')out.onclick();});
+  d.querySelector('.dbg').onclick=()=>d.hidden=true;}
+document.getElementById('menu').onclick=openMenu;
+
+// ---------- Alertas regionais ----------
+const ATYPES={incendio:['🔥','Incêndio'],enchente:['🌊','Enchente'],acidente:['💥','Acidente'],bloqueio:['🚧','Via bloqueada'],roubo:['🚨','Roubo / assalto'],outro:['⚠️','Outro']};
+const RAIO=300;
+function dist(a,b,c,d){const R=6371e3,r=x=>x*Math.PI/180,dl=r(c-a),dn=r(d-b);const h=Math.sin(dl/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h));}
+function gps(){return new Promise((ok,no)=>{if(!navigator.geolocation)return no(new Error('GPS indisponível'));
+  navigator.geolocation.getCurrentPosition(p=>ok({lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy}),e=>no(e),{enableHighAccuracy:true,timeout:15000,maximumAge:60000});});}
+function NewAlert(){
+  let type=null,pos=null;
+  m.innerHTML=`<h2>Criar alerta regional</h2><p class="muted">Avise os motoristas num raio de ${RAIO} m. O alerta passa por análise da equipe AutoLink antes de aparecer.</p>
+  <div class="types">${Object.entries(ATYPES).map(([k,[e,l]])=>`<button data-t="${k}"><span>${e}</span>${l}</button>`).join('')}</div>
+  <textarea id="ds" maxlength="300" placeholder="Descreva o que está acontecendo (ex: incêndio em terreno na esquina da rua X)"></textarea>
+  <div class="card gps"><span style="font-size:22px">📍</span><div style="flex:1"><b style="font-size:15px">Localização</b><div class="muted" id="gt">Obtendo sua localização...</div></div><button class="chip" id="gr">Atualizar</button></div>
+  <button class="btn" id="sv">Enviar alerta para análise</button>`;
+  m.querySelectorAll('.types button').forEach(b=>b.onclick=()=>{type=b.dataset.t;m.querySelectorAll('.types button').forEach(x=>x.classList.toggle('on',x===b));});
+  const locate=()=>{$('#gt').textContent='Obtendo sua localização...';gps().then(p=>{pos=p;$('#gt').textContent=`Pronto · precisão de ${Math.round(p.acc)} m`;})
+    .catch(()=>{pos=null;$('#gt').innerHTML='<span class="err">Não foi possível pegar o GPS. Permita a localização para o AutoLink nos ajustes do celular.</span>';});};
+  $('#gr').onclick=locate;locate();
+  $('#sv').onclick=async()=>{if(!type)return toast('Escolha o tipo do alerta');if(!pos)return toast('Aguarde a localização (GPS)');
+    const b=$('#sv');b.disabled=true;b.textContent='Enviando...';
+    try{await add('alerts',{type,desc:$('#ds').value.trim(),lat:String(pos.lat),lng:String(pos.lng),authorId:S.uid,status:'pending',createdAt:new Date()});
+      alert('Alerta enviado! ✅\n\nNossa equipe vai analisar e, se aprovado, ele aparece para os motoristas da região.');go(Home);}
+    catch(e){alert('Erro: '+e.message);b.disabled=false;b.textContent='Enviar alerta para análise';}};
+}
+async function nearAlerts(){
+  let pos;try{pos=await gps();}catch(e){return;}
+  let list=[];try{list=await find('alerts',[['status','approved']]);}catch(e){return;}
+  const now=Date.now();
+  const near=list.filter(a=>!(a.expiresAt&&a.expiresAt<now)).map(a=>({...a,d:dist(pos.lat,pos.lng,+a.lat,+a.lng)})).filter(a=>a.d<=RAIO).sort((a,b)=>a.d-b.d);
+  const box=document.getElementById('danger');if(!box)return;
+  box.innerHTML=near.map(a=>{const [e,l]=ATYPES[a.type]||ATYPES.outro;return `<a class="danger" target="_blank" href="https://www.google.com/maps?q=${+a.lat},${+a.lng}"><span class="ic">${e}</span><div><b>${l} a ${Math.round(a.d)} m de você</b><br><small>${esc(a.desc||'Alerta na sua região. Tenha cuidado.')}</small></div></a>`;}).join('');
+  if(near.length&&navigator.vibrate)navigator.vibrate([200,100,200]);
+}
+
 // ---------- Início ----------
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+theme();
 (async()=>{m.innerHTML='<p class="muted" style="text-align:center;margin-top:40px">Carregando...</p>';
   try{await refresh();}catch(e){}
   S?go(Home):Auth('signin');})();
