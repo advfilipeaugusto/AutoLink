@@ -125,7 +125,7 @@ input[type=date],input[type=time]{display:block;width:100%;max-width:100%;min-wi
 .hqr{position:absolute;top:14px;right:14px;width:42px;height:42px;border-radius:12px;background:var(--or);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px #ff6b0055}.hqr svg{width:24px;height:24px}
 .b.hid{opacity:.45;border:1px dashed var(--mut)}.b[data-mid]{cursor:pointer}
 </style></head><body>
-<header><button id="menu" aria-label="Menu" style="padding:4px 6px 4px 0;position:relative"><span class="rdot" id="menuDot" hidden style="position:absolute;top:0;right:2px"></span><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button id="back" hidden aria-label="Voltar" style="font-size:34px;line-height:1;padding:0 8px 4px 2px;font-weight:400">‹</button><div class="brand"><div class="t">Auto<span>Link</span></div><img class="lc lcw" src="logo-car-white.png" alt=""><img class="lc lcb" src="logo-car.png" alt=""></div><span style="flex:1"></span><button id="famI" hidden aria-label="Carro da família" style="font-size:22px;padding:4px 6px;position:relative">👨‍👩‍👧</button><button id="srch" hidden aria-label="Buscar" style="color:var(--tx);padding:4px"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button><button id="bell" hidden aria-label="Notificações" style="position:relative;color:var(--tx);padding:4px"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4zM10 21h4"/></svg><span class="nb" id="bellN"></span></button><button id="out" hidden>Sair</button></header>
+<header><button id="menu" aria-label="Menu" style="padding:4px 6px 4px 0;position:relative"><span class="rdot" id="menuDot" hidden style="position:absolute;top:0;right:2px"></span><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button id="back" hidden aria-label="Voltar" style="font-size:34px;line-height:1;padding:0 8px 4px 2px;font-weight:400">‹</button><div class="brand"><div class="t">Auto<span>Link</span></div><img class="lc lcw" src="logo-car-white.png" alt=""><img class="lc lcb" src="logo-car.png" alt=""></div><span style="flex:1"></span><button id="famI" hidden aria-label="Família" style="font-size:22px;padding:4px 6px;position:relative">👨‍👩‍👧</button><button id="srch" hidden aria-label="Buscar" style="color:var(--tx);padding:4px"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button><button id="bell" hidden aria-label="Notificações" style="position:relative;color:var(--tx);padding:4px"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4zM10 21h4"/></svg><span class="nb" id="bellN"></span></button><button id="out" hidden>Sair</button></header>
 <main id="m"></main>
 <nav id="tabs" hidden></nav>
 <div id="drawer" hidden><div class="dbg"></div><aside><div class="dh" style="align-items:flex-start;gap:12px"><div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px"><b>Auto<span style="color:var(--or)">Link</span></b><img class="lcd lcw" src="logo-car-white.png" alt=""><img class="lcd lcb" src="logo-car.png" alt=""><div id="dEmail" hidden></div></div><label class="av" id="dAv" aria-label="Foto do perfil"><input type="file" accept="image/*" id="dAvI" style="position:absolute;width:1px;height:1px;opacity:0"></label></div><div id="dName" style="padding:10px 18px 14px;font-size:18px;font-weight:800"></div><div id="dItems"></div><div class="muted" style="margin-top:auto;padding:16px">Versão 1.0 · beta</div></aside></div><div id="toast"></div>
@@ -177,7 +177,7 @@ const stack=[];
 const TOP=()=>[Home,Garage,Soon];
 function go(view,arg,push=true){clearInterval(timer);
   if(TOP().includes(view)){stack.length=0;stack.push([view,arg]);}else if(push)stack.push([view,arg]);
-  back.hidden=stack.length<=1;out.hidden=true;document.getElementById('bell').hidden=document.getElementById('srch').hidden=!S||view===Auth||view===ProfileForm;if(!S||view===Auth||view===ProfileForm)document.getElementById('famI').hidden=true;scrollTo(0,0);tabs(view,arg);view(arg);}
+  back.hidden=stack.length<=1;out.hidden=true;document.getElementById('bell').hidden=document.getElementById('srch').hidden=document.getElementById('famI').hidden=!S||view===Auth||view===ProfileForm;scrollTo(0,0);tabs(view,arg);view(arg);}
 function tabs(view,arg){const t=document.getElementById('tabs');if(!S||!TOP().includes(view)){t.hidden=true;return;}t.hidden=false;
   const cur=view===Home?'home':view===Garage?'garage':arg;
   const B=(k,i,l)=>`<button data-t="${k}" class="${cur===k?'on':''}">${ic(i)}${l}</button>`;
@@ -232,7 +232,7 @@ function Home(){
   <h2>Avisos sobre meu carro</h2><div id="alerts"><div class="card muted">Carregando...</div></div>
   <h2>Alertas na minha região</h2><div id="rmap"></div>
   <h2>Funcionalidades</h2><div class="grid g5">
-   ${[['alerta','siren','Criar alerta','#ef4444'],['acid','car','Acidente','#ef4444'],['away','bell','Ausência'],['hist','msg','Histórico'],['man','wrench','Manutenção'],['doc','doc','Documentos'],['perdi','car','Perdi meu carro','#f59e0b'],['emp','store','Empresa','#3b82f6'],['cal','doc','Calendário','#f59e0b'],['uber','car','Motorista de app','#22c55e']]
+   ${[['alerta','siren','Criar alerta','#ef4444'],['acid','car','Acidente','#ef4444'],['away','bell','Ausência'],['hist','msg','Histórico'],['man','wrench','Manutenção'],['doc','doc','Documentos'],['perdi','car','Perdi meu carro','#f59e0b'],['emp','store','Empresa','#3b82f6'],['cal','doc','Calendário','#f59e0b'],['uber','car','Motorista de app','#22c55e'],['fam','users','Família','#3b82f6'],['park','pin','Onde estacionei','#f59e0b'],['sos','siren','SOS família','#ef4444'],['help','msg','Ajuda'],['manual','doc','Manual']]
      .map(([k,i,l,c])=>`<button class="sc" data-k="${k}"><span class="ic">${ic(i,c||'#FF6B00')}</span>${l}</button>`).join('')}</div>
   ${installTip()}`;
   let cars=[],idx=0;
@@ -243,6 +243,7 @@ function Home(){
     if(k==='qr')return go(MyQR);
     if(k==='emp')return go(Company);
     if(k==='cal')return go(Calendar);
+    if(k==='fam')return go(Family);if(k==='park')return go(Parked);if(k==='sos')return go(Sos);if(k==='help')return go(Help);if(k==='manual')return location.href='manual.html';
     if(k==='uber')return toast('🚧 Motorista de app: em construção. Em breve!');
     toast(SOON);});
   const carSvg=`<svg class="car" viewBox="0 0 120 60" fill="none" stroke="#FF6B00" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 44H8c-2 0-3-1-3-3v-7c0-2 1-3 3-4l14-4 12-9c3-2 7-3 11-3h22c5 0 9 2 12 5l9 8 14 2c4 1 7 4 7 8v4c0 2-1 3-3 3h-6"/><path d="M38 44h40"/><circle cx="26" cy="44" r="8"/><circle cx="90" cy="44" r="8"/><path d="M36 26h50"/></svg>`;
@@ -261,7 +262,7 @@ function Home(){
   const load=async()=>{
     cars=await allCars();if(idx>=cars.length)idx=0;
     const chats=(await allChats(cars)).filter(c=>!c.blocked&&!c.hiddenOwner).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
-    famIcon(cars);setUnread(chats);if(!window._autoIdx){window._autoIdx=1;const j=cars.findIndex(x=>UNREAD[x.id]);if(j>=0)idx=j;}drawHero();
+    setUnread(chats);if(!window._autoIdx){window._autoIdx=1;const j=cars.findIndex(x=>UNREAD[x.id]);if(j>=0)idx=j;}drawHero();
     const box=document.getElementById('alerts');if(!box)return;
     const recent=chats.filter(c=>c.updatedAt&&Date.now()-c.updatedAt<48*3600e3&&!String(c.lastMsg||'').startsWith('Você:'));
     if(!recent.length){box.innerHTML=`<div class="card alert"><span class="ic">${ic('shield','#22c55e')}</span><div>Nenhum aviso sobre seu carro.<div class="muted">Tudo certo!</div></div></div>`;return;}
@@ -280,10 +281,7 @@ function Garage(){
   <div style="display:flex;gap:8px"><input id="mb" placeholder="Marca (ex: Nissan)" maxlength="30"><input id="mm" placeholder="Modelo (ex: March)" maxlength="40"></div>
   <input id="my" placeholder="Ano (ex: 2018)" inputmode="numeric" maxlength="4">
   <p class="muted" style="margin:-4px 0 10px">Marca, modelo e ano ajudam a achar peças compatíveis no Mercado.</p>
-  <button class="btn">Adicionar</button></form>
-  <h2>👨‍👩‍👧 Carro da família</h2><div class="card"><b>Entrar em um carro compartilhado</b><p class="muted">Peça o código de convite para o dono do carro. Ele gera em Garagem → carro → Família. O código vale por 2 dias.</p>
-  <div style="display:flex;gap:8px"><input id="jc" placeholder="Código (ex: F7K2QX)" maxlength="6" autocapitalize="characters" style="margin:0"><button class="chip" id="jb">Entrar</button></div></div>`;
-  $('#jb').onclick=()=>joinFamily($('#jc').value);
+  <button class="btn">Adicionar</button></form>`;
   const pl=$('#pl');pl.oninput=()=>pl.value=pl.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
   const list=async()=>{const cars=await allCars();await refreshUnread(cars);const box=$('#cars');if(!box)return;
     box.innerHTML=cars.length?'':'<p class="muted">Nenhum carro ainda. Adicione abaixo.</p>';
@@ -323,7 +321,7 @@ function Car(car){
       await api('/cars/'+car.id,'DELETE');
       stack.length=0;go(Home);
     }catch(err){alert('Erro ao apagar: '+err.message);}};
-  carExtras(car);familyBox(car);
+  carExtras(car);
   if(car.ownerId!==S.uid){['#st','#fleet','#del'].forEach(q=>{const e=$(q);if(e)e.style.display='none';});const r=$('#act')?.closest('.row');if(r)r.style.display='none';
     $('#st').insertAdjacentHTML('afterend','<div class="card">👨‍👩‍👧 <b>Carro compartilhado</b><div class="muted">Você recebe e responde as mensagens deste carro junto com o dono.</div></div>');}
   $('#act').onchange=async e=>{car.active=e.target.checked;try{await update('cars/'+car.id,{active:car.active});}catch(err){alert(err.message);}};
@@ -494,7 +492,7 @@ function Ticket(t){
   poll(()=>load().catch(()=>{}),4000);}
 document.getElementById('menu').onclick=openMenu;
 document.getElementById('bell').onclick=()=>go(Notifs);
-document.getElementById('famI').onclick=()=>go(Garage);
+document.getElementById('famI').onclick=()=>go(Family);
 document.getElementById('srch').onclick=()=>go(Search);
 
 // ---------- Alertas regionais ----------

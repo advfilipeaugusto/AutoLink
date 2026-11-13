@@ -267,17 +267,7 @@ async function openDoc(d, btn) {
 }
 
 // ---------- Frota: "Como estou dirigindo?" ----------
-async function carExtras(car) {
-  const box = el('fleet'); if (!box) return;
-  box.innerHTML = `<div class="row"><span>🏢 Veículo de empresa<br><small class="muted">Mostra "Como estou dirigindo?" para quem escanear</small></span><label class="sw"><input type="checkbox" id="flt" ${car.fleet ? 'checked' : ''}><span></span></label></div><div id="rts"></div>`;
-  el('flt').onchange = async e => { car.fleet = e.target.checked; try { await update('cars/' + car.id, { fleet: car.fleet }); carExtras(car); } catch (err) { alert(err.message); } };
-  if (!car.fleet) return;
-  try { const l = (await find('ratings', [['carId', car.id], ['ownerId', S.uid]])).sort((a, b) => b.at - a.at); const r = el('rts'); if (!r) return;
-    const avg = l.length ? (l.reduce((s, x) => s + +x.stars, 0) / l.length).toFixed(1) : '—';
-    r.innerHTML = `<div class="card"><b>Como estou dirigindo?</b><div style="font-size:28px;font-weight:900;color:var(--or)">⭐ ${avg} <small class="muted" style="font-size:13px">(${l.length} avaliações)</small></div>
-     ${l.slice(0, 10).map(x => `<div style="border-top:1px solid var(--line);padding-top:8px;margin-top:8px">${'⭐'.repeat(+x.stars)}<div class="muted">${x.comment ? esc(x.comment) + ' · ' : ''}${x.at ? x.at.toLocaleString('pt-BR') : ''}</div></div>`).join('')}</div>`;
-  } catch (e) {}
-}
+async function carExtras(car) { const box = el('fleet'); if (box) box.innerHTML = ''; }
 
 // ---------- Meu QR ----------
 async function MyQR() {
@@ -320,7 +310,7 @@ async function regionMap() {
 // ---------- Empresa ----------
 function Company() {
   const F = [['🚚', 'QR para frota', 'Adesivos AutoLink para todos os veículos da empresa, gerenciados em um só lugar.'],
-    ['⭐', 'Como estou dirigindo?', 'Receba avaliações de quem vê seus motoristas na rua. Ative em cada carro: Garagem → carro → "Veículo de empresa".', 1],
+    ['⭐', 'Como estou dirigindo?', 'Receba avaliações de quem vê seus motoristas na rua. Ative abaixo, em cada veículo.', 1],
     ['👥', 'Motoristas', 'Cadastre motoristas e saiba quem está com cada veículo.'],
     ['📊', 'Relatórios', 'Avaliações, ocorrências e manutenções de toda a frota.'],
     ['🔧', 'Manutenção da frota', 'Lembretes de revisão, IPVA e licenciamento de todos os veículos.'],
@@ -329,8 +319,10 @@ function Company() {
    ${F.map(([e, t, d, ok]) => `<button class="card cf" style="display:flex;gap:12px;align-items:center" data-ok="${ok ? 1 : ''}"><span style="font-size:28px">${e}</span><div style="flex:1"><b>${t}</b> ${ok ? '<span class="pill" style="margin:0">Disponível</span>' : '<span class="pill" style="margin:0;background:#3a3a40;color:var(--mut)">Em breve</span>'}<div class="muted">${d}</div></div></button>`).join('')}
    <div class="card" style="border-color:var(--or)"><b>💰 Quanto custa</b><div style="font-size:22px;font-weight:900;color:var(--or);margin:6px 0">R$ 69,00/mês <span style="font-size:15px">+ R$ 7,90 por veículo</span></div><div class="muted">Exemplo: frota de 10 caminhões = R$ 69,00 + 10 × R$ 7,90 = <b>R$ 148,00 por mês</b>.</div></div>
    <button class="btn" id="cq" style="margin-top:8px">Quero o AutoLink na minha empresa</button>`;
-  m.querySelectorAll('.cf').forEach(b => b.onclick = () => b.dataset.ok ? go(Garage) : toast('🚧 ' + b.querySelector('b').textContent + ': em construção. Em breve!'));
+  m.querySelectorAll('.cf').forEach(b => b.onclick = () => b.dataset.ok ? el('fleetBox').scrollIntoView({ behavior: 'smooth' }) : toast('🚧 ' + b.querySelector('b').textContent + ': em construção. Em breve!'));
   el('cq').onclick = () => go(Advertise, 'company');
+  m.insertAdjacentHTML('beforeend', '<h2 id="fleetBox">🏢 Veículos de empresa</h2><p class="muted">Ligue em cada veículo: quem escanear o adesivo verá "Como estou dirigindo?" e poderá dar nota de 1 a 5.</p><div id="fleetL"><p class="muted">Carregando...</p></div>');
+  fleetList();
 }
 
 // ---------- Não lidas (sino + contador por carro) ----------
@@ -495,8 +487,8 @@ async function allChats(cars) {
   return own.concat(...sh);
 }
 function famCode() { const A = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; return Array.from(crypto.getRandomValues(new Uint8Array(6)), b => A[b % A.length]).join(''); }
-function familyBox(car) {
-  const box = el('fam'); if (!box || car.ownerId !== S.uid) return;
+function familyBox(car, cont) {
+  const box = cont || el('fam'); if (!box || car.ownerId !== S.uid) return; const $q = x => box.querySelector(x);
   const names = car.memberNames ? String(car.memberNames).split('|').filter(Boolean) : [];
   const mem = Array.isArray(car.members) ? car.members : [];
   const until = car.memberUntil ? String(car.memberUntil).split('|') : [];
@@ -504,14 +496,14 @@ function familyBox(car) {
   const expired = mem.map((u, i) => +until[i] && +until[i] < Date.now() ? i : -1).filter(i => i >= 0);
   if (expired.length) { const m2 = mem.filter((_, j) => !expired.includes(j)), n2 = names.filter((_, j) => !expired.includes(j)), u2 = until.filter((_, j) => !expired.includes(j));
     api('/cars/' + car.id + '?updateMask.fieldPaths=members&updateMask.fieldPaths=memberNames&updateMask.fieldPaths=memberUntil', 'PATCH', { fields: { members: { arrayValue: { values: m2.map(u => ({ stringValue: u })) } }, memberNames: { stringValue: n2.join('|') }, memberUntil: { stringValue: u2.join('|') } } })
-      .then(() => { car.members = m2; car.memberNames = n2.join('|'); car.memberUntil = u2.join('|'); familyBox(car); }).catch(() => {}); }
-  box.innerHTML = `<div class="card"><b>👨‍👩‍👧 Família</b><p class="muted" style="margin:4px 0 8px">Compartilhe este carro: seus familiares recebem e respondem as mensagens no celular deles.</p>
+      .then(() => { car.members = m2; car.memberNames = n2.join('|'); car.memberUntil = u2.join('|'); familyBox(car, cont); }).catch(() => {}); }
+  box.innerHTML = `<div class="card">${cont ? '' : '<b>👨‍👩‍👧 Família</b><p class="muted" style="margin:4px 0 8px">Compartilhe este carro: seus familiares recebem e respondem as mensagens no celular deles.</p>'}
    ${mem.length ? `<div style="margin-bottom:8px">${mem.map((u, i) => `<div class="row" style="margin:4px 0"><span>👤 ${esc(names[i] || 'Familiar')}<br><small class="muted">${+until[i] ? 'até ' + new Date(+until[i]).toLocaleDateString('pt-BR') : 'sem prazo'}</small></span><button class="chip" data-rm="${i}">Remover</button></div>`).join('')}</div>` : ''}
    <div class="muted" style="margin:6px 0 4px">Por quanto tempo o familiar terá acesso?</div>
    <select id="fDur" class="sel" style="padding:10px"><option value="0">Sem prazo (indeterminado)</option><option value="1">1 dia</option><option value="3">3 dias</option><option value="7">7 dias</option><option value="30">30 dias</option><option value="90">3 meses</option><option value="365">1 ano</option></select>
    <button class="chip" id="fInv">+ Convidar familiar</button><div id="fCode"></div></div>`;
-  el('fInv').onclick = async () => {
-    const code = famCode(), exp = new Date(Date.now() + 48 * 3600e3), days = +el('fDur').value;
+  $q('#fInv').onclick = async () => {
+    const code = famCode(), exp = new Date(Date.now() + 48 * 3600e3), days = +$q('#fDur').value;
     const durTxt = days ? (days === 1 ? '1 dia' : days === 90 ? '3 meses' : days === 365 ? '1 ano' : days + ' dias') : 'sem prazo';
     try { await api('/invites/' + code, 'PATCH', { fields: fields({ carId: car.id, ownerId: S.uid, carName: car.name, expiresAt: exp, accessDays: String(days) }) });
       const link = new URL('app.html', location.href).href;
@@ -526,7 +518,7 @@ Como entrar (é grátis):
 4. Digite o código: ${code}
 
 ⏰ O código vale por 2 dias. Depois disso, me peça um novo.`;
-      el('fCode').innerHTML = `<div style="margin-top:10px;text-align:center"><div class="muted">Código de convite</div><div class="code">${code}</div><div class="muted" style="margin-bottom:6px">🔑 Acesso do familiar: <b>${durTxt}</b><br>⏰ O código vale 2 dias para ele entrar.<br>O familiar precisa ter o app AutoLink (é grátis): a mensagem explica como entrar.</div>
+      $q('#fCode').innerHTML = `<div style="margin-top:10px;text-align:center"><div class="muted">Código de convite</div><div class="code">${code}</div><div class="muted" style="margin-bottom:6px">🔑 Acesso do familiar: <b>${durTxt}</b><br>⏰ O código vale 2 dias para ele entrar.<br>O familiar precisa ter o app AutoLink (é grátis): a mensagem explica como entrar.</div>
         <a class="btn" style="display:block;text-decoration:none;margin-top:8px;background:#25d366;color:#fff" target="_blank" href="https://wa.me/?text=${encodeURIComponent(txt)}">Enviar pelo WhatsApp</a></div>`;
     } catch (e) { alert('Erro: ' + e.message); }
   };
@@ -534,7 +526,7 @@ Como entrar (é grátis):
     const i = +b.dataset.rm; if (!confirm('Remover ' + (names[i] || 'este familiar') + ' do carro?')) return;
     const m2 = mem.filter((_, j) => j !== i), n2 = names.filter((_, j) => j !== i), u2 = until.filter((_, j) => j !== i);
     try { await api('/cars/' + car.id + '?updateMask.fieldPaths=members&updateMask.fieldPaths=memberNames&updateMask.fieldPaths=memberUntil', 'PATCH', { fields: { members: { arrayValue: { values: m2.map(u => ({ stringValue: u })) } }, memberNames: { stringValue: n2.join('|') }, memberUntil: { stringValue: u2.join('|') } } });
-      car.members = m2; car.memberNames = n2.join('|'); car.memberUntil = u2.join('|'); familyBox(car); toast('Familiar removido'); } catch (e) { alert(e.message); }
+      car.members = m2; car.memberNames = n2.join('|'); car.memberUntil = u2.join('|'); familyBox(car, cont); toast('Familiar removido'); } catch (e) { alert(e.message); }
   });
 }
 async function joinFamily(code) {
@@ -551,7 +543,7 @@ async function joinFamily(code) {
     while (untl.length < mem.length) untl.push('0');
     await api('/cars/' + car.id + '?updateMask.fieldPaths=members&updateMask.fieldPaths=memberNames&updateMask.fieldPaths=memberUntil&updateMask.fieldPaths=joinCode', 'PATCH', { fields: { memberUntil: { stringValue: untl.concat([myUntil]).join('|') },
       members: { arrayValue: { values: mem.concat([S.uid]).map(u => ({ stringValue: u })) } }, memberNames: { stringValue: names.concat([(PROFILE && PROFILE.name || S.email || 'Familiar').split(' ')[0]]).join('|') }, joinCode: { stringValue: code } } });
-    alert('Pronto! ✅ Agora você recebe as mensagens do ' + inv.carName + (days ? ' por ' + days + ' dia(s).' : '.')); go(Garage);
+    alert('Pronto! ✅ Agora você recebe as mensagens do ' + inv.carName + (days ? ' por ' + days + ' dia(s).' : '.')); go(Family);
   } catch (e) { alert('Não foi possível entrar: ' + e.message); }
 }
 
@@ -740,4 +732,70 @@ async function Blocked() {
     };
     box.appendChild(r);
   }
+}
+
+async function fleetList() {
+  const box = el('fleetL'); if (!box) return;
+  const cars = (await allCars()).filter(c => !c.shared);
+  box.innerHTML = cars.length ? '' : '<p class="muted">Cadastre um veículo na Garagem primeiro.</p>';
+  for (const c of cars) {
+    let rt = []; if (c.fleet) rt = await find('ratings', [['carId', c.id], ['ownerId', S.uid]]).catch(() => []);
+    const avg = rt.length ? (rt.reduce((s, x) => s + +x.stars, 0) / rt.length).toFixed(1) : null;
+    const d = document.createElement('div'); d.className = 'card';
+    d.innerHTML = `<div class="row" style="margin:0"><span><b>${esc(c.name)}</b> <span class="muted">${esc(c.plate || '')}</span><br><small class="muted">Veículo de empresa</small></span><label class="sw"><input type="checkbox" ${c.fleet ? 'checked' : ''}><span></span></label></div>
+      ${c.fleet ? `<div style="margin-top:8px"><b style="color:var(--or);font-size:20px">⭐ ${avg || '—'}</b> <span class="muted">(${rt.length} avaliações)</span>
+       ${rt.sort((a, b) => b.at - a.at).slice(0, 5).map(x => `<div style="border-top:1px solid var(--line);padding-top:6px;margin-top:6px">${'⭐'.repeat(+x.stars)}<div class="muted">${x.comment ? esc(x.comment) + ' · ' : ''}${x.at ? x.at.toLocaleString('pt-BR') : ''}</div></div>`).join('')}</div>` : ''}`;
+    d.querySelector('input').onchange = async e => { try { await update('cars/' + c.id, { fleet: e.target.checked }); toast(e.target.checked ? 'Veículo de empresa ativado ✅' : 'Desativado'); fleetList(); } catch (err) { alert(err.message); } };
+    box.appendChild(d);
+  }
+}
+
+// ---------- Família (ícone 👨‍👩‍👧) ----------
+async function Family() {
+  m.innerHTML = `<h2>👨‍👩‍👧 Família</h2><p class="muted">Compartilhe seus carros: seus familiares recebem e respondem as mensagens no celular deles.</p>
+   <div id="famCars"><p class="muted">Carregando...</p></div>
+   <h2>Entrar no carro de um familiar</h2><div class="card"><p class="muted" style="margin-top:0">Peça o código de convite ao dono do carro. O código vale por 2 dias.</p>
+   <div style="display:flex;gap:8px"><input id="jc" placeholder="Código (ex: F7K2QX)" maxlength="6" autocapitalize="characters" style="margin:0"><button class="chip" id="jb">Entrar</button></div></div>
+   <div id="famShared"></div>`;
+  el('jb').onclick = () => joinFamily(el('jc').value).then(() => {});
+  const cars = await allCars(); const own = cars.filter(c => !c.shared), sh = cars.filter(c => c.shared);
+  const box = el('famCars'); if (!box) return;
+  box.innerHTML = own.length ? '' : '<div class="card">Cadastre um carro na Garagem para compartilhar.</div>';
+  for (const c of own) { const w = document.createElement('div'); w.innerHTML = `<div class="muted" style="margin:10px 0 4px;font-weight:700">🚗 ${esc(c.name)} ${c.plate ? '· ' + esc(c.plate) : ''}</div><div class="famc"></div>`; box.appendChild(w);
+    familyBox(c, w.querySelector('.famc')); }
+  if (sh.length) el('famShared').innerHTML = `<h2>Carros da família que eu participo</h2>` + sh.map(c => `<button class="card" data-car="${c.id}"><b>${esc(c.name)}</b> <span class="pill">👨‍👩‍👧 Família</span><div class="muted">${esc(c.plate || '')}</div></button>`).join('');
+  m.querySelectorAll('[data-car]').forEach(b => b.onclick = () => go(Car, sh.find(c => c.id === b.dataset.car)));
+}
+
+// ---------- Onde estacionei ----------
+function Parked() {
+  const K = 'al_parked_' + S.uid, get = () => { try { return JSON.parse(localStorage.getItem(K) || 'null'); } catch (e) { return null; } };
+  const draw = () => { const p = get();
+    m.innerHTML = `<h2>📍 Onde estacionei</h2><p class="muted">Salve o local do carro com um toque e depois veja o caminho no mapa.</p>
+     ${p ? `<div class="card" style="border-color:var(--or)"><b>🚗 Carro estacionado</b><div class="muted">${new Date(p.at).toLocaleString('pt-BR')}${p.note ? ' · ' + esc(p.note) : ''}</div>
+       <a class="btn" style="display:block;text-align:center;text-decoration:none;margin-top:10px" target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=walking">🧭 Me leve até o carro</a>
+       <button class="link" id="pClr">Já peguei o carro (apagar local)</button></div>` : ''}
+     <input id="pNote" placeholder="Anotação (ex: 2º andar, vaga B12)" maxlength="80">
+     <button class="btn" id="pSave">📍 Salvar onde estou agora</button>`;
+    el('pSave').onclick = () => { el('pSave').textContent = 'Obtendo localização...'; gps().then(g => { localStorage.setItem(K, JSON.stringify({ lat: g.lat, lng: g.lng, note: el('pNote').value.trim(), at: Date.now() })); toast('Local salvo ✅'); draw(); })
+      .catch(() => { alert('Não foi possível pegar a localização. Permita a localização para o AutoLink.'); draw(); }); };
+    const c = el('pClr'); if (c) c.onclick = () => { localStorage.removeItem(K); draw(); }; };
+  draw();
+}
+
+// ---------- SOS família ----------
+async function Sos() {
+  if (!PROFILE) await loadProfile();
+  const p = PROFILE || {}, ph = String(p.famPhone || '').replace(/\D/g, '');
+  m.innerHTML = `<h2>🆘 SOS família</h2><p class="muted">Em uma situação de risco, envie sua localização para o seu contato de emergência pelo WhatsApp.</p>
+   <div class="card">👨‍👩‍👧 Contato de emergência: <b>${esc(p.famName || '—')}</b> ${p.famRel ? '(' + esc(p.famRel) + ')' : ''}<div class="muted">${esc(p.famPhone || 'não cadastrado')}</div></div>
+   <button class="btn" id="sosB" style="background:#ef4444;color:#fff;font-size:20px;padding:22px">🆘 Enviar minha localização</button>
+   <div class="warn">🚨 Em perigo real, ligue <b>190 (Polícia)</b>, <b>192 (SAMU)</b> ou <b>193 (Bombeiros)</b>.</div>
+   <button class="link" id="sosE">Alterar contato de emergência</button>`;
+  el('sosE').onclick = () => go(ProfileForm, {});
+  el('sosB').onclick = () => { if (ph.length < 10) return alert('Cadastre o telefone do seu contato de emergência em Meu perfil.');
+    el('sosB').textContent = 'Obtendo localização...';
+    gps().then(g => { const msg = `🆘 ${p.name ? p.name.split(' ')[0] : 'Seu familiar'} precisa de ajuda! Localização agora: https://www.google.com/maps?q=${g.lat},${g.lng} (enviado pelo AutoLink)`;
+      location.href = 'https://wa.me/55' + ph.replace(/^55/, '') + '?text=' + encodeURIComponent(msg); })
+    .catch(() => { const msg = `🆘 ${p.name ? p.name.split(' ')[0] : 'Seu familiar'} precisa de ajuda! (não foi possível enviar a localização)`; location.href = 'https://wa.me/55' + ph.replace(/^55/, '') + '?text=' + encodeURIComponent(msg); }); };
 }
