@@ -1,3 +1,23 @@
-{ "name": "AutoLink", "short_name": "AutoLink", "start_url": "app.html", "scope": "./", "display": "standalone",
-  "background_color": "#111111", "theme_color": "#111111", "lang": "pt-BR",
-  "icons": [ { "src": "icon2-192.png", "sizes": "192x192", "type": "image/png" }, { "src": "icon2-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" } ] }
+{
+ "name": "AutoLink",
+ "short_name": "AutoLink",
+ "start_url": "app.html",
+ "scope": "./",
+ "display": "standalone",
+ "background_color": "#0b0b0c",
+ "theme_color": "#0b0b0c",
+ "lang": "pt-BR",
+ "icons": [
+  {
+   "src": "icon3-192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "icon3-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any maskable"
+  }
+ ]
+}
