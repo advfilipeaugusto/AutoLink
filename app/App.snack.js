@@ -11,23 +11,77 @@ const BASE = 'https://firestore.googleapis.com/v1/projects/autolink-1aa51/databa
 const WEB_URL = 'https://advfilipeaugusto.github.io/AutoLink/web/';
 
 // ---------- Login anônimo ----------
-let session = null; // { uid, token, refresh, exp }
-async function login() {
-  const saved = await AsyncStorage.getItem('session');
-  let r;
-  if (saved) {
-    const s = JSON.parse(saved);
-    r = await (await fetch('https://securetoken.googleapis.com/v1/token?key=' + KEY, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'grant_type=refresh_token&refresh_token=' + s.refresh })).json();
-    if (r.id_token) session = { uid: r.user_id, token: r.id_token, refresh: r.refresh_token };
-  }
-  if (!session) {
-    r = await (await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + KEY, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"returnSecureToken":true}' })).json();
-    if (!r.idToken) throw new Error(JSON.stringify(r.error || r));
-    session = { uid: r.localId, token: r.idToken, refresh: r.refreshToken };
-  }
-  session.exp = Date.now() + 50 * 60 * 1000;
+let session = null; // { uid, token, refresh, exp, email }
+const ID = 'https://identitytoolkit.googleapis.com/v1/accounts:';
+const post = async (url, body) => (await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })).json();
+async function saveSession(r, email) {
+  session = { uid: r.localId || r.user_id, token: r.idToken || r.id_token, refresh: r.refreshToken || r.refresh_token, email, exp: Date.now() + 50 * 60 * 1000 };
   await AsyncStorage.setItem('session', JSON.stringify(session));
-  return session.uid;
+  return session;
+}
+// Entra com a sessão guardada no celular (se houver)
+async function login() {
+  const saved = JSON.parse((await AsyncStorage.getItem('session')) || 'null');
+  if (!saved) return null;
+  const r = await (await fetch('https://securetoken.googleapis.com/v1/token?key=' + KEY, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'grant_type=refresh_token&refresh_token=' + saved.refresh })).json();
+  if (!r.id_token) { await AsyncStorage.removeItem('session'); return null; }
+  return saveSession(r, saved.email);
+}
+const ERROS = { EMAIL_EXISTS: 'Este e-mail já tem conta. Use "Entrar".', INVALID_LOGIN_CREDENTIALS: 'E-mail ou senha incorretos.', INVALID_PASSWORD: 'E-mail ou senha incorretos.', EMAIL_NOT_FOUND: 'E-mail não cadastrado.', INVALID_EMAIL: 'E-mail inválido.', MISSING_PASSWORD: 'Digite a senha.', TOO_MANY_ATTEMPTS_TRY_LATER: 'Muitas tentativas. Tente mais tarde.', CREDENTIAL_TOO_OLD_LOGIN_AGAIN: 'Saia e entre de novo.' };
+const msg = r => { const m = r.error?.message || 'erro'; return ERROS[m.split(' ')[0]] || (m.startsWith('WEAK_PASSWORD') ? 'Senha fraca: use pelo menos 6 caracteres.' : m); };
+async function signIn(email, password) {
+  const r = await post(ID + 'signInWithPassword?key=' + KEY, { email, password, returnSecureToken: true });
+  if (!r.idToken) throw new Error(msg(r)); return saveSession(r, email);
+}
+async function signUp(email, password) {
+  const r = await post(ID + 'signUp?key=' + KEY, { email, password, returnSecureToken: true });
+  if (!r.idToken) throw new Error(msg(r));
+  const prev = session && !session.email ? session : null;
+  const ss = await saveSession(r, email);
+  if (prev) await migrate(prev, ss.uid); // já usava o app sem conta: leva os carros para a conta nova
+  return ss;
+}
+// Passa carros e conversas da sessão antiga (sem conta) para a conta nova
+async function migrate(prev, newUid) {
+  const call = async (path, method, body) => { const res = await fetch(BASE + path, { method, headers: { Authorization: 'Bearer ' + prev.token, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); return res.json(); };
+  const q = col => call(':runQuery', 'POST', { structuredQuery: { from: [{ collectionId: col }], where: { fieldFilter: { field: { fieldPath: 'ownerId' }, op: 'EQUAL', value: { stringValue: prev.uid } } } } });
+  for (const col of ['chats', 'cars']) {
+    const docs = (await q(col)).filter(x => x.document);
+    for (const d of docs) await call('/' + col + '/' + d.document.name.split('/').pop() + '?updateMask.fieldPaths=ownerId', 'PATCH', { fields: { ownerId: { stringValue: newUid } } });
+  }
+}
+async function resetPassword(email) {
+  const r = await post(ID + 'sendOobCode?key=' + KEY, { requestType: 'PASSWORD_RESET', email });
+  if (r.error) throw new Error(msg(r));
+}
+async function logout() { session = null; await AsyncStorage.removeItem('session'); }
+
+function Auth({ onDone, upgrade }) {
+  const [mode, setMode] = useState(upgrade ? 'signup' : 'signin');
+  const [email, setEmail] = useState(''); const [pass, setPass] = useState(''); const [busy, setBusy] = useState(false);
+  const run = async () => {
+    const e = email.trim().toLowerCase(); if (!e) return Alert.alert('Digite seu e-mail');
+    setBusy(true);
+    try {
+      if (mode === 'reset') { await resetPassword(e); Alert.alert('E-mail enviado', 'Abra seu e-mail e siga o link para criar uma nova senha.'); setMode('signin'); }
+      else { const ss = mode === 'signin' ? await signIn(e, pass) : await signUp(e, pass); onDone(ss.uid); }
+    } catch (err) { Alert.alert('Ops', err.message); }
+    setBusy(false);
+  };
+  const title = { signin: 'Entrar', signup: upgrade ? 'Proteja sua conta' : 'Criar conta', reset: 'Recuperar senha' }[mode];
+  return (
+    <View style={[s.pad, { justifyContent: 'center' }]}>
+      <View style={{ alignItems: 'center', marginBottom: 20 }}><SvgXml xml={LOGO} width={90} height={90} /></View>
+      <Text style={[s.h2, { fontSize: 24, textAlign: 'center' }]}>{title}</Text>
+      {upgrade && mode === 'signup' && <Text style={[s.muted, { textAlign: 'center', marginBottom: 10 }]}>Crie e-mail e senha para não perder seus carros se trocar de celular. Seus carros e conversas vêm junto.</Text>}
+      <TextInput style={s.input} placeholder="E-mail" value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" autoComplete="email" />
+      {mode !== 'reset' && <TextInput style={s.input} placeholder="Senha (mínimo 6 caracteres)" value={pass} onChangeText={setPass} secureTextEntry autoCapitalize="none" />}
+      <Btn label={busy ? 'Aguarde...' : title} onPress={busy ? () => {} : run} />
+      {mode !== 'signin' && <TouchableOpacity onPress={() => setMode('signin')}><Text style={s.link}>Já tenho conta: entrar</Text></TouchableOpacity>}
+      {mode !== 'signup' && <TouchableOpacity onPress={() => setMode('signup')}><Text style={s.link}>Não tenho conta: criar</Text></TouchableOpacity>}
+      {mode === 'signin' && <TouchableOpacity onPress={() => setMode('reset')}><Text style={s.link}>Esqueci minha senha</Text></TouchableOpacity>}
+    </View>
+  );
 }
 
 // ---------- Banco de dados ----------
@@ -36,7 +90,7 @@ const dec = f => 'booleanValue' in f ? f.booleanValue : 'timestampValue' in f ? 
 const fields = o => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, enc(v)]));
 const unpack = d => ({ id: d.name.split('/').pop(), ...Object.fromEntries(Object.entries(d.fields || {}).map(([k, v]) => [k, dec(v)])) });
 async function api(path, method = 'GET', body) {
-  if (Date.now() > session.exp) { session = null; await login(); }
+  if (Date.now() > session.exp) await login();
   const r = await fetch(BASE + path, { method, headers: { Authorization: 'Bearer ' + session.token, 'Content-Type': 'application/json' }, body: body && JSON.stringify(body) });
   const j = await r.json(); if (!r.ok) throw new Error(JSON.stringify(j.error || j)); return j;
 }
@@ -54,23 +108,26 @@ function usePoll(fn, deps) {
 }
 
 export default function App() {
-  const [uid, setUid] = useState(null); const [err, setErr] = useState(null);
+  const [uid, setUid] = useState(undefined);
   const [screen, setScreen] = useState({ name: 'home' });
-  useEffect(() => { login().then(setUid).catch(e => setErr(e.message)); }, []);
-  if (err) return <Center><Text style={{ padding: 20 }}>Erro ao entrar: {err}</Text></Center>;
-  if (!uid) return <Center><Text>Carregando...</Text></Center>;
+  useEffect(() => { login().then(ss => setUid(ss ? ss.uid : null)).catch(() => setUid(null)); }, []);
+  if (uid === undefined) return <Center><Text>Carregando...</Text></Center>;
   const go = (name, p = {}) => setScreen({ name, ...p });
+  const sair = () => Alert.alert('Sair da conta?', '', [{ text: 'Cancelar' }, { text: 'Sair', style: 'destructive', onPress: () => logout().then(() => { setUid(null); go('home'); }) }]);
+  const needsAuth = !uid || !session?.email;
   return (
     <SafeAreaView style={s.root}>
       <View style={s.header}>
         {screen.name !== 'home' && <TouchableOpacity onPress={() => go(screen.name === 'chat' ? 'car' : 'home', { car: screen.car })}><Text style={s.back}>‹ Voltar</Text></TouchableOpacity>}
         <SvgXml xml={LOGO} width={36} height={36} />
-        <Text style={s.title}>Auto<Text style={{ color: '#FF6B00' }}>Link</Text></Text>
+        <Text style={[s.title, { flex: 1 }]}>Auto<Text style={{ color: '#FF6B00' }}>Link</Text></Text>
+        {!needsAuth && screen.name === 'home' && <TouchableOpacity onPress={sair}><Text style={s.back}>Sair</Text></TouchableOpacity>}
       </View>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={RNPlatform.OS === 'ios' ? 'padding' : 'height'}>
-      {screen.name === 'home' && <Home uid={uid} go={go} />}
-      {screen.name === 'car' && <Car car={screen.car} go={go} />}
-      {screen.name === 'chat' && <Chat car={screen.car} chatId={screen.chatId} />}
+      {needsAuth && <Auth upgrade={!!uid} onDone={u => { setUid(u); go('home'); }} />}
+      {!needsAuth && screen.name === 'home' && <Home uid={uid} go={go} />}
+      {!needsAuth && screen.name === 'car' && <Car car={screen.car} go={go} />}
+      {!needsAuth && screen.name === 'chat' && <Chat car={screen.car} chatId={screen.chatId} />}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -217,5 +274,6 @@ const s = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginVertical: 6 },
   bubble: { padding: 10, borderRadius: 12, marginVertical: 3, maxWidth: '80%' },
   me: { backgroundColor: '#FF6B00', alignSelf: 'flex-end' }, them: { backgroundColor: '#111', alignSelf: 'flex-start' },
+  link: { color: '#FF6B00', textAlign: 'center', fontWeight: '700', marginTop: 14 },
   chip: { backgroundColor: '#FFE1CC', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16 },
 });
