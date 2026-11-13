@@ -42,13 +42,13 @@ service cloud.firestore {
     }
     match /cars/{carId} {
       allow get: if request.auth != null;
-      allow list: if resource.data.ownerId == me();
+      allow list: if resource.data.ownerId == me() || isAdmin();
       allow create: if request.resource.data.ownerId == me();
       allow update, delete: if resource.data.ownerId == me() || isAdmin();
     }
     match /chats/{chatId} {
       function part() { return me() == resource.data.ownerId || me() == resource.data.visitorId; }
-      allow get, list: if request.auth != null && part();
+      allow get, list: if request.auth != null && (part() || isAdmin());
       allow update: if request.auth != null && (me() == resource.data.ownerId ||
         (me() == resource.data.visitorId && resource.data.get('blocked', false) == false &&
          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastMsg', 'updatedAt'])));
