@@ -38,7 +38,7 @@ async function send(text){
     } else await api('/chats/'+chatId+'?updateMask.fieldPaths=lastMsg&updateMask.fieldPaths=updatedAt','PATCH',{fields:fields({lastMsg:text,updatedAt:now})});
     await api('/chats/'+chatId+'/messages','POST',{fields:fields({text,from:'visitor',at:now})});
     load();
-  }catch(e){ alert('Não foi possível enviar: '+e.message); }
+  }catch(e){ alert(/permission|PERMISSION/.test(e.message)?'O dono deste carro não está recebendo mensagens suas.':'Não foi possível enviar: '+e.message); }
 }
 async function load(){
   const box=document.getElementById('msgs'); if(!box) return;

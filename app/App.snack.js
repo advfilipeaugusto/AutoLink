@@ -131,10 +131,33 @@ function Chat({ car, chatId }) {
       await update('chats/' + chatId, { lastMsg: 'Você: ' + t, updatedAt: new Date() });
     } catch (e) { Alert.alert('Erro', e.message); }
   };
+  const [chat, setChat] = useState(null);
+  usePoll(async () => setChat(unpack(await api('/chats/' + chatId))), [chatId]);
+  const block = (silent) => Promise.all([
+    update('chats/' + chatId, { blocked: true }),
+    api('/owners/' + car.ownerId + '/blocked/' + chat.visitorId + '?updateMask.fieldPaths=at', 'PATCH', { fields: fields({ at: new Date() }) }),
+  ]).then(() => { setChat(c => ({ ...c, blocked: true })); if (!silent) Alert.alert('Bloqueado', 'Essa pessoa não consegue mais te mandar mensagens.'); })
+    .catch(e => Alert.alert('Erro', e.message));
+  const askBlock = () => Alert.alert('Bloquear?', 'Essa pessoa não vai mais conseguir te mandar mensagens.', [{ text: 'Cancelar' }, { text: 'Bloquear', style: 'destructive', onPress: () => block() }]);
+  const report = (reason) => add('reports', { ownerId: car.ownerId, carId: car.id, chatId, visitorId: chat.visitorId, reason, at: new Date() })
+    .then(() => block(true)).then(() => Alert.alert('Denúncia enviada', 'Obrigado. A pessoa também foi bloqueada.'))
+    .catch(e => Alert.alert('Erro', e.message));
+  const askReport = () => Alert.alert('Denunciar', 'Qual o problema?', [
+    { text: 'Ofensa ou ameaça', onPress: () => report('ofensa') },
+    { text: 'Spam / mensagens repetidas', onPress: () => report('spam') },
+    { text: 'Outro', onPress: () => report('outro') },
+    { text: 'Cancelar', style: 'cancel' }]);
   const quick = ['Já estou indo!', 'Me dá 5 minutos', 'Obrigado pelo aviso!'];
   return (
     <View style={[s.pad, { flex: 1 }]}>
-      <Text style={s.h2}>{car.name}</Text>
+      <View style={s.row}>
+        <Text style={s.h2}>{car.name}</Text>
+        {chat && !chat.blocked && <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity style={s.chip} onPress={askBlock}><Text>🚫 Bloquear</Text></TouchableOpacity>
+          <TouchableOpacity style={s.chip} onPress={askReport}><Text>⚠️ Denunciar</Text></TouchableOpacity>
+        </View>}
+      </View>
+      {chat?.blocked && <Text style={[s.muted, { color: '#c00' }]}>Pessoa bloqueada. Ela não consegue mais te mandar mensagens.</Text>}
       <FlatList ref={list} data={msgs} keyExtractor={m => m.id} onContentSizeChange={() => list.current?.scrollToEnd()}
         renderItem={({ item }) => <View style={[s.bubble, item.from === 'owner' ? s.me : s.them]}>
           <Text style={{ color: item.from === 'owner' ? '#111' : '#fff' }}>{item.text}</Text></View>} />
