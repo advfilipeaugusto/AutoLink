@@ -15,3 +15,8 @@
 Adesivo QR com ativação por PIN, chat anônimo, bloquear/denunciar, login, garagem, histórico de
 contatos, leitor de QR, alertas regionais com aprovação, central de ajuda, pedidos de anunciantes e
 vendedores, app de gestão (ADM).
+
+## Adiados (lista de 15/11)
+- **3 · Achar meu carro por e-mail** e **18 · avisar mensagem nova por e-mail**: precisa de serviço de e-mail (ex: EmailJS grátis). O app já mostra "você receberá um e-mail (em breve)".
+- **14 · Área de lojistas e pessoas físicas** (lojas e produtos no Mercado). O quadro "Empresas e lojistas" já existe na tela inicial.
+- **24 · Notícias de carros** na tela inicial (lista de quadros + leitura completa, publicadas pelo ADM).
