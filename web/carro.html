@@ -1,0 +1,33 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AutoLink · Veículo roubado</title><link rel="icon" href="icon3-192.png"><meta name="theme-color" content="#111111"><meta name="robots" content="noindex">
+<link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+<style>
+body{margin:0;font-family:system-ui,-apple-system,Arial,sans-serif;background:#f4f4f6;color:#111}header{background:#111;color:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:22px;font-weight:900}header span{color:#FF6B00}header img{height:24px}
+main{max-width:620px;margin:auto;padding:16px}.box{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;border:1px solid #e5e5ea}.muted{color:#666;font-size:14px}
+.red{background:#dc2626;color:#fff;border-radius:16px;padding:16px;text-align:center}.ph{display:flex;gap:8px;overflow-x:auto}.ph img{height:150px;border-radius:12px;cursor:zoom-in}
+.sg{border-top:1px solid #eee;padding:10px 0}.sg a{color:#0b5cff;font-weight:700}.lb{position:fixed;inset:0;background:#000d;display:flex;align-items:center;justify-content:center;padding:16px}.lb img{max-width:100%;max-height:100%;border-radius:12px}
+.ok{background:#16a34a}
+</style></head><body>
+<header><img src="logo-car-white.png" alt=""><div>Auto<span>Link</span></div></header><main id="m"><p class="muted">Carregando...</p></main>
+<script>
+const KEY='AIzaSyBSGj1H273wiXM-VgpkytnC3kX6yQlt8_I',BASE='https://firestore.googleapis.com/v1/projects/autolink-1aa51/databases/(default)/documents';
+const m=document.getElementById('m'),id=new URLSearchParams(location.search).get('id');
+const esc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const dec=f=>'timestampValue' in f?new Date(f.timestampValue):'booleanValue' in f?f.booleanValue:f.stringValue;
+const unpack=d=>({id:d.name.split('/').pop(),...Object.fromEntries(Object.entries(d.fields||{}).map(([k,v])=>[k,dec(v)]))});
+async function load(){
+  if(!id){m.innerHTML='<div class="box">Link inválido.</div>';return;}
+  let t;try{const r=await fetch(BASE+'/thefts/'+id+'?key='+KEY);if(!r.ok)throw 0;t=unpack(await r.json());}catch(e){m.innerHTML='<div class="box">Registro não encontrado ou ainda em análise.</div>';return;}
+  let sg=[];try{const r=await (await fetch(BASE+'/thefts/'+id+':runQuery?key='+KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({structuredQuery:{from:[{collectionId:'sightings'}],orderBy:[{field:{fieldPath:'at'},direction:'DESCENDING'}]}})})).json();sg=(r||[]).filter(x=>x.document).map(x=>unpack(x.document));}catch(e){}
+  const rec=t.status==='recovered',ph=[t.photo,t.photo2,t.photo3].filter(Boolean);
+  m.innerHTML=`<div class="${rec?'red ok':'red'}"><div style="font-size:34px">${rec?'✅':'🚨'}</div><b style="font-size:21px">${rec?'VEÍCULO RECUPERADO':'VEÍCULO ROUBADO'}</b><div>${esc(t.carName)} ${esc(t.year||'')} ${t.color?'· '+esc(t.color):''}</div><div style="margin-top:6px;font-size:20px;font-weight:900;letter-spacing:2px">${esc(t.plate||'')}</div></div>
+   ${ph.length?`<div class="box ph">${ph.map(p=>`<img src="${p}" alt="foto do carro">`).join('')}</div>`:''}
+   <div class="box"><b>O que aconteceu</b><p style="white-space:pre-wrap">${esc(t.desc)}</p><div class="muted">${t.kind==='furto'?'Furto':'Roubo'} · ${esc(t.when||'')} ${t.place?'· '+esc(t.place):''} ${t.city?'· '+esc(t.city):''}</div></div>
+   <div class="box"><b>📍 Avistamentos (${sg.length})</b><div class="muted">Pessoas que escanearam o adesivo do carro e enviaram a localização, de forma anônima. Esta página atualiza sozinha.</div>
+    ${sg.length?sg.map(s=>`<div class="sg"><div><b>${s.at?s.at.toLocaleString('pt-BR'):''}</b></div>${s.note?`<div>${esc(s.note)}</div>`:''}${s.lat?`<a target="_blank" href="https://www.google.com/maps?q=${+s.lat},${+s.lng}">Ver no mapa ›</a>`:'<div class="muted">sem localização</div>'}</div>`).join(''):'<p class="muted">Nenhum avistamento ainda.</p>'}</div>
+   <div class="box"><b>Viu este carro?</b><p>Não se aproxime. Ligue <b>190</b> e informe a placa, a cor e o local.</p><a href="tel:190" style="display:block;text-align:center;background:#111;color:#fff;padding:14px;border-radius:12px;text-decoration:none;font-weight:800">📞 Ligar 190</a></div>
+   <p class="muted" style="text-align:center">AutoLink · atualizado às ${new Date().toLocaleTimeString('pt-BR')}</p>`;
+  m.querySelectorAll('.ph img').forEach(i=>i.onclick=()=>{const d=document.createElement('div');d.className='lb';d.innerHTML=`<img src="${i.src}">`;d.onclick=()=>d.remove();document.body.appendChild(d);});
+}
+load();setInterval(load,30000);
+</script></body></html>

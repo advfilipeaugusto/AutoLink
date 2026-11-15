@@ -30,7 +30,7 @@ async function loadProfile() {
 async function gateProfile() {
   await loadProfile();
   if (!PROFILE) return go(ProfileForm, { first: true });
-  go(Home); startNotifier();
+  go(Home); startNotifier(); setTimeout(() => showTour(), 600);
 }
 function ProfileForm(opt = {}) {
   const p = PROFILE || {}, locked = !!PROFILE;
@@ -75,7 +75,7 @@ function ProfileForm(opt = {}) {
         await api('/profiles/' + S.uid, 'PATCH', { fields: fields(data) });
       } else await update('profiles/' + S.uid, data);
       await loadProfile();
-      if (opt.first) { toast('Cadastro concluído! ✅'); go(Home); startNotifier(); } else { toast('Perfil salvo ✅'); }
+      if (opt.first) { toast('Cadastro concluído! ✅'); go(Home); startNotifier(); setTimeout(() => showTour(), 600); } else { toast('Perfil salvo ✅'); }
     } catch (err) { alert('Erro ao salvar: ' + err.message); }
     b.disabled = false; b.textContent = opt.first ? 'Concluir cadastro' : 'Salvar alterações';
   };
@@ -827,4 +827,106 @@ async function RegionAlerts() {
     const st = a => a.status === 'pending' ? '⏳ Em análise pela equipe' : a.status === 'approved' && !(a.expiresAt && +a.expiresAt < now) ? `🟢 <b>Online</b>: motoristas estão vendo até ${a.expiresAt ? a.expiresAt.toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''}` : a.status === 'rejected' ? '❌ Não aprovado' : '⚪ Encerrado';
     el('raM').innerHTML = my.length ? my.map(a => row(a, `<div style="margin-top:4px;font-size:14px">${st(a)}</div>`)).join('') : '<p class="muted">Você ainda não criou alertas.</p>';
   } catch (e) { el('raM').innerHTML = '<p class="muted">—</p>'; }
+}
+
+// ---------- Roubo / furto ----------
+const SITE_BASE = new URL('./', location.href).href;
+function theftLink(id) { return SITE_BASE + 'carro.html?id=' + id; }
+async function Theft() {
+  m.innerHTML = `<h2>🚨 Roubo / furto</h2>
+   <div class="card"><b>Como funciona</b><p class="muted" style="margin:6px 0 0">1. Você registra o que aconteceu, com fotos e o boletim de ocorrência.<br>2. A equipe AutoLink confere e publica.<br>3. Quem escanear o adesivo do seu carro verá <b>"VEÍCULO ROUBADO"</b> e poderá enviar a localização, anonimamente.<br>4. Você recebe um <b>link</b> para acompanhar de qualquer celular, mesmo se levaram o seu.</p></div>
+   <div id="thMine"></div><button class="btn" id="thNew">+ Registrar roubo ou furto</button>
+   <h2>Veículos roubados na região</h2><div id="thPub"><p class="muted">Carregando...</p></div>`;
+  el('thNew').onclick = () => go(TheftForm);
+  try { const mine = (await find('thefts', [['userId', S.uid]])).filter(t => !t.deleted).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    const ST = { pending: '⏳ Em análise pela equipe', approved: '🔴 Publicado: as pessoas estão vendo', rejected: '❌ Não aprovado', recovered: '✅ Carro recuperado' };
+    el('thMine').innerHTML = mine.length ? '<h2>Meus registros</h2>' + mine.map(t => `<div class="card"><b>${esc(t.carName || 'Carro')}</b> <span class="muted">${esc(t.plate || '')}</span><div style="margin:4px 0">${ST[t.status] || t.status}</div>
+      ${t.status === 'approved' ? `<div class="muted">Link para acompanhar (guarde e envie para a família):</div><div class="code" style="font-size:13px;letter-spacing:0;word-break:break-all;text-align:left">${esc(theftLink(t.id))}</div>
+       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><a class="chip" style="text-decoration:none" href="${theftLink(t.id)}" target="_blank">Abrir</a><button class="chip" data-sh="${t.id}">Compartilhar</button><button class="chip" data-rec="${t.id}">Meu carro foi recuperado</button></div>` : ''}
+      <div class="muted" style="margin-top:6px">📧 Você também receberá as atualizações por e-mail (em breve).</div></div>`).join('') : '';
+    m.querySelectorAll('[data-sh]').forEach(b => b.onclick = () => { const u = theftLink(b.dataset.sh); if (navigator.share) navigator.share({ title: 'AutoLink · veículo roubado', url: u }).catch(() => {}); else { navigator.clipboard?.writeText(u); toast('Link copiado'); } });
+    m.querySelectorAll('[data-rec]').forEach(b => b.onclick = async () => { if (!confirm('Seu carro foi recuperado? O alerta de roubo será retirado.')) return;
+      try { const t = mine.find(x => x.id === b.dataset.rec); await update('thefts/' + b.dataset.rec, { status: 'recovered', recoveredAt: new Date() }); if (t && t.carId) await update('cars/' + t.carId, { stolen: false }).catch(() => {}); toast('Que ótimo! ✅'); go(Theft, null, false); } catch (e) { alert(e.message); } });
+  } catch (e) {}
+  try { const pub = (await find('thefts', [['status', 'approved']])).filter(t => !t.deleted && t.userId !== S.uid);
+    el('thPub').innerHTML = pub.length ? pub.map(t => `<a class="card" style="display:flex;gap:12px;align-items:center;text-decoration:none;color:inherit" href="${theftLink(t.id)}" target="_blank">
+      ${t.photo ? `<img src="${t.photo}" style="width:64px;height:64px;object-fit:cover;border-radius:10px">` : '<span style="font-size:30px">🚗</span>'}<div style="flex:1;min-width:0"><b>${esc(t.carName || '')}</b> <span class="muted">${esc(t.color || '')}</span><div class="muted">${esc(t.city || '')}${t.when ? ' · ' + esc(t.when) : ''}</div></div><span style="color:var(--red)">●</span></a>`).join('') : '<p class="muted">Nenhum veículo roubado publicado.</p>';
+  } catch (e) { el('thPub').innerHTML = '<p class="muted">—</p>'; }
+}
+async function TheftForm() {
+  const cars = (await allCars()).filter(c => !c.shared);
+  m.innerHTML = `<h2>🚨 Registrar roubo ou furto</h2><div class="warn" style="margin:0 0 12px">🚓 Primeiro ligue <b>190</b> e faça o <b>boletim de ocorrência</b>.</div>
+   <div class="muted">Qual carro?</div><select id="tc" class="sel">${cars.map(c => `<option value="${c.id}">${esc(c.name)} ${c.plate ? '· ' + esc(c.plate) : ''}</option>`).join('') || '<option value="">Cadastre um carro primeiro</option>'}</select>
+   <div class="muted">Roubo ou furto?</div><select id="tk" class="sel"><option value="roubo">Roubo (com abordagem)</option><option value="furto">Furto (levaram sem ninguém perto)</option></select>
+   <input id="tcol" placeholder="Cor do carro (ex: prata)" maxlength="30">
+   <div class="muted">Quando aconteceu?</div><input id="tw" type="datetime-local"><input id="tcity" placeholder="Cidade" maxlength="60">
+   <input id="tplace" placeholder="Onde aconteceu? (rua, bairro, ponto de referência)" maxlength="150">
+   <textarea id="td" maxlength="600" placeholder="Conte o que aconteceu e detalhes que ajudem a reconhecer o carro (adesivos, amassados, rodas...)"></textarea>
+   <input id="tbo" placeholder="Número do boletim de ocorrência" maxlength="40">
+   <div id="tph"></div><div id="tdoc"></div><div id="tbof"></div>
+   <label style="display:flex;gap:8px;align-items:flex-start;margin:6px 0 12px;font-size:14px"><input type="checkbox" id="tok" style="width:20px;height:20px;flex:none;margin:0"> Declaro que as informações são verdadeiras e autorizo a publicação das fotos e dados do veículo (sem meus dados pessoais).</label>
+   <p class="muted">📧 Você receberá um e-mail com o link de acompanhamento quando o registro for aprovado (em breve).</p>
+   <button class="btn" id="ts">Enviar para análise</button>`;
+  if (PROFILE?.city) el('tcity').value = PROFILE.city;
+  const pc = photoPicker(el('tph'), 'Fotos do carro (até 3)', false), pd = photoPicker1(el('tdoc'), '📄 Foto do documento do carro (CRLV)'), pb = photoPicker1(el('tbof'), '🚓 Foto do boletim de ocorrência');
+  el('ts').onclick = async () => {
+    const car = cars.find(c => c.id === el('tc').value); if (!car) return toast('Escolha o carro');
+    if (!el('td').value.trim()) return toast('Conte o que aconteceu'); if (!pc.get().length) return toast('Envie pelo menos 1 foto do carro');
+    if (!pb.get() && !el('tbo').value.trim()) return toast('Informe o número ou a foto do boletim de ocorrência'); if (!el('tok').checked) return toast('Marque a declaração');
+    const b = el('ts'); b.disabled = true; b.textContent = 'Enviando...';
+    const ph = pc.get(), wv = el('tw').value;
+    try { await add('thefts', Object.assign({ userId: S.uid, email: S.email || '', carId: car.id, carName: [car.brand, car.model].filter(Boolean).join(' ') || car.name, plate: car.plate || '', year: car.year || '', kind: el('tk').value,
+        color: el('tcol').value.trim(), when: wv ? new Date(wv).toLocaleString('pt-BR') : '', city: el('tcity').value.trim(), uf: PROFILE?.uf || '', place: el('tplace').value.trim(), desc: el('td').value.trim(), bo: el('tbo').value.trim(), status: 'pending', createdAt: new Date() },
+        ph[0] ? { photo: ph[0] } : {}, ph[1] ? { photo2: ph[1] } : {}, ph[2] ? { photo3: ph[2] } : {}, pd.get() ? { docPhoto: pd.get() } : {}, pb.get() ? { boPhoto: pb.get() } : {}));
+      alert('Registro enviado ✅\n\nA equipe AutoLink vai conferir. Quando for aprovado, o alerta aparece para quem escanear o seu carro e você recebe o link de acompanhamento em "Roubo / furto".'); go(Theft);
+    } catch (e) { alert('Não foi possível enviar: ' + e.message + '\n\nDica: se as fotos forem muitas, tente enviar menos.'); b.disabled = false; b.textContent = 'Enviar para análise'; }
+  };
+}
+function photoPicker1(box, title) { let ph = null;
+  const draw = () => { box.innerHTML = `<div class="muted" style="margin:0 0 6px">${title}</div><div class="pp">${ph ? `<div class="ppi"><img src="${ph}"><button type="button" aria-label="Apagar">✕</button></div>` : '<label class="ppa"><span>📷</span><small>Adicionar</small><input type="file" accept="image/*" hidden></label>'}</div>`;
+    const i = box.querySelector('input'); if (i) i.onchange = async () => { if (i.files[0]) { try { ph = await shrinkImage(i.files[0], 1000, .55); draw(); } catch (e) { toast('Não foi possível ler a foto'); } } };
+    const x = box.querySelector('.ppi button'); if (x) x.onclick = () => { ph = null; draw(); };
+    const v = box.querySelector('.ppi img'); if (v) v.onclick = () => { const d = document.createElement('div'); d.className = 'lb'; d.innerHTML = `<img src="${v.src}"><button type="button">✕ Fechar</button>`; d.onclick = () => d.remove(); document.body.appendChild(d); }; };
+  draw(); return { get: () => ph };
+}
+
+// ---------- Tutorial do primeiro acesso ----------
+const TOUR = [['👋', 'Bem-vindo ao AutoLink!', 'O adesivo que conecta você ao seu carro. Veja em 1 minuto o que dá para fazer.'],
+  ['🏷️', 'Cole e ative o adesivo', 'Cole o adesivo grande na traseira e o pequeno na frente. Na Garagem, toque no carro e em "Ativar adesivo": escaneie e digite o PIN do cartão.'],
+  ['💬', 'Receba avisos sem expor seu número', 'Carro bloqueando garagem? Farol aceso? Quem vê escaneia o adesivo e te avisa aqui. Ninguém vê seu telefone.'],
+  ['🔔', 'Fique de olho no sino', 'O sino mostra as mensagens novas. Cada carro tem seu contador. Toque no carro para responder.'],
+  ['🚨', 'Alertas e segurança', 'Veja alertas da sua região, peça ajuda com o SOS família e registre roubo ou furto. Se acontecer um acidente, quem estiver perto pode avisar sua família pelo adesivo.'],
+  ['🚗', 'Tudo do seu carro', 'Em "Meu carro" você guarda documentos, registra manutenções e recebe lembretes de IPVA e licenciamento.'],
+  ['✅', 'Pronto!', 'Você pode rever este tutorial quando quiser no menu ☰.']];
+function showTour(force) {
+  if (document.querySelector('.tour')) return;
+  try { if (!force && localStorage.getItem('al_tour')) return; } catch (e) {}
+  let i = 0; const d = document.createElement('div'); d.className = 'tour';
+  const draw = () => { const [e, t, x] = TOUR[i]; d.innerHTML = `<div class="tb"><div style="font-size:64px">${e}</div><h2 style="margin:10px 0 8px">${t}</h2><p class="muted" style="font-size:16px;line-height:1.5">${x}</p>
+    <div class="dots" style="margin:16px 0">${TOUR.map((_, j) => `<i class="${j === i ? 'a' : ''}"></i>`).join('')}</div>
+    <button class="btn" id="tN">${i === TOUR.length - 1 ? 'Começar a usar' : 'Próximo'}</button>${i < TOUR.length - 1 ? '<button class="link" id="tS">Pular</button>' : ''}</div>`;
+    d.querySelector('#tN').onclick = () => { if (i < TOUR.length - 1) { i++; draw(); } else end(); }; const s = d.querySelector('#tS'); if (s) s.onclick = end; };
+  const end = () => { try { localStorage.setItem('al_tour', '1'); } catch (e) {} d.remove(); };
+  draw(); document.body.appendChild(d);
+}
+
+// ---------- Comprar adesivo ----------
+async function BuySticker() {
+  if (!PROFILE) await loadProfile(); const p = PROFILE || {};
+  const addr = [p.street, p.num, p.comp, p.district, p.city && p.city + '/' + p.uf, p.cep].filter(Boolean).join(', ');
+  m.innerHTML = `<h2>🛒 Comprar adesivo AutoLink</h2>
+   <div class="card"><b>O que vem no kit</b><ul style="margin:6px 0 0;padding-left:18px;color:var(--mut);line-height:1.7;font-size:14px">
+    <li>🏷️ Adesivo <b>traseiro</b> (7 × 10 cm), para colar ao lado da placa</li><li>🏷️ Adesivo <b>dianteiro</b> (4,5 × 6,5 cm), para o espelho do motorista</li>
+    <li>🔑 Cartão de ativação com <b>PIN secreto</b></li><li>📘 Manual rápido de instalação</li></ul></div>
+   <div class="muted">Quantos kits? (1 kit por carro)</div><select id="bq" class="sel">${[1, 2, 3, 4, 5].map(n => `<option>${n}</option>`).join('')}</select>
+   <div class="card"><b style="font-size:15px">📦 Entrega</b><div class="muted">${esc(addr) || 'Complete seu endereço em Meu perfil'}</div><button class="chip" id="bae" style="margin-top:8px">Alterar endereço</button></div>
+   <div class="card"><b style="font-size:15px">💳 Pagamento</b><div class="muted">Pix ou cartão (em breve pelo app). Por enquanto, a equipe AutoLink entra em contato pelo seu WhatsApp para combinar.</div></div>
+   <p class="muted">📧 Você receberá a confirmação do pedido por e-mail (em breve).</p>
+   <button class="btn" id="bgo">Fazer pedido</button>`;
+  el('bae').onclick = () => go(ProfileForm, {});
+  el('bgo').onclick = async () => { if (!addr) return toast('Complete seu endereço em Meu perfil');
+    const b = el('bgo'); b.disabled = true; b.textContent = 'Enviando...';
+    try { await add('orders', { userId: S.uid, email: S.email || '', name: p.name || '', phone: p.phone || '', qty: el('bq').value, address: addr, status: 'new', createdAt: new Date() });
+      alert('Pedido enviado ✅\n\nA equipe AutoLink vai entrar em contato pelo seu WhatsApp para combinar o pagamento e a entrega.'); go(Home); }
+    catch (e) { alert('Erro: ' + e.message); b.disabled = false; b.textContent = 'Fazer pedido'; } };
 }

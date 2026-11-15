@@ -5,6 +5,7 @@ main{padding:16px;max-width:520px;margin:auto}.q{display:block;width:100%;paddin
 #msgs{min-height:200px}.b{padding:10px;border-radius:12px;margin:4px 0;max-width:80%}.me{background:#FF6B00;color:#111;margin-left:auto}.them{background:#111;color:#fff}
 form{display:flex;gap:8px}input{flex:1;padding:12px;border-radius:8px;border:1px solid #ddd;font-size:16px}button.s{background:#FF6B00;color:#111;border:0;border-radius:8px;padding:0 16px;font-weight:700}
 .muted{color:#777;font-size:13px}.nm{background:#fff;border:1px solid #ddd;border-radius:12px;padding:10px 12px;margin:0 0 6px}.acc{display:block;width:100%;margin:18px 0 4px;padding:14px;border:2px solid #ef4444;border-radius:12px;background:#fff;color:#b91c1c;font-size:15px;font-weight:700}
+@keyframes pulse{50%{opacity:.85}}
 .okb{background:#e8f8ee;border:1px solid #22c55e;border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:14px;line-height:1.45}.tk{font-size:11px;text-align:right;margin-top:3px;opacity:.85}.seen{text-align:right;font-size:12px;color:#1a7f37;margin:-2px 2px 6px}</style></head><body><header><a id="bk" href="app.html" hidden aria-label="Voltar" style="color:#FF6B00;text-decoration:none;font-size:34px;line-height:1;font-weight:400;margin-right:6px">‹</a><img src="logo-car-white.png" alt="" style="width:auto;height:26px;border-radius:0"><div>Auto<span>Link</span></div></header><main id="app">Carregando...</main>
 <script src="filter.js"></script>
 <script>
@@ -101,6 +102,7 @@ function showChat(){
     await lg;
   }catch(e){ car=null; }
   if(!car||!car.active){app.innerHTML='<p>Este QR code não está ativo.</p>';return;}
+  if(car.stolen&&car.theftId){stolenView();return;}
   chatId=localStorage.getItem(CK+carId);
   if(chatId){
     showChat();load().catch(()=>{});return;}
@@ -114,6 +116,18 @@ function showChat(){
   document.getElementById('accB').onclick=accidentForm;
   app.querySelectorAll('.q').forEach(b=>b.onclick=()=>send(b.textContent)); form(); if(car.fleet)rateBox(); awayBanner();
 })();
+function stolenView(){
+  app.innerHTML=`<div style="background:#dc2626;color:#fff;border-radius:16px;padding:18px;text-align:center;animation:pulse 1.2s infinite"><div style="font-size:40px">🚨</div><b style="font-size:22px">VEÍCULO ROUBADO</b><div style="margin-top:6px">Este carro (${esc(car.name)}) foi registrado como roubado ou furtado.</div></div>
+   <div style="background:#fff;border:2px solid #111;border-radius:14px;padding:14px;margin:14px 0;font-size:15px;line-height:1.5"><b>⚠️ Para sua segurança:</b><br>• <b>Não se aproxime</b> nem aborde ninguém.<br>• Ligue para a <b>Polícia: 190</b>.<br>• Envie a localização abaixo: é <b>anônimo</b> e ajuda o dono a recuperar o carro.</div>
+   <textarea id="sn" maxlength="300" placeholder="O que você viu? (opcional: rua, direção, pessoas...)" style="width:100%;box-sizing:border-box;padding:12px;border-radius:8px;border:1px solid #ddd;font:inherit;min-height:70px"></textarea>
+   <button class="s" id="ss" style="width:100%;padding:16px;font-size:17px;margin-top:8px;background:#dc2626;color:#fff">📍 Enviar localização (anônimo)</button>
+   <a href="tel:190" style="display:block;text-align:center;margin-top:12px;padding:14px;border-radius:12px;background:#111;color:#fff;text-decoration:none;font-weight:800">📞 Ligar 190</a>`;
+  document.getElementById('ss').onclick=e=>{const b=e.target;b.disabled=true;b.textContent='Obtendo localização...';
+    const save=async(c)=>{try{await api('/thefts/'+car.theftId+'/sightings','POST',{fields:fields(Object.assign({by:S.uid,note:document.getElementById('sn').value.trim(),at:new Date()},c?{lat:String(c.latitude),lng:String(c.longitude)}:{}))});
+      app.innerHTML='<div class="okb">✅ <b>Obrigado!</b> A informação foi enviada ao dono do carro, de forma anônima. Não se aproxime do veículo. Em caso de risco, ligue 190.</div>';}
+      catch(err){alert('Não foi possível enviar: '+err.message);b.disabled=false;b.textContent='📍 Enviar localização (anônimo)';}};
+    navigator.geolocation.getCurrentPosition(p=>save(p.coords),()=>{if(confirm('Não foi possível pegar a localização. Enviar só a mensagem?'))save(null);else{b.disabled=false;b.textContent='📍 Enviar localização (anônimo)';}},{enableHighAccuracy:true,timeout:15000});};
+}
 function vName(){const a=document.getElementById('anon'),n=document.getElementById('vname');return a&&!a.checked&&n?n.value.trim():'';}
 function shrink(file){return new Promise((ok,no)=>{const img=new Image();img.onload=()=>{const k=Math.min(1,900/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=img.width*k;c.height=img.height*k;c.getContext('2d').drawImage(img,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',.55));};img.onerror=no;img.src=URL.createObjectURL(file);});}
 function accidentForm(){const ph=[];let pos=null;

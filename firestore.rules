@@ -27,6 +27,26 @@ service cloud.firestore {
       allow update: if me() == uid && request.resource.data.doc == resource.data.doc
         && request.resource.data.name == resource.data.name && request.resource.data.docType == resource.data.docType;
     }
+    match /thefts/{id} {
+      function pub() { return resource.data.status == 'approved' || resource.data.status == 'recovered'; }
+      allow get: if pub() || (request.auth != null && (resource.data.userId == me() || isAdmin()));
+      allow list: if pub() || (request.auth != null && (resource.data.userId == me() || isAdmin()));
+      allow create: if request.auth != null && request.resource.data.userId == me() && request.resource.data.status == 'pending';
+      allow update: if isAdmin() || (request.auth != null && resource.data.userId == me() && request.resource.data.status == 'recovered'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'recoveredAt']));
+      allow delete: if isAdmin();
+      match /sightings/{s} {
+        function th() { return get(/databases/$(db)/documents/thefts/$(id)).data; }
+        allow read: if th().status == 'approved' || th().status == 'recovered';
+        allow create: if request.auth != null && th().status == 'approved' && request.resource.data.by == me();
+        allow delete: if isAdmin();
+      }
+    }
+    match /orders/{id} {
+      allow create: if request.auth != null && request.resource.data.userId == me() && request.resource.data.status == 'new';
+      allow get, list: if request.auth != null && (resource.data.userId == me() || isAdmin());
+      allow update, delete: if isAdmin();
+    }
     match /replacements/{id} {
       allow get, list: if request.auth != null && (resource.data.userId == me() || isAdmin());
       allow create: if request.auth != null && request.resource.data.userId == me() && request.resource.data.status == 'pending';
