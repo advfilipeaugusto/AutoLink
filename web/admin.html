@@ -26,12 +26,13 @@ a.wa{display:inline-block;background:#25d366;color:#fff;text-decoration:none;fon
 .lb{position:fixed;inset:0;background:#000d;z-index:60;display:flex;align-items:center;justify-content:center;padding:16px;cursor:zoom-out}.lb img{max-width:100%;max-height:100%;border-radius:12px}
 .pwb select,.pwb input,.pwb textarea{width:100%;box-sizing:border-box;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:15px;margin:4px 0 8px}
 button.x{position:absolute;top:10px;right:10px;width:36px;height:36px;padding:0;margin:0;border-radius:50%;background:#eee;font-size:18px;line-height:36px}button.x:hover{background:#ddd}button.gray{background:#ddd}button.red{background:#d32f2f;color:#fff}button.sm{padding:6px 10px;font-size:13px;margin:0}code{background:#eee;padding:2px 6px;border-radius:4px}
-.sheet{display:flex;flex-wrap:wrap;gap:4mm;justify-content:center}
+.sheet{display:flex;flex-wrap:wrap;gap:4mm;justify-content:center;align-items:flex-start}
 .st{width:60mm;background:#111;border-radius:5mm;padding:4mm;color:#fff;text-align:center;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid}
 .st .b{font-size:7mm;font-weight:900;letter-spacing:-.3mm}.st .b span{color:#FF6B00}
 .st .t{font-size:3.2mm;font-weight:800;margin:1.5mm 0}.st .t b{color:#FF6B00}
 .st .q{background:#fff;border:1.2mm solid #FF6B00;border-radius:3mm;padding:2mm;display:inline-block}.st .q img,.st .q canvas{width:36mm!important;height:36mm!important;display:block}
-.st .c{font-size:3mm;color:#bbb;margin-top:1.5mm;letter-spacing:.3mm}.st .c b{color:#FF6B00}
+.st .c{font-size:3mm;color:#bbb;margin-top:1.5mm;letter-spacing:.3mm}.st .lg2{display:block;height:5mm;margin:0 auto 1mm}
+.st.sm{width:42mm;padding:3mm;border-radius:4mm}.st.sm .b{font-size:5mm}.st.sm .t{font-size:2.6mm;margin:1mm 0}.st.sm .q img,.st.sm .q canvas{width:26mm!important;height:26mm!important}.st.sm .lg2{height:3.6mm}.st.sm .c{font-size:2.4mm}.st .c b{color:#FF6B00}
 
 .pb{width:100%;break-before:page;text-align:center}.card{width:60mm;border:.4mm dashed #999;border-radius:3mm;padding:3mm;box-sizing:border-box;font-size:3.4mm;break-inside:avoid;background:#fff}
 .card .b{font-weight:900;margin-bottom:1mm}.card .b span{color:#FF6B00}.card .pin{font-size:5mm;letter-spacing:1mm}.card .mut{color:#666;font-size:2.6mm;margin-top:1mm}
@@ -130,11 +131,11 @@ async function repos(){const l=(await q('replacements')).filter(r=>!r.deleted).s
   rps.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>confirm('Cancelar este pedido?')&&setSt(b.dataset.c,'rejected'));}
 async function accidents(){const l=(await q('accidents')).filter(a=>!a.deleted).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));const pend=l.filter(a=>a.status==='pending');BD.acidentes=pend.length;badges();
   if(!l.length){acc.innerHTML='Nenhum registro de acidente.';return;}
-  const prof={};await Promise.all([...new Set(l.map(a=>a.authorId))].map(async u=>{try{const r=await api('/profiles/'+u);prof[u]=pk(r.fields);}catch(e){}}));
+  const prof={};await Promise.all([...new Set(l.map(a=>a.ownerId||a.authorId))].map(async u=>{try{const r=await api('/profiles/'+u);prof[u]=pk(r.fields);}catch(e){}}));
   const ST={pending:'⏳ Aguardando análise',contacted:'✅ Família avisada',rejected:'❌ Recusado'};
-  acc.innerHTML=`<p><b>${pend.length}</b> aguardando análise</p>`+l.map(a=>{const p=prof[a.authorId]||{};const fam=(p.famPhone||'').replace(/\D/g,'');
+  acc.innerHTML=`<p><b>${pend.length}</b> aguardando análise</p>`+l.map(a=>{const p=prof[a.ownerId||a.authorId]||{};const fam=(p.famPhone||'').replace(/\D/g,'');
     const txt=encodeURIComponent(`Olá ${p.famName||''}, aqui é da equipe AutoLink. ${p.name||'Seu familiar'} registrou um acidente de carro${a.lat?` neste local: https://www.google.com/maps?q=${a.lat},${a.lng}`:''}. Ele(a) cadastrou você como contato de emergência.`);
-    return `<div class="acd"><div>${thumbs(a)}</div><div style="flex:1;min-width:220px"><b>${ST[a.status]||a.status}</b><div class="muted">${a.createdAt?a.createdAt.toLocaleString('pt-BR'):''}</div>
+    return `<div class="acd"><div>${thumbs(a)}</div><div style="flex:1;min-width:220px"><b>${ST[a.status]||a.status}</b><div class="muted">${a.createdAt?a.createdAt.toLocaleString('pt-BR'):''} · ${a.reporter==='visitor'?'Enviado por quem viu o acidente'+(a.reporterName?' ('+esc(a.reporterName)+')':'')+(a.carName?' · carro '+esc(a.carName):''):'Enviado pelo próprio dono'}</div>
      <p style="margin:6px 0"><b>${esc(p.name||'Sem perfil')}</b> · ${esc(p.phone||'')}<br>${esc(a.desc||'(sem descrição)')}</p>
      ${a.lat?`<a target="_blank" href="https://www.google.com/maps?q=${+a.lat},${+a.lng}">📍 Ver no mapa</a><br>`:''}
      <div style="margin-top:6px">👨‍👩‍👧 <b>${esc(p.famName||'—')}</b> ${p.famRel?'('+esc(p.famRel)+')':''} · ${esc(p.famPhone||'sem telefone')}</div>
@@ -300,10 +301,11 @@ async function generate(){const n=Math.min(200,Math.max(1,+document.getElementBy
   try{await api(':commit','POST',{writes:codes.map(c=>({update:{name:DOC+'/stickers/'+c,fields:{batch:enc(b),createdAt:enc(now)}},currentDocument:{exists:false}})).concat(codes.map(c=>({update:{name:DOC+'/stickerSecrets/'+c,fields:{pin:enc(pins[c])}}})))});}
   catch(e){return alert('Erro ao gerar: '+e.message+'\nTente de novo.');}
   info.textContent=`${n} adesivos gerados no lote "${b}". Clique em Imprimir.`;render(codes,pins);history();}
-function render(codes,pins={}){sheet.innerHTML='';for(const c of codes){const d=document.createElement('div');d.className='st';
-  d.innerHTML=`<div class="b">Auto<span>Link</span></div><div class="t">Precisa falar com o<br><b>dono deste carro?</b></div><div class="q"></div><div class="c">Aponte a câmera do celular<br><b style="font-size:3.6mm;letter-spacing:.5mm">${c}</b></div>`;
-  sheet.appendChild(d);new QRCode(d.querySelector('.q'),{text:SITE+'?s='+c,width:300,height:300,colorDark:'#111',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});}
+function render(codes,pins={}){sheet.innerHTML='';for(const c of codes){
+  for(const sm of [0,1]){const d=document.createElement('div');d.className='st'+(sm?' sm':'');
+  d.innerHTML=`<div class="b">Auto<span>Link</span></div><div class="t">${sm?'<b>Fale com o dono</b>':'Precisa falar com o<br><b>dono deste carro?</b>'}</div><div class="q"></div><div class="c"><img src="logo-car-white.png" alt="" class="lg2"><div>${sm?'Frente':'Aponte a câmera do celular'}</div></div>`;
+  sheet.appendChild(d);new QRCode(d.querySelector('.q'),{text:SITE+'?s='+c,width:300,height:300,colorDark:'#111',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});}}
   const br=document.createElement('div');br.className='pb';br.innerHTML='<h3>Cartões de ativação (vão DENTRO da embalagem, nunca no carro)</h3>';sheet.appendChild(br);
-  for(const c of codes){const d=document.createElement('div');d.className='card';d.innerHTML=`<div class="b">Auto<span>Link</span> · Ativação</div><div>Código: <b>${c}</b></div><div>PIN: <b class="pin">${pins[c]||'—'}</b></div><div class="mut">App AutoLink → seu carro → Ativar adesivo.<br>Guarde em segredo.</div>`;sheet.appendChild(d);}}
+  for(const c of codes){const d=document.createElement('div');d.className='card';d.innerHTML=`<div class="b">Auto<span>Link</span> · Ativação</div><div>Código: <b>${c}</b></div><div>PIN: <b class="pin">${pins[c]||'—'}</b></div><div class="mut">App AutoLink → Garagem → seu carro → Ativar adesivo → escaneie o adesivo e digite o PIN.<br>Guarde em segredo.</div>`;sheet.appendChild(d);}}
 main();
 </script></body></html>

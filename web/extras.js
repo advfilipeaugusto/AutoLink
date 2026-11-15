@@ -168,7 +168,8 @@ function shrinkImage(file, max = 1100, q = .6) {
 }
 function Accident() {
   m.innerHTML = `<h2>🚑 Registrar acidente</h2>
-  <div class="card"><b>Como funciona</b><p class="muted" style="margin:6px 0 0">Se você sofreu um acidente de carro, tire uma foto e envie. A equipe AutoLink analisa e <b>entra em contato com o seu contato de emergência</b> (família).</p></div>
+  <div class="card"><b>Como funciona</b><p class="muted" style="margin:6px 0 0">Se o seu carro sofrer um acidente e você não puder avisar ninguém, <b>qualquer pessoa no local pode escanear o adesivo AutoLink</b> do seu carro, tocar em <b>"Este carro sofreu um acidente"</b> e enviar fotos. A equipe AutoLink analisa e <b>avisa o seu contato de emergência</b> (família).</p></div>
+  <div class="muted" style="margin:14px 0 6px">Você também pode registrar um acidente por aqui:</div>
   <div class="warn" style="margin-top:8px">🚨 Em caso de feridos, ligue <b>192 (SAMU)</b> ou <b>193 (Bombeiros)</b> antes de tudo.</div>
   <div id="acph" style="margin-top:14px"></div>
   <textarea id="acd" maxlength="300" placeholder="O que aconteceu? (opcional)"></textarea>
@@ -229,7 +230,7 @@ async function Maint() {
 const DKINDS = ['CNH', 'CRLV (documento do carro)', 'Apólice de seguro', 'Nota fiscal', 'Laudo / vistoria', 'Outro'];
 const CHUNK = 700000;
 async function Docs() {
-  m.innerHTML = `<h2>📄 Documentos</h2><p class="muted">Guarde CNH, documento do carro, seguro e outros. Arquivos PDF ou foto, até 5 MB.</p>
+  m.innerHTML = `<h2>📄 Documentos</h2><p class="muted">Guarde CNH, documento do carro, seguro e outros. Fotos (são reduzidas automaticamente) ou PDF até 10 MB.</p>
   <div class="card"><b>Enviar documento</b><select id="dk" class="sel">${DKINDS.map(k => `<option>${k}</option>`).join('')}</select>
    <input id="dn" placeholder="Nome (ex: CNH Filipe)" maxlength="60">
    <label class="btn" style="display:block;text-align:center">📎 Escolher arquivo (PDF ou foto)<input type="file" id="df" accept="application/pdf,image/*" hidden></label>
@@ -245,16 +246,17 @@ async function Docs() {
       box.appendChild(r); } };
   list();
   el('df').onchange = async e => {
-    const f = e.target.files[0]; if (!f) return; if (f.size > 5 * 1024 * 1024) return toast('Arquivo maior que 5 MB');
-    const st = el('dst'); st.textContent = 'Enviando...';
+    const f = e.target.files[0]; if (!f) return; const isImg = /^image\//.test(f.type) || /\.(jpe?g|png|heic|heif|webp)$/i.test(f.name);
+    if (!isImg && f.size > 10 * 1024 * 1024) { e.target.value = ''; return alert('O PDF tem mais de 10 MB. Tente um arquivo menor.'); }
+    const st = el('dst'); st.textContent = isImg ? 'Preparando a foto...' : 'Enviando...';
     try {
-      const b64 = await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1]); r.onerror = no; r.readAsDataURL(f); });
+      const b64 = isImg ? (await shrinkImage(f, 1800, .72)).split(',')[1] : await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1]); r.onerror = no; r.readAsDataURL(f); });
       const n = Math.ceil(b64.length / CHUNK);
-      const meta = await add('owners/' + S.uid + '/docs', { name: el('dn').value.trim() || f.name, kind: el('dk').value, mime: f.type || 'application/octet-stream', size: String(f.size), chunks: String(n), createdAt: new Date() });
+      const meta = await add('owners/' + S.uid + '/docs', { name: el('dn').value.trim() || f.name, kind: el('dk').value, mime: isImg ? 'image/jpeg' : (f.type || 'application/pdf'), size: String(Math.round(b64.length * .75)), chunks: String(n), createdAt: new Date() });
       for (let i = 0; i < n; i++) { st.textContent = `Enviando... ${Math.round((i + 1) / n * 100)}%`;
         await api('/owners/' + S.uid + '/docs/' + meta.id + '/chunks/' + i, 'PATCH', { fields: { d: { stringValue: b64.slice(i * CHUNK, (i + 1) * CHUNK) } } }); }
       st.textContent = 'Documento salvo ✅'; el('dn').value = ''; e.target.value = ''; list();
-    } catch (err) { st.textContent = ''; alert('Erro ao enviar: ' + err.message); }
+    } catch (err) { st.textContent = ''; e.target.value = ''; alert('Não foi possível enviar o documento.\n\n' + (err && err.message ? err.message : 'Tente de novo com uma foto ou PDF menor.')); }
   };
 }
 async function openDoc(d, btn) {
@@ -352,7 +354,7 @@ async function Notifs() {
 let awayIv = null;
 function awayTimer(car) {
   const box = el('awTimer'); clearInterval(awayIv); if (!box) return;
-  if (!car) { box.innerHTML = ''; return; }
+  if (!car) { box.innerHTML = `<h2>Mensagem de ausência</h2><button class="card awt" id="awAdd" style="border-style:dashed"><span style="font-size:26px">⏳</span><div style="flex:1;text-align:left"><b>Nenhuma mensagem de ausência</b><div class="muted">Você não deixou nenhuma mensagem. Toque para adicionar.</div></div><span class="plus">+</span></button>`; el('awAdd').onclick = () => go(Away); return; }
   const tick = () => { const b = el('awTimer'); if (!b) return clearInterval(awayIv);
     const ms = +car.awayUntil - Date.now(); if (ms <= 0) { clearInterval(awayIv); b.innerHTML = ''; homeExtras(); return; }
     const h = Math.floor(ms / 3600e3), mi = Math.floor(ms % 3600e3 / 60e3), se = Math.floor(ms % 60e3 / 1e3), z = n => String(n).padStart(2, '0');
@@ -585,7 +587,7 @@ async function Calendar() {
 }
 
 // ---------- Mercado (busca, filtros e compatibilidade) ----------
-const MCATS = [['🔩', 'Peças'], ['🚗', 'Compra e venda'], ['🛡️', 'Seguros'], ['🔑', 'Aluguel de carros'], ['🔧', 'Oficinas'], ['🧽', 'Lava-jatos'], ['🚛', 'Guincho 24h'], ['🎧', 'Acessórios'], ['📡', 'Rastreador GPS'], ['⛽', 'Postos'], ['⚡', 'Postos elétricos'], ['🅿️', 'Estacionamentos'], ['🤝', 'Parceiros'], ['📋', 'Despachante'], ['🔍', 'Perito automotivo'], ['🎨', 'Funilaria e pintura'], ['🔊', 'Som e película'], ['✅', 'Vistoria']];
+const MCATS = [['🔩', 'Peças'], ['🚗', 'Compra e venda'], ['🛡️', 'Seguros'], ['🔑', 'Aluguel de carros'], ['🔧', 'Oficinas'], ['🧽', 'Lava-jatos'], ['🚛', 'Guincho 24h'], ['🎧', 'Acessórios'], ['🛞', 'Pneus'], ['📡', 'Rastreador GPS'], ['⛽', 'Postos'], ['⚡', 'Postos elétricos'], ['🅿️', 'Estacionamentos'], ['🤝', 'Parceiros'], ['📋', 'Despachante'], ['🔍', 'Perito automotivo'], ['🎨', 'Funilaria e pintura'], ['🔊', 'Som e película'], ['✅', 'Vistoria']];
 const CAT_DESC = { 'Peças': 'Peças novas e usadas, originais e paralelas.', 'Lava-jatos': 'Lavagem simples, completa, higienização, polimento e enceramento.', 'Oficinas': 'Mecânica geral, elétrica, suspensão, freios e revisão.',
   'Seguros': 'Cotação de seguro auto com corretoras parceiras.', 'Guincho 24h': 'Reboque e socorro mecânico a qualquer hora.', 'Compra e venda': 'Carros à venda com histórico do AutoLink.', 'Aluguel de carros': 'Locadoras e aluguel entre pessoas.' };
 async function Market() {
@@ -752,9 +754,9 @@ async function fleetList() {
 
 // ---------- Família (ícone 👨‍👩‍👧) ----------
 async function Family() {
-  m.innerHTML = `<h2>👨‍👩‍👧 Família</h2><p class="muted">Compartilhe seus carros: seus familiares recebem e respondem as mensagens no celular deles.</p>
+  m.innerHTML = `<h2>👥 Compartilhar carro</h2><p class="muted">Família, funcionários ou quem mais usa o seu carro: as pessoas convidadas recebem e respondem as mensagens no celular delas.</p>
    <div id="famCars"><p class="muted">Carregando...</p></div>
-   <h2>Entrar no carro de um familiar</h2><div class="card"><p class="muted" style="margin-top:0">Peça o código de convite ao dono do carro. O código vale por 2 dias.</p>
+   <h2>Entrar num carro compartilhado comigo</h2><div class="card"><p class="muted" style="margin-top:0">Peça o código de convite ao dono do carro. O código vale por 2 dias.</p>
    <div style="display:flex;gap:8px"><input id="jc" placeholder="Código (ex: F7K2QX)" maxlength="6" autocapitalize="characters" style="margin:0"><button class="chip" id="jb">Entrar</button></div></div>
    <div id="famShared"></div>`;
   el('jb').onclick = () => joinFamily(el('jc').value).then(() => {});
@@ -763,7 +765,7 @@ async function Family() {
   box.innerHTML = own.length ? '' : '<div class="card">Cadastre um carro na Garagem para compartilhar.</div>';
   for (const c of own) { const w = document.createElement('div'); w.innerHTML = `<div class="muted" style="margin:10px 0 4px;font-weight:700">🚗 ${esc(c.name)} ${c.plate ? '· ' + esc(c.plate) : ''}</div><div class="famc"></div>`; box.appendChild(w);
     familyBox(c, w.querySelector('.famc')); }
-  if (sh.length) el('famShared').innerHTML = `<h2>Carros da família que eu participo</h2>` + sh.map(c => `<button class="card" data-car="${c.id}"><b>${esc(c.name)}</b> <span class="pill">👨‍👩‍👧 Família</span><div class="muted">${esc(c.plate || '')}</div></button>`).join('');
+  if (sh.length) el('famShared').innerHTML = `<h2>Carros compartilhados comigo</h2>` + sh.map(c => `<button class="card" data-car="${c.id}"><b>${esc(c.name)}</b> <span class="pill">👨‍👩‍👧 Família</span><div class="muted">${esc(c.plate || '')}</div></button>`).join('');
   m.querySelectorAll('[data-car]').forEach(b => b.onclick = () => go(Car, sh.find(c => c.id === b.dataset.car)));
 }
 
@@ -798,4 +800,31 @@ async function Sos() {
     gps().then(g => { const msg = `🆘 ${p.name ? p.name.split(' ')[0] : 'Seu familiar'} precisa de ajuda! Localização agora: https://www.google.com/maps?q=${g.lat},${g.lng} (enviado pelo AutoLink)`;
       location.href = 'https://wa.me/55' + ph.replace(/^55/, '') + '?text=' + encodeURIComponent(msg); })
     .catch(() => { const msg = `🆘 ${p.name ? p.name.split(' ')[0] : 'Seu familiar'} precisa de ajuda! (não foi possível enviar a localização)`; location.href = 'https://wa.me/55' + ph.replace(/^55/, '') + '?text=' + encodeURIComponent(msg); }); };
+}
+
+// ---------- Meu carro: manutenção, documentos e calendário ----------
+function MyCar() {
+  const C = [['🔧', 'Manutenção', 'Revisões, trocas e lembretes', () => go(Maint)], ['📄', 'Documentos', 'CNH, CRLV, seguro e notas', () => go(Docs)], ['📅', 'Calendário', 'Rodízio, IPVA e licenciamento', () => go(Calendar)]];
+  m.innerHTML = `<h2>🚗 Meu carro</h2><p class="muted">Tudo sobre o seu carro em um só lugar.</p><div class="mc">${C.map(([e, t, d], i) => `<button class="card mcb" data-i="${i}"><span style="font-size:38px">${e}</span><b>${t}</b><small class="muted">${d}</small></button>`).join('')}</div>`;
+  m.querySelectorAll('.mcb').forEach(b => b.onclick = C[+b.dataset.i][3]);
+}
+
+// ---------- Alertas da região: lista + meus alertas ----------
+async function RegionAlerts() {
+  m.innerHTML = `<h2>🚨 Alertas da região</h2><p class="muted">Evite estes locais. Toque num alerta para ver no mapa.</p><div id="raL"><p class="muted">Carregando...</p></div>
+   <h2>Meus alertas</h2><div id="raM"><p class="muted">Carregando...</p></div><button class="btn" id="raN" style="margin-top:10px">+ Criar alerta</button>`;
+  el('raN').onclick = () => go(NewAlert);
+  if (!PROFILE) await loadProfile();
+  const uf = (PROFILE && PROFILE.uf || '').toUpperCase(), city = (PROFILE && PROFILE.city || '').toLowerCase().trim(), now = Date.now();
+  const SC = { local: '📍 Perto do local', city: '🏙️ Na cidade', state: '🗺️ No estado' };
+  const row = (a, extra) => { const [e, l] = ATYPES[a.type] || ATYPES.outro; return `<a class="card" style="display:flex;gap:12px;align-items:center;text-decoration:none;color:inherit" ${a.lat ? `target="_blank" href="https://www.google.com/maps?q=${+a.lat},${+a.lng}"` : ''}>
+    <span style="font-size:28px">${e}</span><div style="flex:1;min-width:0"><b>${l}</b><div class="muted">${esc(a.desc || '')}</div><div class="muted">${SC[a.scope || 'local']}${a.city ? ' · ' + esc(a.city) : ''}${a.uf ? '/' + esc(a.uf) : ''}</div>${extra || ''}</div>${a.lat ? '<span style="color:var(--or)">📍</span>' : ''}</a>`; };
+  try { const l = (await find('alerts', [['status', 'approved']])).filter(a => !a.deleted && !(a.expiresAt && +a.expiresAt < now));
+    const mine = l.filter(a => !uf || !a.uf || String(a.uf).toUpperCase() === uf).sort((a, b) => (String(b.city || '').toLowerCase().trim() === city) - (String(a.city || '').toLowerCase().trim() === city));
+    el('raL').innerHTML = mine.length ? mine.map(a => row(a, `<div class="muted">No ar até ${a.expiresAt ? a.expiresAt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'}</div>`)).join('') : '<div class="card alert"><span class="ic">✅</span><div>Nenhum alerta ativo na sua região.</div></div>';
+  } catch (e) { el('raL').innerHTML = '<p class="muted">Não foi possível carregar.</p>'; }
+  try { const my = (await find('alerts', [['authorId', S.uid]])).filter(a => !a.deleted).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    const st = a => a.status === 'pending' ? '⏳ Em análise pela equipe' : a.status === 'approved' && !(a.expiresAt && +a.expiresAt < now) ? `🟢 <b>Online</b>: motoristas estão vendo até ${a.expiresAt ? a.expiresAt.toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''}` : a.status === 'rejected' ? '❌ Não aprovado' : '⚪ Encerrado';
+    el('raM').innerHTML = my.length ? my.map(a => row(a, `<div style="margin-top:4px;font-size:14px">${st(a)}</div>`)).join('') : '<p class="muted">Você ainda não criou alertas.</p>';
+  } catch (e) { el('raM').innerHTML = '<p class="muted">—</p>'; }
 }
