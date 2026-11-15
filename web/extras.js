@@ -111,7 +111,7 @@ async function askNotif() {
 // ---------- Mensagem de ausência ----------
 const AWAY_PRESETS = ['Estou no trabalho. Volto mais tarde.', 'Estou em reunião. Respondo assim que puder.', 'Estou dirigindo. Respondo em breve.', 'Estou viajando. Fale com o porteiro do prédio.', 'Volto em 10 minutos.'];
 function Away() {
-  m.innerHTML = `<h2>Mensagem de ausência</h2>
+  m.innerHTML = `<h2>⏳ Mensagem de ausência</h2>
   <div class="card"><b>Como funciona</b><p class="muted" style="margin:6px 0 0">Quando você não puder responder, deixe uma mensagem automática. Quem escanear seu adesivo recebe essa resposta na hora.
   Ela vale por <b>no máximo 12 horas</b>. Quando acabar, o AutoLink te avisa para renovar.</p></div>
   <div id="awst"></div>
@@ -354,7 +354,7 @@ async function Notifs() {
 let awayIv = null;
 function awayTimer(car) {
   const box = el('awTimer'); clearInterval(awayIv); if (!box) return;
-  if (!car) { box.innerHTML = `<h2>Mensagem de ausência</h2><button class="card awt" id="awAdd" style="border-style:dashed"><span style="font-size:26px">⏳</span><div style="flex:1;text-align:left"><b>Nenhuma mensagem de ausência</b><div class="muted">Você não deixou nenhuma mensagem. Toque para adicionar.</div></div><span class="plus">+</span></button>`; el('awAdd').onclick = () => go(Away); return; }
+  if (!car) { box.innerHTML = `<h2>⏳ Mensagem de ausência</h2><button class="card awt" id="awAdd" style="border-style:dashed"><span style="font-size:26px">⏳</span><div style="flex:1;text-align:left"><b>Nenhuma mensagem de ausência</b><div class="muted">Você não deixou nenhuma mensagem. Toque para adicionar.</div></div><span class="plus">+</span></button>`; el('awAdd').onclick = () => go(Away); return; }
   const tick = () => { const b = el('awTimer'); if (!b) return clearInterval(awayIv);
     const ms = +car.awayUntil - Date.now(); if (ms <= 0) { clearInterval(awayIv); b.innerHTML = ''; homeExtras(); return; }
     const h = Math.floor(ms / 3600e3), mi = Math.floor(ms % 3600e3 / 60e3), se = Math.floor(ms % 60e3 / 1e3), z = n => String(n).padStart(2, '0');
@@ -400,7 +400,6 @@ function Settings() {
    <button class="card" id="cBlk" style="display:flex;gap:12px;align-items:center"><span style="font-size:24px">🚫</span><div><b style="font-size:15px">Pessoas bloqueadas</b><div class="muted">Ver e desbloquear</div></div></button>
    <div class="muted" style="margin:14px 0 6px">Aparência</div>
    ${R('cTh', cur === 'light' ? '☀️' : '🌙', 'Tema', cur === 'light' ? 'Claro' : 'Escuro', `<span class="tg" style="display:flex;background:var(--bg);border-radius:10px;padding:3px;gap:2px"><i class="t ${cur === 'light' ? 'on' : ''}" data-t="light" style="font-style:normal;padding:6px 10px;border-radius:8px">☀️</i><i class="t ${cur === 'dark' ? 'on' : ''}" data-t="dark" style="font-style:normal;padding:6px 10px;border-radius:8px">🌙</i></span>`)}
-   ${R('cFt', '🔠', 'Letra maior', 'Facilita a leitura', SW('fBig', big))}
    <div class="muted" style="margin:14px 0 6px">Avisos</div>
    ${R('cSn', '🔊', 'Som dos avisos', 'Toca um som quando chega mensagem', SW('fSnd', snd))}
    ${R('cNt', '🔔', 'Avisos do celular', nOk ? 'Ativados' : 'Permitir que o AutoLink mostre avisos', nOk ? '<span class="pill">Ativos</span>' : '<button class="chip" id="fNt">Ativar</button>')}
@@ -413,7 +412,6 @@ function Settings() {
   el('cBlk').onclick = () => go(Blocked);
   m.querySelectorAll('.t').forEach(x => x.onclick = () => { theme(x.dataset.t); go(Settings, null, false); });
   m.querySelectorAll('.t.on').forEach(x => { x.style.background = 'var(--or)'; x.style.color = '#111'; });
-  el('fBig').onchange = e => { pref('font', e.target.checked ? 'big' : 'normal'); applyPrefs(); };
   el('fSnd').onchange = e => { pref('sound', e.target.checked ? 'on' : 'off'); if (e.target.checked) beep(); };
   if (el('fNt')) el('fNt').onclick = () => askNotif().then(() => go(Settings, null, false));
   el('cTr').onclick = () => location.href = 'termos.html';

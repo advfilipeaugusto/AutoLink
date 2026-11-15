@@ -139,6 +139,9 @@ header img.fi{height:24px;width:auto;border-radius:0;display:block}
 .mplate{display:inline-flex;flex-direction:column;align-items:center;background:#fff;color:#111;border:2px solid #111;border-radius:6px;overflow:hidden;margin-top:6px;min-width:120px}.mplate i{display:block;width:100%;background:#1d4ed8;color:#fff;font-size:8px;font-style:normal;font-weight:800;letter-spacing:2px;text-align:center;padding:1px 0}.mplate b{font-size:20px;letter-spacing:2px;padding:1px 10px;font-family:'Arial Black',Arial,sans-serif}
 :root[data-theme=light] .hero2{background:linear-gradient(145deg,#f8fafc,#e2e8f0)!important;color:#0f172a!important;border-color:#cbd5e1!important}:root[data-theme=light] .hero2 svg.car{color:#334155}:root[data-theme=light] .hero2 .hqr{background:#0f172a!important}:root[data-theme=light] .hero2 .hqr svg{stroke:#fff}
 .news{display:flex;gap:12px;align-items:center;text-align:left}.news img{width:64px;height:64px;border-radius:12px;object-fit:cover;flex:none}.news .ni{width:64px;height:64px;border-radius:12px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:28px;flex:none}
+.heroSh{background:linear-gradient(145deg,#312e81 0%,#1e1b4b 75%)!important;border:2px dashed #818cf8!important}.heroSh .lbl{color:#c7d2fe!important}.heroSh svg.car{color:#a5b4fc}
+:root[data-theme=light] .heroSh{background:linear-gradient(145deg,#eef2ff,#e0e7ff)!important;color:#1e1b4b!important}
+[hidden]{display:none!important}
 </style></head><body>
 <header><button id="menu" aria-label="Menu" style="padding:4px 6px 4px 0;position:relative"><span class="rdot" id="menuDot" hidden style="position:absolute;top:0;right:2px"></span><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button id="back" hidden aria-label="Voltar" style="font-size:34px;line-height:1;padding:0 8px 4px 2px;font-weight:400">‹</button><div class="brand"><div class="t">Auto<span>Link</span></div><img class="lc lcw" src="logo-car-white.png" alt=""><img class="lc lcb" src="logo-car.png" alt=""></div><span style="flex:1"></span><button id="famI" hidden aria-label="Família" style="padding:4px 6px;position:relative"><img class="fi lcw" src="fam-white.png" alt=""><img class="fi lcb" src="fam-black.png" alt=""></button><button id="srch" hidden aria-label="Buscar" style="color:var(--tx);padding:4px"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button><button id="bell" hidden aria-label="Notificações" style="position:relative;color:var(--tx);padding:4px"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4zM10 21h4"/></svg><span class="nb" id="bellN"></span></button><button id="out" hidden>Sair</button></header>
 <main id="m"></main>
@@ -244,15 +247,14 @@ function installTip(){
 
 function Home(){
   m.innerHTML=`<div id="danger"></div><div id="hero"><div class="hero"><div class="muted">Carregando...</div></div></div>
-  <h2>Avisos sobre meu carro</h2><div id="alerts"><div class="card muted">Carregando...</div></div>
   <div id="awTimer"></div><div id="xtra"></div>
-  <div id="newsH"></div>
-  <h2>Alertas na minha região <button class="link" id="raAll" style="display:inline;width:auto;margin:0 0 0 6px;font-size:14px">ver todos ›</button></h2><div id="rmap"></div>
-  <h2>Funcionalidades</h2><div class="grid">
+  <h2>🚨 Alertas na minha região <button class="link" id="raAll" style="display:inline;width:auto;margin:0 0 0 6px;font-size:14px">ver todos ›</button></h2><div id="rmap"></div>
+  <h2>🧩 Funcionalidades</h2><div class="grid">
    ${[['alerta','siren','Criar|alerta','#ef4444'],['acid','img:ic-crash.png','Avisar|acidente'],['hist','clock','Meu|histórico'],['meucarro','car','Meu|carro'],['perdi','carsearch','Roubo|ou furto','#f59e0b'],['fam','img:ic-fam.png','Compartilhar|carro'],['park','pin','Onde|estacionei','#f59e0b'],['sos','sos','SOS|família','#ef4444']]
      .map(([k,i,l,c])=>`<button class="sc" data-k="${k}"><span class="ic">${i.startsWith('img:')?`<img src="${i.slice(4)}" alt="" style="width:34px;height:34px;object-fit:contain">`:ic(i,c||'#FF6B00')}</span><span class="scl">${l.replace('|','<br>')}</span></button>`).join('')}</div>
   <button class="card biz" id="bizC"><span style="font-size:30px">🏢</span><div><b>Empresas e frotas</b><div class="muted">Adesivos para a frota e "Como estou dirigindo?"</div></div><span style="margin-left:auto;color:var(--or);font-size:22px">›</span></button>
   <button class="card biz" id="selC" style="border-color:#22c55e55"><span style="font-size:30px">🛍️</span><div><b>Lojistas e vendedores</b><div class="muted">Pessoa física ou loja: venda no Mercado</div></div><span style="margin-left:auto;color:#22c55e;font-size:22px">›</span></button>
+  <div id="newsH"></div>
   ${installTip()}`;
   let cars=[],idx=0;
   $('#bizC').onclick=()=>go(Company);$('#selC').onclick=()=>go(Sellers);newsHome();$('#raAll').onclick=()=>go(RegionAlerts);
@@ -276,7 +278,7 @@ function Home(){
     const c=cars[idx],on=c.stickerCode&&c.active,un=UNREAD[c.id]||0;
     const other=cars.map((x,i)=>[x,i]).filter(([x,i])=>i!==idx&&UNREAD[x.id]);
     h.innerHTML=other.map(([x,i])=>`<button class="otherc" data-i="${i}">🔔 Nova mensagem no ${esc(x.name)} (${UNREAD[x.id]}) · toque para ver</button>`).join('')
-     +`<button class="hero card hero2 ${un?'alertc':''}" id="hc"><div class="lbl">${c.shared?'👥 Compartilhado comigo':'🚗 Meu carro'}${cars.length>1?' · '+(idx+1)+'/'+cars.length:''}</div><div class="nm">${esc(c.name)}<span class="cb ${un?'on':''}">🔔 ${un}</span></div>
+     +`<button class="hero card hero2 ${c.shared?'heroSh':''} ${un?'alertc':''}" id="hc"><div class="lbl">${c.shared?'👥 CARRO COMPARTILHADO COM VOCÊ':'🚗 Meu carro'}${cars.length>1?' · '+(idx+1)+'/'+cars.length:''}</div><div class="nm">${esc(c.name)}<span class="cb ${un?'on':''}">🔔 ${un}</span></div>
       ${c.plate?`<div class="mplate"><i>BRASIL</i><b>${esc(c.plate)}</b></div>`:'<div class="muted" style="margin-top:4px">Sem placa cadastrada</div>'}<span class="hqr" id="hqr" role="button" aria-label="Meu QR code">${ic('qr','#111',2.2)}</span>
       <div class="st ${on?'on':'off'}"><i></i>${on?'Online':c.stickerCode?'QR pausado':'Sem adesivo'}</div>${carSvg}</button>
       ${cars.length>1?`<div class="hnav"><button id="hp">‹ Anterior</button><div class="dots" style="margin:0">${cars.map((_,i)=>`<i class="${i===idx?'a':''}"></i>`).join('')}</div><button id="hn">Próximo ›</button></div>`:''}`;
@@ -335,9 +337,9 @@ function History(){
   draw();}
 function Car(car){
   m.innerHTML=`<h2>${esc(car.name)}</h2><div id="st"></div>
-  <div class="row"><span>QR ativo (recebendo mensagens)</span><label class="sw"><input type="checkbox" id="act" ${car.active?'checked':''}><span></span></label></div>
+  <div class="row" ${car.stickerCode?'':'hidden'}><span>QR ativo (recebendo mensagens)</span><label class="sw"><input type="checkbox" id="act" ${car.active?'checked':''}><span></span></label></div>
   <div id="fam"></div><div id="fleet"></div>
-  <h2>Conversas</h2><div id="chats"><p class="muted">Carregando...</p></div>
+  <div ${car.stickerCode?'':'hidden'}><h2>Conversas</h2><div id="chats"><p class="muted">Carregando...</p></div></div>
   <button class="link" id="del" style="color:#d32f2f;margin-top:30px">Apagar este carro</button>`;
   $('#del').onclick=async()=>{
     if(!confirm(`Apagar o carro "${car.name}"?`+(car.stickerCode?`\n\nO adesivo ${car.stickerCode} será desvinculado e poderá ser ativado de novo (com o PIN) em outro carro.`:'')+'\n\nNão dá para desfazer.'))return;
@@ -352,8 +354,11 @@ function Car(car){
   $('#act').onchange=async e=>{car.active=e.target.checked;try{await update('cars/'+car.id,{active:car.active});}catch(err){alert(err.message);}};
   const st=$('#st');
   if(car.stickerCode&&!car._swap){st.innerHTML=`<div class="card" style="text-align:center"><div class="muted">Adesivo ativo · placa ${esc(car.plate||'—')}</div><div class="code">${esc(car.stickerCode)}</div><button class="link" id="swapSt" style="font-size:13px">Ativar outro adesivo neste carro</button></div>`;
-    $('#swapSt').onclick=()=>{if(confirm('Este carro já tem o adesivo '+car.stickerCode+'.\n\nAo ativar um adesivo novo, o anterior será DESATIVADO automaticamente.\n\nSe o seu adesivo estragou ou foi perdido, use Configurações → "Danifiquei ou perdi meu QR".\n\nContinuar?')){car._swap=1;go(Car,car,false);}};}
-  else{st.innerHTML=`<div class="card"><b>Ativar adesivo AutoLink</b><p class="muted">1. Escaneie o adesivo com a câmera.<br>2. Digite o PIN de 6 números do cartão de ativação.</p>
+    $('#swapSt').onclick=()=>{if(confirm('Este carro já tem o adesivo '+car.stickerCode+'.\n\nAo ativar um adesivo novo, o anterior será DESATIVADO automaticamente.\n\nContinuar?')){car._swap=1;go(Car,car,false);}};}
+  else{st.innerHTML=`<div class="card"><b>Ativar adesivo AutoLink</b><ol class="muted" style="padding-left:18px;margin:6px 0 10px;line-height:1.6">
+    <li>Toque em <b>📷 Escanear o adesivo</b> e aponte para o QR code do adesivo.</li><li>Confira a <b>placa</b> do carro (ela fica vinculada a este adesivo).</li>
+    <li>Digite o <b>PIN de 6 números</b> que está no folheto da embalagem.</li><li>Toque em <b>Ativar adesivo</b>.</li>
+    <li>Cole o adesivo grande ao lado da <b>placa traseira</b> e o pequeno embaixo do <b>espelho do motorista</b>.</li></ol>
     <button type="button" class="btn" id="scanSt" style="background:var(--card2);color:var(--tx);box-shadow:none;border:1px solid var(--line)">📷 Escanear o adesivo</button>
     <form id="sf"><input id="sc" placeholder="Código do adesivo (preenchido ao escanear)" maxlength="9" autocapitalize="characters" autocorrect="off" spellcheck="false" autocomplete="off" style="display:none">
     <div class="muted" id="scOk" style="margin-bottom:8px"></div>
@@ -465,12 +470,13 @@ function openMenu(){const d=document.getElementById('drawer');d.hidden=false;loc
    +I('buy','store','Comprar adesivo')+I('plan','shield','Meu plano','<span class="pill">Grátis</span>')
    +I('ads','mega','Quero anunciar no AutoLink')+I('sell','store','Quero vender no AutoLink')+I('share','users','Indicar o AutoLink')
    +I('manual','doc','Manual do AutoLink')+I('tour','play','Ver tutorial')+I('help','msg','Central de ajuda',HELP_UNREAD?'<span class="rdot"></span>':'')+I('terms','doc','Termos e privacidade')
-   +I('config','wrench','Configurações')
+   +I('acc','users','Acessibilidade','<span class="pill" style="background:#3a3a40;color:var(--mut)">Em breve</span>')+I('config','wrench','Configurações')
    +`<div class="dacc">${S?`<div class="muted">Conectado como</div><b>${esc(S.email||'')}</b><button class="chip" id="dOut" style="margin-top:10px">Sair da conta</button>`:''}</div>`;
   d.querySelectorAll('.di').forEach(b=>b.onclick=()=>{const k=b.dataset.k;
     if(k==='theme'){theme(cur==='light'?'dark':'light');return openMenu();}
     d.hidden=true;lockPage(false);
     if(k==='config')return go(Settings);
+    if(k==='acc')return toast('🚧 Acessibilidade: em construção. Em breve!');
     if(k==='myqr')return go(MyQR);
     if(k==='buy')return go(BuySticker);
     if(k==='tour')return showTour(true);
