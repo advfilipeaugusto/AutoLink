@@ -47,8 +47,6 @@ button.x{position:absolute;top:10px;right:10px;width:36px;height:36px;padding:0;
 .gr{width:100%;background:#fff7ed;border:1px solid #FF6B00;border-radius:3mm;padding:3mm 4mm;font-size:3.4mm;line-height:1.5;margin-bottom:4mm;box-sizing:border-box}.card{width:60mm;border:.4mm dashed #999;border-radius:3mm;padding:3mm;box-sizing:border-box;font-size:3.4mm;break-inside:avoid;background:#fff}
 .card .b{font-weight:900;margin-bottom:1mm}.card .b span{color:#FF6B00}.card .pin{font-size:5mm;letter-spacing:1mm}.card .mut{color:#666;font-size:2.6mm;margin-top:1mm}
 @media print{header,#hub,.box{display:none!important}main{padding:0;max-width:none}body{background:#fff}@page{size:A4;margin:8mm}}
-.st2{background:#FF6B00!important}.st2 .q{border:0!important;border-radius:2.5mm}.st2 .c,.st2 .c b{color:#fff!important}.st2.big .lg3{width:40mm}.st2.small .lg3{width:24mm}
-.st2.big .q img,.st2.big .q canvas{width:56mm!important;height:56mm!important}.st2.big .c{font-size:4.6mm}
 .kb{background:#FF6B00;color:#fff;border:0;border-radius:10px;padding:9px 14px;font-weight:800;text-decoration:none;font-size:14px;cursor:pointer}
 @media print{.gr{display:none!important}}
 </style></head><body>
@@ -376,7 +374,7 @@ function render(codes,pins={}){
   const kitUrl='../kit/livreto.html#'+encodeURIComponent(codes.map(c=>c+':'+(pins[c]||'')).join(','));
   sheet.innerHTML=`<div class="gr" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><b>O que imprimir?</b><a class="kb" href="${kitUrl}" target="_blank" rel="noopener">📘 Kit completo (livreto com adesivos e PIN)</a><button class="kb" onclick="print()">🏷️ Só os adesivos QR + folheto do PIN</button></div><div class="gr pins"><b>🔑 PINs gerados</b><br>${codes.map(c=>`${c}: <b style="font-family:monospace;font-size:15px">${pins[c]||'—'}</b>`).join(' · ')}</div>`+'<div class="gr"><b>📐 Para a gráfica</b> · Adesivo principal: <b>8 × 13 cm</b> · Adesivo menor: <b>4,5 × 6,5 cm</b> · Folheto do PIN: <b>8 × 13 cm</b><br>Adesivos: vinil branco com <b>laminação UV</b> e recorte no formato · Folheto: papel couchê 250–300 g · Imprimir em <b>100% (sem ajustar à página)</b>.</div>';
   const face=(c,cls)=>{const d=document.createElement('div');d.className='st2 '+cls;
-    d.innerHTML=`<img src="logo-car-white.png" alt="" class="lg3"><div class="q"></div><div class="c"><b>Aponte a câmera${cls==='big'?' do celular':''}</b><br>Não precisa baixar ${cls==='big'?'aplicativo':'app'}</div>`;
+    d.innerHTML=`<div class="b">Auto<span>Link</span></div><div class="t">Precisa falar com o<br><b>dono deste carro?</b></div><div class="q"></div><div class="c"><b>Aponte a câmera do celular</b><br>Não precisa baixar aplicativo</div><img src="logo-car-white.png" alt="" class="lg2">`;
     sheet.appendChild(d);new QRCode(d.querySelector('.q'),{text:SITE+'?s='+c,width:400,height:400,colorDark:'#111',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});};
   for(const c of codes){const w=document.createElement('div');w.className='kit';sheet.appendChild(w);const keep=sheet;
     face(c,'big');face(c,'small');}
