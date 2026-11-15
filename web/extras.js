@@ -960,8 +960,9 @@ async function loadNews() {
 const newsThumb = n => n.photo ? `<img src="${n.photo}" alt="">` : `<span class="ni">${n.img || '📰'}</span>`;
 async function newsHome() {
   const box = el('newsH'); if (!box) return; const l = await loadNews(); if (!el('newsH')) return;
-  box.innerHTML = `<h2>📰 Notícias <button class="link" id="nAll" style="display:inline;width:auto;margin:0 0 0 6px;font-size:14px">ver todas ›</button></h2>` +
-    l.slice(0, 3).map((n, i) => `<button class="card news" data-n="${i}">${newsThumb(n)}<div style="min-width:0"><b style="font-size:15px;line-height:1.25;display:block">${esc(n.title)}</b><div class="muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(n.summary || '')}</div></div></button>`).join('');
+  box.className = 'card';
+  box.innerHTML = `<h2>📰 Notícias <button class="link" id="nAll" style="display:inline;width:auto;margin:0 0 0 6px;font-size:14px">ver todas ›</button></h2><div class="ngr">` +
+    l.slice(0, 2).map((n, i) => `<button class="card news" data-n="${i}">${newsThumb(n)}<b style="font-size:14px;line-height:1.25;display:block">${esc(n.title)}</b><div class="muted" style="font-size:12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(n.summary || '')}</div></button>`).join('') + '</div>';
   el('nAll').onclick = () => go(News); box.querySelectorAll('[data-n]').forEach(b => b.onclick = () => go(Article, l[+b.dataset.n]));
 }
 async function News() {
