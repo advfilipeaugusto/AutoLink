@@ -42,6 +42,14 @@ service cloud.firestore {
         allow delete: if isAdmin();
       }
     }
+    match /news/{id} {
+      allow read: if resource.data.published == true || isAdmin();
+      allow write: if isAdmin();
+    }
+    match /points/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
     match /orders/{id} {
       allow create: if request.auth != null && request.resource.data.userId == me() && request.resource.data.status == 'new';
       allow get, list: if request.auth != null && (resource.data.userId == me() || isAdmin());
@@ -79,7 +87,7 @@ service cloud.firestore {
         && request.resource.data.ownerId == me()
         && get(/databases/$(db)/documents/cars/$(request.resource.data.carId)).data.ownerId == me()
         && request.resource.data.activationPin == get(/databases/$(db)/documents/stickerSecrets/$(code)).data.pin
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['carId', 'ownerId', 'activatedAt', 'activationPin']));
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['carId', 'ownerId', 'activatedAt', 'activationPin', 'plate']));
     }
     match /alerts/{id} {
       allow get, list: if request.auth != null && (resource.data.status == 'approved' || resource.data.authorId == me() || isAdmin());

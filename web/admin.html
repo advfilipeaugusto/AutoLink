@@ -21,7 +21,7 @@ textarea{width:100%;box-sizing:border-box;padding:12px;border:1px solid #ccc;bor
 .kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}.kc{background:#f7f7f8;border-radius:14px;padding:14px}.kc .e{font-size:22px}.kc .v{font-size:30px;font-weight:900;color:#111;margin:4px 0}.kc .v small{font-size:14px;color:#1a7f37}
 .acd{display:flex;gap:14px;flex-wrap:wrap;border-top:1px solid #eee;padding:14px 0}.acd img{width:200px;max-width:100%;border-radius:12px;object-fit:cover}
 a.wa{display:inline-block;background:#25d366;color:#fff;text-decoration:none;font-weight:700;padding:8px 12px;border-radius:10px;margin:8px 6px 0 0;font-size:14px}
-.trb button{display:block;width:100%;margin:0 0 6px!important;white-space:nowrap}#bell{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;margin:0;padding:4px}#bell .bd:not(:empty){top:-4px;right:-6px}
+.trb button{display:block;width:100%;margin:0 0 6px!important;white-space:nowrap}#lo{position:absolute;right:62px;top:50%;transform:translateY(-50%);background:none;color:#FF6B00;margin:0;padding:6px;font-size:14px}#bell{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;margin:0;padding:4px}#bell .bd:not(:empty){top:-4px;right:-6px}
 .th{display:flex;gap:6px;margin:6px 0}.th img{width:56px;height:56px;object-fit:cover;border-radius:8px;cursor:zoom-in;border:1px solid #ddd}
 .lb{position:fixed;inset:0;background:#000d;z-index:60;display:flex;align-items:center;justify-content:center;padding:16px;cursor:zoom-out}.lb img{max-width:100%;max-height:100%;border-radius:12px}
 .pwb select,.pwb input,.pwb textarea{width:100%;box-sizing:border-box;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:15px;margin:4px 0 8px}
@@ -34,12 +34,21 @@ button.x{position:absolute;top:10px;right:10px;width:36px;height:36px;padding:0;
 .st .c{font-size:3mm;color:#bbb;margin-top:1.5mm;letter-spacing:.3mm}.st .lg2{display:block;height:5mm;margin:0 auto 1mm}
 .st.sm{width:45mm;padding:3mm;border-radius:4mm}.st.sm .b{font-size:5mm}.st.sm .t{font-size:2.6mm;margin:1mm 0}.st.sm .q img,.st.sm .q canvas{width:26mm!important;height:26mm!important}.st.sm .lg2{height:3.6mm}.st.sm .c{font-size:2.4mm}.st .c b{color:#FF6B00}
 
-.pb{width:100%;break-before:page;text-align:center}.man{width:105mm;min-height:148mm;box-sizing:border-box;border:.4mm dashed #999;border-radius:3mm;padding:6mm;font-size:3.6mm;line-height:1.45;background:#fff;break-inside:avoid}.man .b{font-size:7mm;font-weight:900}.man .b span{color:#FF6B00}.man ol{padding-left:5mm}.man .mut{color:#666;font-size:3mm}
+.pb{width:100%;break-before:page;text-align:center}
+.st2{background:#111;color:#fff;text-align:center;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid}
+.st2.big{width:80mm;height:130mm;border-radius:6mm;padding:7mm 6mm}.st2.small{width:45mm;height:65mm;border-radius:4mm;padding:3.5mm 3mm}
+.st2 .b{font-weight:900;letter-spacing:-.3mm}.st2 .b span{color:#FF6B00}.st2 .t b{color:#FF6B00}.st2 .q{background:#fff;border:solid #FF6B00;display:inline-block}.st2 .q img,.st2 .q canvas{display:block}.st2 .c{color:#ddd}.st2 .c b{color:#fff}
+.st2.big .b{font-size:11mm}.st2.big .t{font-size:5mm;line-height:1.25}.st2.big .q{border-width:1.8mm;border-radius:4mm;padding:3mm}.st2.big .q img,.st2.big .q canvas{width:52mm!important;height:52mm!important}.st2.big .c{font-size:3.6mm;line-height:1.4}.st2.big .lg2{height:8mm}
+.st2.small .b{font-size:6mm}.st2.small .t{font-size:2.6mm;line-height:1.2}.st2.small .q{border-width:1mm;border-radius:2.5mm;padding:1.6mm}.st2.small .q img,.st2.small .q canvas{width:27mm!important;height:27mm!important}.st2.small .c{font-size:2.1mm;line-height:1.3}.st2.small .lg2{height:4mm}
+.leaf{width:80mm;height:130mm;box-sizing:border-box;border:.4mm dashed #999;border-radius:3mm;padding:5mm;font-size:3.1mm;line-height:1.38;background:#fff;color:#111;break-inside:avoid;overflow:hidden}
+.leaf .lh{display:flex;justify-content:space-between;align-items:center;margin-bottom:2mm}.leaf .b{font-size:7mm;font-weight:900}.leaf .b span{color:#FF6B00}
+.leaf .pinb{background:#111;color:#fff;border-radius:2mm;padding:1.5mm 3mm;text-align:center;font-size:2.4mm}.leaf .pinb b{font-size:6mm;letter-spacing:1mm;color:#FF6B00}.leaf .pinb small{display:block;color:#aaa;font-size:2mm}
+.leaf .lt{display:block;margin-top:2mm;font-size:3.4mm}.leaf ol,.leaf ul{margin:1mm 0;padding-left:4.5mm}.leaf ul{list-style:none;padding-left:0}.leaf .mut{color:#666;font-size:2.6mm;margin-top:2mm}.man{width:105mm;min-height:148mm;box-sizing:border-box;border:.4mm dashed #999;border-radius:3mm;padding:6mm;font-size:3.6mm;line-height:1.45;background:#fff;break-inside:avoid}.man .b{font-size:7mm;font-weight:900}.man .b span{color:#FF6B00}.man ol{padding-left:5mm}.man .mut{color:#666;font-size:3mm}
 .gr{width:100%;background:#fff7ed;border:1px solid #FF6B00;border-radius:3mm;padding:3mm 4mm;font-size:3.4mm;line-height:1.5;margin-bottom:4mm;box-sizing:border-box}.card{width:60mm;border:.4mm dashed #999;border-radius:3mm;padding:3mm;box-sizing:border-box;font-size:3.4mm;break-inside:avoid;background:#fff}
 .card .b{font-weight:900;margin-bottom:1mm}.card .b span{color:#FF6B00}.card .pin{font-size:5mm;letter-spacing:1mm}.card .mut{color:#666;font-size:2.6mm;margin-top:1mm}
 @media print{header,#hub,.box{display:none!important}main{padding:0;max-width:none}body{background:#fff}@page{size:A4;margin:8mm}}
 </style></head><body>
-<header><button id="hb" hidden onclick="home()" aria-label="Voltar">‹</button><div class="lg"><small>Adm</small><div>Auto<span>Link</span></div><img src="logo-car-white.png" alt="" class="lgc"></div><button id="bell" onclick="pend()" aria-label="Pendências"><span style="font-size:24px">🔔</span><span class="bd" id="bellN"></span></button></header><div id="hub" hidden></div><main id="m">Carregando...</main>
+<header><button id="hb" hidden onclick="home()" aria-label="Voltar">‹</button><div class="lg"><small>Adm</small><div>Auto<span>Link</span></div><img src="logo-car-white.png" alt="" class="lgc"></div><button id="lo" onclick="if(confirm('Sair do app ADM?')){sessionStorage.clear();location.reload();}" aria-label="Sair">Sair</button><button id="bell" onclick="pend()" aria-label="Pendências"><span style="font-size:24px">🔔</span><span class="bd" id="bellN"></span></button></header><div id="hub" hidden></div><main id="m">Carregando...</main>
 <script>
 const KEY='AIzaSyBSGj1H273wiXM-VgpkytnC3kX6yQlt8_I',BASE='https://firestore.googleapis.com/v1/projects/autolink-1aa51/databases/(default)/documents',DOC='projects/autolink-1aa51/databases/(default)/documents';
 const SITE=location.origin+location.pathname.replace('admin.html','');
@@ -74,6 +83,12 @@ async function main(){
   <div class="box" data-tab="repo"><h3>🔁 Reposição de adesivo</h3><div id="rps" class="muted">Carregando...</div></div>
   <div class="box" data-tab="mod"><h3>🛡️ Mensagens bloqueadas pelo filtro</h3><div id="mblk" class="muted">Carregando...</div></div>
   <div class="box" data-tab="mod"><h3>💬 Conversas recentes</h3><div id="mchat" class="muted">Carregando...</div></div>
+  <div class="box" data-tab="news"><h3>📰 Nova notícia</h3><input id="nT" placeholder="Título"><input id="nS" placeholder="Resumo (1 linha)"><textarea id="nB" placeholder="Texto completo da notícia" style="min-height:160px"></textarea>
+   <input id="nE" placeholder="Emoji da capa (ex: 🚗) ou deixe vazio"><label class="muted">Foto da capa (opcional) <input type="file" id="nP" accept="image/*"></label><br><button id="nGo">Publicar</button></div>
+  <div class="box" data-tab="news"><h3>Publicadas</h3><div id="nList" class="muted">Carregando...</div></div>
+  <div class="box" data-tab="points"><h3>🏪 Novo ponto de venda</h3><input id="pN" placeholder="Nome (ex: Posto Ipiranga Cohama)"><input id="pA" placeholder="Endereço"><input id="pH" placeholder="Horário (ex: seg a sáb, 8h às 18h)">
+   <input id="pM" placeholder="Cole o link do Google Maps do local (para calcular a distância)"><button id="pGo">Adicionar</button></div>
+  <div class="box" data-tab="points"><h3>Pontos cadastrados</h3><div id="pList" class="muted">Carregando...</div></div>
   <div class="box" data-tab="bin"><h3>🗑️ Lixeira</h3><div id="bin" class="muted">Carregando...</div></div>
   <div class="box" data-tab="lixo"><h3>🗂️ QRs desativados</h3><div id="trs" class="muted">Carregando...</div></div>
   <div class="box" data-tab="roubo"><h3>🚔 Roubo / furto</h3><div id="thl" class="muted">Carregando...</div></div>
@@ -86,11 +101,11 @@ async function main(){
   <div class="box" data-tab="adesivos"><h3>Histórico de lotes</h3><div id="hist" class="muted">Carregando...</div></div>
   <div class="box" data-tab="adesivos" id="detBox" style="display:none;position:relative"><button class="x" onclick="closeBatch()" title="Fechar" aria-label="Fechar">✕</button><h3 id="detT" style="padding-right:40px"></h3><div id="det"></div></div><div class="sheet" id="sheet"></div>`;
   gen.onclick=generate;history();home();refreshAll();setInterval(refreshAll,30000);}
-let TAB=null;const TABS=[['numeros','📊','Números','Usuários, adesivos e conversas'],['adesivos','🏷️','Adesivos','Gerar, imprimir e acompanhar lotes'],['alertas','🚨','Alertas','Aprovar alertas regionais'],['roubo','🚔','Roubo / furto','Aprovar e acompanhar'],['pedidos','🛒','Pedidos de adesivo','Gerar kit para a gráfica'],['acidentes','🚑','Acidentes','Analisar e avisar a família'],['ajuda','💬','Central de ajuda','Responder clientes'],['mod','🛡️','Moderação','Mensagens bloqueadas e conversas'],['repo','🔁','Reposição de adesivo','Danificados e perdidos'],['lixo','🗂️','QRs desativados','Desfazer ou apagar de vez'],['bin','🗑️','Lixeira','Resgatar itens apagados'],['anuncios','📣','Anunciantes e vendedores','Pedidos para anunciar ou vender']];
+let TAB=null;const TABS=[['numeros','📊','Números','Usuários, adesivos e conversas'],['adesivos','🏷️','Adesivos','Gerar, imprimir e acompanhar lotes'],['alertas','🚨','Alertas','Aprovar alertas regionais'],['roubo','🚔','Roubo / furto','Aprovar e acompanhar'],['pedidos','🛒','Pedidos de adesivo','Gerar kit para a gráfica'],['acidentes','🚑','Acidentes','Analisar e avisar a família'],['ajuda','💬','Central de ajuda','Responder clientes'],['mod','🛡️','Moderação','Mensagens bloqueadas e conversas'],['repo','🔁','Reposição de adesivo','Danificados e perdidos'],['news','📰','Notícias','Publicar notícias no app'],['points','🏪','Pontos de venda','Locais de retirada do adesivo'],['lixo','🗂️','QRs desativados','Desfazer ou apagar de vez'],['bin','🗑️','Lixeira','Resgatar itens apagados'],['anuncios','📣','Anunciantes e vendedores','Pedidos para anunciar ou vender']];
 function home(){TAB=null;hb.hidden=true;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.add('hide'));sheet.style.display='none';
   hub.hidden=false;hub.innerHTML=`<h2 style="margin:4px 0 14px">Olá! O que você quer fazer?</h2><div class="hubg">${TABS.map(([k,e,l,d])=>`<button data-k="${k}"><span class="e">${e}</span><b>${l}</b><small>${d}</small><span class="bd" id="bd-${k}"></span></button>`).join('')}</div>`;
   hub.querySelectorAll('button').forEach(b=>b.onclick=()=>tab(b.dataset.k));badges();scrollTo(0,0);}
-function tab(t){TAB=t;if(t==='mod')moderation();if(t==='bin')bin();if(t==='numeros')numbers();hub.hidden=true;hb.hidden=false;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('hide',x.dataset.tab!==t));sheet.style.display=t==='adesivos'?'':'none';scrollTo(0,0);}
+function tab(t){TAB=t;if(t==='news')newsAdm();if(t==='points')pointsAdm();if(t==='mod')moderation();if(t==='bin')bin();if(t==='numeros')numbers();hub.hidden=true;hb.hidden=false;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('hide',x.dataset.tab!==t));sheet.style.display=t==='adesivos'?'':'none';scrollTo(0,0);}
 let BD={};function badges(){for(const k in BD){const e=document.getElementById('bd-'+k);if(e)e.textContent=BD[k]?BD[k]:'';}
   const n=(BD.roubo||0)+(BD.pedidos||0)+(BD.repo||0)+(BD.acidentes||0)+(BD.alertas||0)+(BD.ajuda||0)+(BD.anuncios||0);const b=document.getElementById('bellN');if(b)b.textContent=n?n:'';}
 function pend(){TAB=null;hb.hidden=false;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.add('hide'));sheet.style.display='none';hub.hidden=false;
@@ -262,11 +277,27 @@ function editAlert(a){const d=document.createElement('div');d.className='pw';
     const f={type:enc($$('#eT').value),desc:enc($$('#eD').value.trim()),scope:enc(sc),city:enc($$('#eC').value.trim()),uf:enc($$('#eU').value.trim().toUpperCase()),lat:enc($$('#eLa').value.trim()),lng:enc($$('#eLo').value.trim()),editedAt:enc(new Date())};
     try{await api('/alerts/'+a.id+'?'+Object.keys(f).map(k=>'updateMask.fieldPaths='+k).join('&'),'PATCH',{fields:f});d.remove();alerts();}catch(e){alert(e.message);}};}
 // ---------- Fotos (miniaturas que abrem grandes) ----------
-function thumbs(x){const ph=[x.photo,x.photo2,x.photo3].filter(Boolean);return ph.length?`<div class="th">${ph.map(p=>`<img src="${p}" alt="foto">`).join('')}</div>`:'';}
+function thumbs(x){const ph=[x.photo,x.photo2,x.photo3,x.photo4,x.photo5].filter(Boolean);return ph.length?`<div class="th">${ph.map(p=>`<img src="${p}" alt="foto">`).join('')}</div>`:'';}
 function bindThumbs(root){root.querySelectorAll('.th img').forEach(i=>i.onclick=()=>{const d=document.createElement('div');d.className='lb';d.innerHTML=`<img src="${i.src}">`;d.onclick=()=>d.remove();document.body.appendChild(d);});}
 // ---------- Lixeira geral ----------
 const esc=t=>String(t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const ALPHA='ABCDEFGHJKMNPQRSTUVWXYZ23456789';const code=()=>'AL-'+Array.from(crypto.getRandomValues(new Uint8Array(6)),b=>ALPHA[b%ALPHA.length]).join('');
+async function newsAdm(){const l=(await q('news').catch(()=>[])).sort((a,b)=>(b.date||0)-(a.date||0));
+  nList.innerHTML=l.length?l.map(n=>`<div class="acd"><div style="font-size:30px">${n.photo?`<img src="${n.photo}" style="width:70px;height:70px;object-fit:cover;border-radius:8px">`:esc(n.img||'📰')}</div><div style="flex:1"><b>${esc(n.title)}</b><div class="muted">${esc(n.summary||'')} · ${n.date?n.date.toLocaleDateString('pt-BR'):''} · ${n.published?'✅ publicada':'⏸ oculta'}</div>
+   <button class="sm gray" data-hd="${n.id}">${n.published?'Ocultar':'Publicar'}</button> <button class="sm red" data-dl="${n.id}">Apagar</button></div></div>`).join(''):'Nenhuma notícia publicada. O app mostra 2 notícias de exemplo enquanto isso.';
+  nList.querySelectorAll('[data-hd]').forEach(b=>b.onclick=async()=>{const n=l.find(x=>x.id===b.dataset.hd);await api('/news/'+n.id+'?updateMask.fieldPaths=published','PATCH',{fields:{published:{booleanValue:!n.published}}});newsAdm();});
+  nList.querySelectorAll('[data-dl]').forEach(b=>b.onclick=async()=>{if(!confirm('Apagar esta notícia?'))return;await api('/news/'+b.dataset.dl,'DELETE');newsAdm();});
+  nGo.onclick=async()=>{if(!nT.value.trim()||!nB.value.trim())return alert('Preencha título e texto');let ph='';
+    if(nP.files[0])ph=await new Promise((ok,no)=>{const img=new Image();img.onload=()=>{const k=Math.min(1,1000/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=img.width*k;c.height=img.height*k;c.getContext('2d').drawImage(img,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',.65));};img.onerror=no;img.src=URL.createObjectURL(nP.files[0]);});
+    const f={title:enc(nT.value.trim()),summary:enc(nS.value.trim()),body:enc(nB.value.trim()),img:enc(nE.value.trim()||'📰'),date:enc(new Date()),published:{booleanValue:true}};if(ph)f.photo=enc(ph);
+    try{await api('/news','POST',{fields:f});nT.value=nS.value=nB.value=nE.value='';nP.value='';newsAdm();alert('Notícia publicada ✅');}catch(e){alert(e.message);}};}
+async function pointsAdm(){const l=await q('points').catch(()=>[]);
+  pList.innerHTML=l.length?l.map(x=>`<div class="acd"><div style="flex:1"><b>${esc(x.name)}</b><div class="muted">${esc(x.address||'')} · ${esc(x.hours||'')}</div><div class="muted">${x.lat?`📍 ${x.lat}, ${x.lng}`:'⚠️ sem localização (não aparece na distância)'}</div>
+   <button class="sm red" data-pd="${x.id}">Apagar</button></div></div>`).join(''):'Nenhum ponto cadastrado.';
+  pList.querySelectorAll('[data-pd]').forEach(b=>b.onclick=async()=>{if(!confirm('Apagar este ponto?'))return;await api('/points/'+b.dataset.pd,'DELETE');pointsAdm();});
+  pGo.onclick=async()=>{if(!pN.value.trim())return alert('Informe o nome');const v=pM.value,mm=v.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)||v.match(/(-?\d+\.\d+)[, ]+(-?\d+\.\d+)/);
+    const f={name:enc(pN.value.trim()),address:enc(pA.value.trim()),hours:enc(pH.value.trim()),active:{booleanValue:true}};if(mm){f.lat=enc(mm[1]);f.lng=enc(mm[2]);}
+    try{await api('/points','POST',{fields:f});pN.value=pA.value=pH.value=pM.value='';pointsAdm();if(!mm)alert('Ponto salvo, mas sem localização. Cole o link do Google Maps para calcular distância.');}catch(e){alert(e.message);}};}
 const SITEB=location.origin+location.pathname.replace('admin.html','');
 async function thefts(){const l=(await q('thefts')).filter(t=>!t.deleted).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));BD.roubo=l.filter(t=>t.status==='pending').length;badges();
   const ST={pending:'⏳ Aguardando análise',approved:'🔴 Publicado',rejected:'❌ Recusado',recovered:'✅ Recuperado'};
@@ -337,18 +368,18 @@ async function generate(){const n=Math.min(200,Math.max(1,+document.getElementBy
   try{await api(':commit','POST',{writes:codes.map(c=>({update:{name:DOC+'/stickers/'+c,fields:{batch:enc(b),createdAt:enc(now)}},currentDocument:{exists:false}})).concat(codes.map(c=>({update:{name:DOC+'/stickerSecrets/'+c,fields:{pin:enc(pins[c])}}})))});}
   catch(e){return alert('Erro ao gerar: '+e.message+'\nTente de novo.');}
   info.textContent=`${n} adesivos gerados no lote "${b}". Clique em Imprimir.`;render(codes,pins);history();}
-function render(codes,pins={}){sheet.innerHTML='<div class="gr"><b>📐 Para a gráfica</b> · Adesivo traseiro: <b>7 × 10 cm</b> · Adesivo dianteiro: <b>4,5 × 6,5 cm</b> · Cartão do PIN: <b>8,5 × 5,5 cm</b> · Manual: <b>A6 (10,5 × 14,8 cm)</b><br>Adesivos: vinil branco com <b>laminação UV</b> e recorte no formato · Cartão e manual: papel couchê 250–300 g · Imprimir em <b>100% (sem ajustar à página)</b>.</div>';for(const c of codes){
-  for(const sm of [0,1]){const d=document.createElement('div');d.className='st'+(sm?' sm':'');
-  d.innerHTML=`<div class="b">Auto<span>Link</span></div><div class="t">${sm?'<b>Fale com o dono</b>':'Precisa falar com o<br><b>dono deste carro?</b>'}</div><div class="q"></div><div class="c"><img src="logo-car-white.png" alt="" class="lg2"><div>${sm?'Frente':'Aponte a câmera do celular'}</div></div>`;
-  sheet.appendChild(d);new QRCode(d.querySelector('.q'),{text:SITE+'?s='+c,width:300,height:300,colorDark:'#111',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});}}
-  const br=document.createElement('div');br.className='pb';br.innerHTML='<h3>Cartões de ativação (vão DENTRO da embalagem, nunca no carro)</h3>';sheet.appendChild(br);
-  for(const c of codes){const d=document.createElement('div');d.className='card';d.innerHTML=`<div class="b">Auto<span>Link</span> · Ativação</div><div>Código: <b>${c}</b></div><div>PIN: <b class="pin">${pins[c]||'—'}</b></div><div class="mut">App AutoLink → Garagem → seu carro → Ativar adesivo → escaneie o adesivo e digite o PIN.<br>Guarde em segredo.</div>`;sheet.appendChild(d);}
-  const mb=document.createElement('div');mb.className='pb';mb.innerHTML='<h3>Manual rápido (1 por kit · A6 10,5 × 14,8 cm)</h3>';sheet.appendChild(mb);
-  for(const c of codes){const d=document.createElement('div');d.className='man';d.innerHTML=`<div class="b">Auto<span>Link</span></div><b>Seu kit AutoLink</b>
-   <ol><li><b>Onde colar:</b> o adesivo <b>grande</b> ao lado direito da <b>placa traseira</b> (sem cobrir a placa). O <b>pequeno</b> embaixo do <b>espelho do motorista</b>.</li>
-   <li><b>Como colar:</b> limpe com álcool, seque, cole do centro para as bordas e espere 24 h para lavar o carro.</li>
-   <li><b>Ative:</b> baixe o app AutoLink, crie sua conta, cadastre o carro e toque em <b>Ativar adesivo</b>. Escaneie o adesivo e digite o <b>PIN</b> do cartão.</li>
-   <li><b>Pronto!</b> Quem precisar falar com você escaneia o adesivo. Seu telefone nunca aparece.</li></ol>
-   <div class="mut">Guarde o cartão do PIN em casa. Dúvidas: app AutoLink → Central de ajuda.</div>`;sheet.appendChild(d);}}
+function render(codes,pins={}){
+  sheet.innerHTML='<div class="gr"><b>📐 Para a gráfica</b> · Adesivo principal: <b>8 × 13 cm</b> · Adesivo menor: <b>4,5 × 6,5 cm</b> · Folheto do PIN: <b>8 × 13 cm</b><br>Adesivos: vinil branco com <b>laminação UV</b> e recorte no formato · Folheto: papel couchê 250–300 g · Imprimir em <b>100% (sem ajustar à página)</b>.</div>';
+  const face=(c,cls)=>{const d=document.createElement('div');d.className='st2 '+cls;
+    d.innerHTML=`<div class="b">Auto<span>Link</span></div><div class="t">Precisa falar com o<br><b>dono deste carro?</b></div><div class="q"></div><div class="c"><b>Aponte a câmera do celular</b><br>Não precisa baixar aplicativo</div><img src="logo-car-white.png" alt="" class="lg2">`;
+    sheet.appendChild(d);new QRCode(d.querySelector('.q'),{text:SITE+'?s='+c,width:400,height:400,colorDark:'#111',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});};
+  for(const c of codes){const w=document.createElement('div');w.className='kit';sheet.appendChild(w);const keep=sheet;
+    face(c,'big');face(c,'small');}
+  const br=document.createElement('div');br.className='pb';br.innerHTML='<h3>Folhetos do PIN (vão DENTRO da embalagem, nunca no carro)</h3>';sheet.appendChild(br);
+  for(const c of codes){const d=document.createElement('div');d.className='leaf';
+    d.innerHTML=`<div class="lh"><div class="b">Auto<span>Link</span></div><div class="pinb">PIN de ativação<br><b>${pins[c]||'—'}</b><small>Código ${c}</small></div></div>
+     <b class="lt">Ative em 4 passos</b><ol><li>Baixe o app <b>AutoLink</b> e crie sua conta.</li><li>Na <b>Garagem</b>, cadastre seu carro.</li><li>Toque em <b>Ativar adesivo</b>, escaneie o adesivo e digite a <b>placa</b> e o <b>PIN</b> acima.</li><li>Cole o adesivo grande ao lado da <b>placa traseira</b> e o pequeno embaixo do <b>espelho do motorista</b>.</li></ol>
+     <b class="lt">O que o AutoLink faz</b><ul><li>💬 Recebe avisos de quem vê seu carro, sem mostrar seu telefone</li><li>🚨 Alertas da região e SOS para a família</li><li>🚑 Quem presenciar um acidente avisa sua família</li><li>🚔 Roubo/furto: localização enviada por quem escanear</li><li>🔧 Manutenção, documentos e lembretes de IPVA</li><li>👥 Compartilhe o carro com a família</li></ul>
+     <div class="mut">Guarde este folheto em casa. Nunca deixe no carro.</div>`;sheet.appendChild(d);}}
 main();
 </script></body></html>

@@ -913,20 +913,76 @@ function showTour(force) {
 // ---------- Comprar adesivo ----------
 async function BuySticker() {
   if (!PROFILE) await loadProfile(); const p = PROFILE || {};
-  const addr = [p.street, p.num, p.comp, p.district, p.city && p.city + '/' + p.uf, p.cep].filter(Boolean).join(', ');
   m.innerHTML = `<h2>🛒 Comprar adesivo AutoLink</h2>
    <div class="card"><b>O que vem no kit</b><ul style="margin:6px 0 0;padding-left:18px;color:var(--mut);line-height:1.7;font-size:14px">
-    <li>🏷️ Adesivo <b>traseiro</b> (7 × 10 cm), para colar ao lado da placa</li><li>🏷️ Adesivo <b>dianteiro</b> (4,5 × 6,5 cm), para o espelho do motorista</li>
-    <li>🔑 Cartão de ativação com <b>PIN secreto</b></li><li>📘 Manual rápido de instalação</li></ul></div>
+    <li>🏷️ Adesivo <b>principal</b> (8 × 13 cm), para a traseira</li><li>🏷️ Adesivo <b>menor</b> (4,5 × 6,5 cm), para a frente</li>
+    <li>🔑 Folheto com o <b>PIN secreto</b> e o passo a passo</li></ul></div>
    <div class="muted">Quantos kits? (1 kit por carro)</div><select id="bq" class="sel">${[1, 2, 3, 4, 5].map(n => `<option>${n}</option>`).join('')}</select>
-   <div class="card"><b style="font-size:15px">📦 Entrega</b><div class="muted">${esc(addr) || 'Complete seu endereço em Meu perfil'}</div><button class="chip" id="bae" style="margin-top:8px">Alterar endereço</button></div>
-   <div class="card"><b style="font-size:15px">💳 Pagamento</b><div class="muted">Pix ou cartão (em breve pelo app). Por enquanto, a equipe AutoLink entra em contato pelo seu WhatsApp para combinar.</div></div>
+   <h2>📍 Retirar em um ponto de venda</h2><p class="muted">Escolha onde quer retirar. A entrega em casa (frete) chega em breve.</p>
+   <button class="chip" id="bNear" style="margin-bottom:10px">📍 Mostrar os mais perto de mim</button><div id="bPts"><p class="muted">Carregando pontos...</p></div>
+   <div class="card"><b style="font-size:15px">💳 Pagamento</b><div class="muted">No ponto de retirada ou combinado pelo WhatsApp (Pix e cartão pelo app em breve).</div></div>
    <p class="muted">📧 Você receberá a confirmação do pedido por e-mail (em breve).</p>
    <button class="btn" id="bgo">Fazer pedido</button>`;
-  el('bae').onclick = () => go(ProfileForm, {});
-  el('bgo').onclick = async () => { if (!addr) return toast('Complete seu endereço em Meu perfil');
+  let pts = await loadPoints(), sel = null, me = null;
+  const draw = () => { const box = el('bPts'); if (!box) return;
+    if (!pts.length) { box.innerHTML = '<div class="card">Ainda não há pontos de venda cadastrados. Faça o pedido e a equipe combina a retirada com você pelo WhatsApp.</div>'; return; }
+    const l = pts.map(x => ({ ...x, d: me && x.lat ? dist(me.lat, me.lng, +x.lat, +x.lng) : null })).sort((a, b) => (a.d ?? 1e12) - (b.d ?? 1e12));
+    box.innerHTML = l.map(x => `<button class="card pt ${sel === x.id ? 'on' : ''}" data-p="${x.id}" style="display:flex;gap:10px;align-items:center;text-align:left${sel === x.id ? ';border-color:var(--or)' : ''}"><span style="font-size:24px">${sel === x.id ? '✅' : '🏪'}</span><div style="flex:1;min-width:0"><b>${esc(x.name)}</b><div class="muted">${esc(x.address || '')}</div>${x.hours ? `<div class="muted">🕐 ${esc(x.hours)}</div>` : ''}</div>
+      <div style="text-align:right">${x.d != null ? `<b style="color:var(--or)">${x.d < 1000 ? Math.round(x.d) + ' m' : (x.d / 1000).toFixed(1) + ' km'}</b>` : ''}${x.lat ? `<a class="muted" style="display:block;font-size:12px" target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${+x.lat},${+x.lng}" onclick="event.stopPropagation()">mapa ›</a>` : ''}</div></button>`).join('');
+    box.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { sel = b.dataset.p; draw(); }); };
+  draw();
+  el('bNear').onclick = () => { el('bNear').textContent = 'Obtendo localização...'; gps().then(g => { me = g; el('bNear').textContent = '📍 Ordenado do mais perto'; draw(); }).catch(() => { el('bNear').textContent = 'Não foi possível pegar a localização'; }); };
+  el('bgo').onclick = async () => { const pt = pts.find(x => x.id === sel); if (pts.length && !pt) return toast('Escolha o ponto de retirada');
     const b = el('bgo'); b.disabled = true; b.textContent = 'Enviando...';
-    try { await add('orders', { userId: S.uid, email: S.email || '', name: p.name || '', phone: p.phone || '', qty: el('bq').value, address: addr, status: 'new', createdAt: new Date() });
-      alert('Pedido enviado ✅\n\nA equipe AutoLink vai entrar em contato pelo seu WhatsApp para combinar o pagamento e a entrega.'); go(Home); }
+    try { await add('orders', { userId: S.uid, email: S.email || '', name: p.name || '', phone: p.phone || '', qty: el('bq').value, delivery: 'retirada', address: pt ? 'Retirada: ' + pt.name + ' · ' + (pt.address || '') : 'Retirada a combinar', pointId: pt ? pt.id : '', status: 'new', createdAt: new Date() });
+      alert('Pedido enviado ✅\n\n' + (pt ? 'Retirada em: ' + pt.name + '\n\n' : '') + 'A equipe AutoLink vai confirmar pelo seu WhatsApp quando o kit estiver pronto.'); go(Home); }
     catch (e) { alert('Erro: ' + e.message); b.disabled = false; b.textContent = 'Fazer pedido'; } };
 }
+
+// ---------- Lojistas e vendedores ----------
+function Sellers() {
+  m.innerHTML = `<h2>🛍️ Lojistas e vendedores</h2><p class="muted">Venda peças, acessórios, serviços e veículos para motoristas da sua região no Mercado AutoLink.</p>
+   <div class="card" style="border-color:#22c55e55"><b>👤 Pessoa física (CPF)</b><div style="font-size:22px;font-weight:900;color:#22c55e;margin:4px 0">R$ 14,90/mês</div><div class="muted">Venda o que você tem: peças usadas, acessórios, seu carro.</div></div>
+   <div class="card" style="border-color:#22c55e55"><b>🏪 Lojista (CNPJ)</b><div style="font-size:22px;font-weight:900;color:#22c55e;margin:4px 0">R$ 19,90/mês</div><div class="muted">Sua loja no Mercado, com selo de verificado, vários produtos e destaque na busca.</div></div>
+   <div class="card"><b>O que você terá</b><ul style="margin:6px 0 0;padding-left:18px;color:var(--mut);font-size:14px;line-height:1.7">
+    <li>Página da sua loja com fotos e WhatsApp</li><li>Cadastro de produtos com preço</li><li>Produtos compatíveis com o carro do cliente</li><li>Painel com visitas e contatos</li></ul></div>
+   <p class="muted">É preciso ter o plano Premium (R$ 4,99/mês). 🚧 A área do vendedor está em construção.</p>
+   <button class="btn" id="slGo">Quero vender no AutoLink</button>`;
+  el('slGo').onclick = () => go(Advertise, 'sell');
+}
+
+// ---------- Notícias ----------
+const NEWS_DEMO = [
+  { id: 'demo1', title: 'Exemplo: Detran anuncia calendário do licenciamento 2027', summary: 'Veja quando vence o licenciamento do seu carro pelo final da placa.', body: 'Esta é uma notícia de EXEMPLO para mostrar como a área de notícias vai funcionar.\n\nO texto completo da matéria aparece aqui, com quantos parágrafos forem necessários. A equipe AutoLink publica as notícias pelo app ADM.', img: '📅', date: new Date() },
+  { id: 'demo2', title: 'Exemplo: 5 cuidados com o carro no período de chuvas', summary: 'Pneus, palhetas e freios: o que conferir antes de sair.', body: 'Esta é uma notícia de EXEMPLO.\n\n1. Confira a calibragem e o desgaste dos pneus.\n2. Troque as palhetas do limpador se estiverem riscando o vidro.\n3. Teste os freios em local seguro.\n4. Evite ruas alagadas.\n5. Mantenha os faróis ligados.', img: '🌧️', date: new Date(Date.now() - 864e5) }];
+async function loadNews() {
+  try { const r = await fetch(BASE + ':runQuery?key=' + KEY, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ structuredQuery: { from: [{ collectionId: 'news' }], where: { fieldFilter: { field: { fieldPath: 'published' }, op: 'EQUAL', value: { booleanValue: true } } } } }) });
+    const l = (await r.json()).filter(x => x.document).map(x => unpack(x.document)).sort((a, b) => (b.date || 0) - (a.date || 0)); return l.length ? l : NEWS_DEMO; } catch (e) { return NEWS_DEMO; }
+}
+const newsThumb = n => n.photo ? `<img src="${n.photo}" alt="">` : `<span class="ni">${n.img || '📰'}</span>`;
+async function newsHome() {
+  const box = el('newsH'); if (!box) return; const l = await loadNews(); if (!el('newsH')) return;
+  box.innerHTML = `<h2>📰 Notícias <button class="link" id="nAll" style="display:inline;width:auto;margin:0 0 0 6px;font-size:14px">ver todas ›</button></h2>` +
+    l.slice(0, 3).map((n, i) => `<button class="card news" data-n="${i}">${newsThumb(n)}<div style="min-width:0"><b style="font-size:15px;line-height:1.25;display:block">${esc(n.title)}</b><div class="muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(n.summary || '')}</div></div></button>`).join('');
+  el('nAll').onclick = () => go(News); box.querySelectorAll('[data-n]').forEach(b => b.onclick = () => go(Article, l[+b.dataset.n]));
+}
+async function News() {
+  m.innerHTML = `<h2>📰 Notícias</h2><div id="nl"><p class="muted">Carregando...</p></div>`;
+  const l = await loadNews(); const box = el('nl'); if (!box) return;
+  box.innerHTML = l.map((n, i) => `<button class="card news" data-n="${i}">${newsThumb(n)}<div style="min-width:0"><b style="font-size:15px;line-height:1.25;display:block">${esc(n.title)}</b><div class="muted">${esc(n.summary || '')}</div><div class="muted" style="font-size:12px">${n.date ? new Date(n.date).toLocaleDateString('pt-BR') : ''}</div></div></button>`).join('');
+  box.querySelectorAll('[data-n]').forEach(b => b.onclick = () => go(Article, l[+b.dataset.n]));
+}
+function Article(n) {
+  m.innerHTML = `${n.photo ? `<img src="${n.photo}" style="width:100%;border-radius:16px;margin-top:10px">` : `<div style="font-size:64px;text-align:center;margin-top:10px">${n.img || '📰'}</div>`}
+   <h2 style="font-size:22px;line-height:1.25">${esc(n.title)}</h2><div class="muted">${n.date ? new Date(n.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) : ''}</div>
+   ${n.summary ? `<p style="font-weight:700;line-height:1.5">${esc(n.summary)}</p>` : ''}<div style="white-space:pre-wrap;line-height:1.65;font-size:16px">${esc(n.body || '')}</div>
+   <button class="chip" id="nSh" style="margin-top:16px">Compartilhar</button>`;
+  el('nSh').onclick = () => { const t = n.title + ' · AutoLink'; if (navigator.share) navigator.share({ title: t, text: n.summary || '', url: location.href.split('?')[0] }).catch(() => {}); else toast('Copie o link do app para compartilhar'); };
+}
+
+// ---------- Pontos de venda / retirada ----------
+async function loadPoints() {
+  try { const r = await fetch(BASE + ':runQuery?key=' + KEY, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ structuredQuery: { from: [{ collectionId: 'points' }] } }) });
+    return (await r.json()).filter(x => x.document).map(x => unpack(x.document)).filter(p => p.active !== false); } catch (e) { return []; }
+}
+
