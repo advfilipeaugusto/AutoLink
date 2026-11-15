@@ -1,0 +1,146 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Livreto AutoLink</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+@page{size:80mm 130mm;margin:0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,"Segoe UI",Arial,sans-serif;color:#111;background:#888}
+.pg{width:80mm;height:130mm;overflow:hidden;position:relative;page-break-after:always;background:#fff;padding:7mm 6mm;display:flex;flex-direction:column}
+@media screen{.pg{margin:10px auto;box-shadow:0 2px 10px #0005}}
+.dark{background:#0f0f12;color:#fff}
+.or{color:#FF6B00}.mut{color:#666;font-size:7.5pt;line-height:1.35}.dark .mut{color:#aaa}
+h1{font-size:20pt;font-weight:900;line-height:1.05;letter-spacing:-.5px}
+h2{font-size:12.5pt;font-weight:900;margin-bottom:3mm;line-height:1.15}
+p{font-size:8.3pt;line-height:1.4}
+.logo{height:11mm;align-self:center}
+.num{position:absolute;bottom:4mm;right:6mm;font-size:6.5pt;color:#999}
+.step{display:flex;gap:2.6mm;align-items:flex-start;margin-bottom:2.6mm}
+.step b.n{flex:none;width:6.2mm;height:6.2mm;border-radius:50%;background:#FF6B00;color:#fff;font-size:8.5pt;display:flex;align-items:center;justify-content:center}
+.step div{font-size:8.1pt;line-height:1.35}
+.fn{display:flex;gap:2.4mm;align-items:flex-start;margin-bottom:2.3mm}
+.fn span{flex:none;font-size:12pt;width:6mm;text-align:center;line-height:1}
+.fn div{font-size:7.6pt;line-height:1.32}
+.box{border:1.5px dashed #FF6B00;border-radius:3mm;padding:3mm;text-align:center}
+.pill{display:inline-block;background:#FF6B00;color:#fff;border-radius:10mm;padding:1mm 3mm;font-size:7.5pt;font-weight:800}
+.qr img,.qr canvas{width:100%!important;height:auto!important;display:block}
+.tear{border-top:1px dashed #bbb;margin:2.5mm 0}
+</style></head><body>
+
+<!-- 1 CAPA -->
+<section class="pg dark" style="justify-content:space-between;background:radial-gradient(120% 70% at 50% 0%,#3a1a05 0%,#0f0f12 60%)">
+ <img class="logo" src="../web/logo-car-white.png" style="height:16mm">
+ <div>
+  <div class="pill" style="margin-bottom:3mm">NOVO</div>
+  <h1>Seu carro<br>agora <span class="or">fala</span><br>com você.</h1>
+  <p style="margin-top:3mm;color:#ddd">Alguém viu seu farol aceso? Seu carro está bloqueando uma garagem? Bateram no seu carro?<br><b style="color:#fff">Eles avisam você na hora — sem saber seu número.</b></p>
+ </div>
+ <div style="display:flex;gap:2mm;flex-wrap:wrap">
+  <span class="pill" style="background:#222;border:1px solid #444">🔒 Anônimo</span><span class="pill" style="background:#222;border:1px solid #444">📱 Sem app p/ quem avisa</span><span class="pill" style="background:#222;border:1px solid #444">⚡ Na hora</span>
+ </div>
+</section>
+
+<!-- 2 COMO FUNCIONA -->
+<section class="pg">
+ <h2>Como funciona</h2>
+ <div class="step"><b class="n">1</b><div><b>Cole o adesivo</b> no carro.</div></div>
+ <div class="step"><b class="n">2</b><div><b>Qualquer pessoa aponta a câmera</b> do celular para o QR code. Não precisa baixar nada.</div></div>
+ <div class="step"><b class="n">3</b><div><b>Ela manda uma mensagem</b> e você recebe no app AutoLink.</div></div>
+ <div class="step"><b class="n">4</b><div><b>Você responde</b> sem mostrar seu telefone. Simples assim.</div></div>
+ <div style="margin-top:auto;background:#fff4ec;border-radius:3mm;padding:3mm">
+  <p style="font-weight:800;margin-bottom:1mm">🛡️ Sua privacidade em 1º lugar</p>
+  <p class="mut">Ninguém vê seu nome, telefone ou endereço. Mensagens ofensivas são bloqueadas automaticamente.</p>
+ </div>
+ <div class="num">2</div>
+</section>
+
+<!-- 3 ADESIVOS (QR) -->
+<section class="pg" style="background:#f4f4f6">
+ <h2 style="text-align:center">Seus adesivos</h2>
+ <div style="display:flex;gap:3mm;align-items:flex-end;justify-content:center">
+  <div style="width:36mm;background:#fff;border-radius:3mm;padding:2.5mm;text-align:center;box-shadow:0 1px 4px #0002">
+   <div class="qr" id="q1"></div><p style="font-size:6.5pt;margin-top:1.5mm;font-weight:800">Grande · vidro traseiro</p></div>
+  <div style="width:22mm;background:#fff;border-radius:3mm;padding:2mm;text-align:center;box-shadow:0 1px 4px #0002">
+   <div class="qr" id="q2"></div><p style="font-size:6pt;margin-top:1.5mm;font-weight:800">Pequeno · janela do motorista</p></div>
+ </div>
+ <p class="mut" style="text-align:center;margin-top:3mm">Os dois adesivos têm o <b>mesmo código</b>. Exemplo ilustrativo — os adesivos reais vêm dentro deste livreto.</p>
+ <div class="box" style="margin-top:auto"><p style="font-weight:800">📍 Onde colar</p><p class="mut">Grande: ao lado da placa traseira ou no vidro traseiro, por dentro.<br>Pequeno: embaixo do espelho do motorista.<br>Limpe e seque o local antes.</p></div>
+ <div class="num">3</div>
+</section>
+
+<!-- 4 ATIVAR -->
+<section class="pg">
+ <h2>Ative em 2 minutos</h2>
+ <div class="step"><b class="n">1</b><div>Baixe o app <b>AutoLink</b> (QR na última página) e <b>crie sua conta</b>.</div></div>
+ <div class="step"><b class="n">2</b><div>Na <b>Garagem</b>, toque em <b>+</b> e cadastre seu carro.</div></div>
+ <div class="step"><b class="n">3</b><div>Toque no carro → <b>📷 Escanear o adesivo</b>.</div></div>
+ <div class="step"><b class="n">4</b><div>Confira a <b>placa</b> e digite o <b>PIN</b> abaixo.</div></div>
+ <div class="step"><b class="n">5</b><div>Toque em <b>Ativar adesivo</b> e cole os adesivos. Pronto! ✅</div></div>
+ <div class="box" style="margin-top:auto;background:#fff8f2">
+  <p class="mut" style="font-weight:700">SEU PIN DE ATIVAÇÃO</p>
+  <div style="font-size:20pt;font-weight:900;letter-spacing:2mm;font-family:monospace">••••••</div>
+  <p class="mut">Raspe ou destaque. Não compartilhe com ninguém.</p>
+ </div>
+ <div class="num">4</div>
+</section>
+
+<!-- 5 FUNÇÕES 1 -->
+<section class="pg">
+ <h2>Tudo que o app faz <span class="or">①</span></h2>
+ <div class="fn"><span>💬</span><div><b>Conversas anônimas</b><br>Receba avisos de quem escaneou seu carro e responda sem expor seu número.</div></div>
+ <div class="fn"><span>⏳</span><div><b>Mensagem de ausência</b><br>“Volto em 10 min” — quem escanear já vê seu recado.</div></div>
+ <div class="fn"><span>🚑</span><div><b>Aviso de acidente</b><br>Quem presenciar pode mandar fotos e local na hora.</div></div>
+ <div class="fn"><span>🚔</span><div><b>Roubo ou furto</b><br>Marque o carro como roubado: quem escanear o adesivo vê o alerta e envia a localização.</div></div>
+ <div class="fn"><span>🚨</span><div><b>Alertas da região</b><br>Blitz, alagamento, buraco, acidente: avise e seja avisado.</div></div>
+ <div class="num">5</div>
+</section>
+
+<!-- 6 FUNÇÕES 2 -->
+<section class="pg">
+ <h2>Tudo que o app faz <span class="or">②</span></h2>
+ <div class="fn"><span>👥</span><div><b>Compartilhar carro</b><br>Família ou funcionário também recebem as mensagens, pelo prazo que você escolher.</div></div>
+ <div class="fn"><span>🚗</span><div><b>Meu carro</b><br>Manutenções, documentos (CRLV, seguro, CNH) e lembretes de vencimento.</div></div>
+ <div class="fn"><span>📍</span><div><b>Onde estacionei</b><br>Salve o local e volte direto ao carro.</div></div>
+ <div class="fn"><span>🆘</span><div><b>SOS família</b><br>Envie sua localização ao contato de emergência com um toque.</div></div>
+ <div class="fn"><span>🛒</span><div><b>Mercado e notícias</b><br>Peças, serviços e novidades do mundo automotivo perto de você.</div></div>
+ <div class="num">6</div>
+</section>
+
+<!-- 7 DICAS / SUPORTE -->
+<section class="pg">
+ <h2>Dicas rápidas</h2>
+ <div class="fn"><span>⏱️</span><div>Quem escaneia tem <b>20 minutos</b> para conversar. Quando você responde, a conversa fica aberta por <b>2 horas</b>.</div></div>
+ <div class="fn"><span>⏸️</span><div>Vai emprestar ou vender o carro? <b>Pause o QR</b> no app.</div></div>
+ <div class="fn"><span>🚫</span><div>Recebeu algo ofensivo? <b>Bloqueie</b> a pessoa com um toque.</div></div>
+ <div class="fn"><span>🔁</span><div>Adesivo estragou? Compre outro no app; o antigo é desativado sozinho.</div></div>
+ <div style="margin-top:auto;background:#0f0f12;color:#fff;border-radius:3mm;padding:3mm">
+  <p style="font-weight:800">Precisa de ajuda?</p><p class="mut">No app: menu ☰ → <b style="color:#fff">Ajuda</b>. O manual completo também está lá.</p>
+ </div>
+ <div class="num">7</div>
+</section>
+
+<!-- 8 CONTRACAPA -->
+<section class="pg dark" style="align-items:center;text-align:center">
+ <img class="logo" src="../web/logo-car-white.png">
+ <p style="margin-top:3mm;font-weight:800">Baixe o app</p>
+ <div style="background:#fff;padding:2.5mm;border-radius:3mm;width:30mm;margin:2mm 0" class="qr" id="q3"></div>
+ <p class="mut">Aponte a câmera · Android e iPhone</p>
+ <p class="mut" style="margin-top:2mm">Kit com 2 adesivos (grande + pequeno) e PIN de ativação. Válido para 1 veículo.</p>
+ <div style="margin-top:auto;background:#fff;border-radius:2mm;padding:2mm 3mm 1mm"><svg id="ean" width="44mm" height="18mm"></svg></div>
+ <p class="mut" style="margin-top:1.5mm;font-size:6pt">AutoLink · CNPJ 00.000.000/0001-00 · SAC pelo app<br>Feito no Brasil · Conserve longe do calor</p>
+</section>
+
+<script>
+const APP='https://advfilipeaugusto.github.io/AutoLink/web/app.html';
+const SAMPLE='https://advfilipeaugusto.github.io/AutoLink/web/?c=AL-EXEMPLO';
+function qr(id,t){new QRCode(document.getElementById(id),{text:t,width:400,height:400,correctLevel:QRCode.CorrectLevel.M});}
+qr('q1',SAMPLE);qr('q2',SAMPLE);qr('q3',APP);
+// EAN-13 (número de exemplo — trocar pelo GTIN oficial da GS1 Brasil)
+(function(){const base='789000000001';let s=0;for(let i=0;i<12;i++)s+=(+base[i])*(i%2?3:1);const code=base+((10-s%10)%10);
+const L=['0001101','0011001','0010011','0111101','0100011','0110001','0101111','0111011','0110111','0001011'],
+G=['0100111','0110011','0011011','0100001','0011101','0111001','0000101','0010001','0001001','0010111'],
+R=L.map(x=>x.replace(/./g,c=>c==='0'?'1':'0')),P=['LLLLLL','LLGLGG','LLGGLG','LLGGGL','LGLLGG','LGGLLG','LGGGLL','LGLGLG','LGLGGL','LGGLGL'];
+let bits='101';const p=P[+code[0]];for(let i=1;i<7;i++)bits+=(p[i-1]==='L'?L:G)[+code[i]];bits+='01010';for(let i=7;i<13;i++)bits+=R[+code[i]];bits+='101';
+const sv=document.getElementById('ean'),W=95+18,u=100/W;let h='';
+for(let i=0;i<bits.length;i++)if(bits[i]==='1'){const guard=i<3||(i>=45&&i<50)||i>=92;h+=`<rect x="${(i+9)*u}%" y="0" width="${u}%" height="${guard?'86%':'76%'}" fill="#000"/>`;}
+h+=`<text x="${2*u}%" y="98%" font-size="9" font-family="monospace">${code[0]}</text><text x="${(9+3+21)*u}%" y="98%" font-size="9" font-family="monospace" text-anchor="middle">${code.slice(1,7)}</text><text x="${(9+50+21)*u}%" y="98%" font-size="9" font-family="monospace" text-anchor="middle">${code.slice(7)}</text>`;
+sv.innerHTML=h;})();
+</script></body></html>
