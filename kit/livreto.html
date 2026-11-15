@@ -172,5 +172,7 @@ const out=document.getElementById('out'),tpl=document.getElementById('tpl');
 for(const [code,pin] of kits){const f=tpl.content.cloneNode(true);const u=ROOT+'web/?s='+code;
   qr(f.querySelector('[data-q=q1]'),u);qr(f.querySelector('[data-q=q2]'),u);qr(f.querySelector('[data-q=qa]'),APP+'?os=android');qr(f.querySelector('[data-q=qi]'),APP+'?os=ios');
   if(pin)f.querySelector('.pin b').textContent=pin;f.querySelector('.code').textContent='Código do adesivo: '+code;ean(f.querySelector('.ean'));out.appendChild(f);}
+if(/[?&]a4/.test(location.search)){const st=document.createElement('style');st.textContent='@page{size:297mm 210mm;margin:0}body{background:#fff}.sh{width:297mm;height:210mm;display:flex;gap:12mm;align-items:center;justify-content:center;page-break-after:always;position:relative}.sh .pg{margin:0!important;box-shadow:none!important;page-break-after:auto;outline:.2mm dashed #999}.tt{position:absolute;top:6mm;left:0;right:0;text-align:center;font:9pt Arial;color:#777}';document.head.appendChild(st);
+  const pgs=[...document.querySelectorAll('.pg')];out.innerHTML='';for(let i=0;i<pgs.length;i+=2){const d=document.createElement('div');d.className='sh';d.innerHTML='<div class=tt>TESTE AutoLink · A4 deitado · escala 100% · recorte na linha tracejada · adesivo grande = 8×13 cm</div>';d.append(pgs[i]);if(pgs[i+1])d.append(pgs[i+1]);out.append(d);}}
 if(location.hash.length>1)setTimeout(()=>print(),900);
 </script></body></html>
