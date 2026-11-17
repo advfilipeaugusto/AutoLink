@@ -111,7 +111,8 @@ function showChat(){
     <div class="nm"><label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="anon" checked style="width:20px;height:20px;flex:none"> Enviar como anônimo</label>
     <input id="vname" placeholder="Seu nome (opcional)" maxlength="40" style="display:none;width:100%;box-sizing:border-box;margin-top:8px"></div>`+
     (car.appDriver?quickApp:[]).concat(quick).map(q=>`<button class="q">${q}</button>`).join('')+`<p class="muted">Ou escreva:</p><p class="muted" style="margin-top:-6px">⏳ Você terá <b>20 minutos</b> para conversar a partir da primeira mensagem.</p><form id="f"><input id="t" maxlength="500"><button class="s">Enviar</button></form>`;
-  app.insertAdjacentHTML('beforeend','<button class="acc" id="accB">🚑 Este carro sofreu um acidente? Avise a família</button>');
+  app.insertAdjacentHTML('beforeend','<button class="acc" id="accB">🚑 Este carro sofreu um acidente? Avise a família</button><button class="acc" id="medB" style="background:#fff;color:#b91c1c;border:2px solid #ef4444;margin-top:8px">🩺 Sou médico ou socorrista: pedir ficha médica</button>');
+  document.getElementById('medB').onclick=medForm;
   document.getElementById('anon').onchange=e=>{const n=document.getElementById('vname');n.style.display=e.target.checked?'none':'block';if(!e.target.checked)n.focus();};
   document.getElementById('accB').onclick=accidentForm;
   app.querySelectorAll('.q').forEach(b=>b.onclick=()=>send(b.textContent)); form(); if(car.fleet)rateBox(); awayBanner();
@@ -130,6 +131,25 @@ function stolenView(){
 }
 function vName(){const a=document.getElementById('anon'),n=document.getElementById('vname');return a&&!a.checked&&n?n.value.trim():'';}
 function shrink(file){return new Promise((ok,no)=>{const img=new Image();img.onload=()=>{const k=Math.min(1,760/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=img.width*k;c.height=img.height*k;c.getContext('2d').drawImage(img,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',.5));};img.onerror=no;img.src=URL.createObjectURL(file);});}
+function medForm(){
+  const T=['Médico (CRM)','Enfermeiro (COREN)','Socorrista SAMU','Bombeiro','Policial','Outro profissional de saúde'];
+  const I='width:100%;box-sizing:border-box;padding:12px;border-radius:8px;border:1px solid #ddd;font:inherit;margin-bottom:8px';
+  app.innerHTML=`<h2>🩺 Pedido de ficha médica</h2><p>Se o dono deste carro cadastrou uma ficha médica (tipo sanguíneo, alergias, doenças), a <b>equipe AutoLink</b> confere sua identificação e <b>liga para você</b> com as informações.</p>
+   <p style="background:#fee2e2;border:1px solid #ef4444;border-radius:12px;padding:10px 12px;font-size:14px">🚨 Ligue <b>192 (SAMU)</b> ou <b>193 (Bombeiros)</b> antes de tudo. Os dados nunca aparecem nesta tela.</p>
+   <input id="mn" placeholder="Seu nome completo" maxlength="100" style="${I}"><input id="mc" placeholder="Seu CPF" inputmode="numeric" maxlength="14" style="${I}">
+   <select id="mt" style="${I}">${T.map(x=>`<option>${x}</option>`).join('')}</select>
+   <input id="mr" placeholder="Nº do registro e UF (ex: CRM 123456/SP)" maxlength="40" style="${I}"><input id="mp" placeholder="Seu telefone com DDD" inputmode="tel" maxlength="20" style="${I}">
+   <textarea id="mw" maxlength="300" placeholder="Onde você está e o que aconteceu?" style="${I};min-height:70px"></textarea>
+   <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;margin-bottom:10px"><input type="checkbox" id="mk" style="width:20px;height:20px;flex:none"> Declaro que as informações são verdadeiras e que usarei os dados só para o atendimento. Falsa identidade é crime.</label>
+   <button class="s" id="ms" style="width:100%;padding:14px">Enviar pedido à equipe AutoLink</button>`;
+  document.getElementById('ms').onclick=async e=>{const v=id=>document.getElementById(id).value.trim(),cpf=v('mc').replace(/\D/g,''),tel=v('mp').replace(/\D/g,'');
+    if(v('mn').length<5||cpf.length!==11||v('mr').length<3||tel.length<10||!v('mw'))return alert('Preencha todos os campos (CPF com 11 números e telefone com DDD).');
+    if(!document.getElementById('mk').checked)return alert('Marque a declaração para continuar.');
+    const b=e.target;b.disabled=true;b.textContent='Enviando...';
+    try{await api('/medRequests','POST',{fields:fields({carId:car.id,carName:car.name||'',ownerId:car.ownerId||'',authorId:S.uid,name:v('mn'),cpf,kind:v('mt'),reg:v('mr'),phone:tel,where:v('mw'),status:'pending',createdAt:new Date()})});
+      app.innerHTML='<div class="okb">✅ <b>Pedido enviado!</b> A equipe AutoLink vai conferir sua identificação e ligar para o telefone informado. Continue o atendimento e, se precisar, ligue 192.</div>';}
+    catch(err){alert('Não foi possível enviar: '+err.message);b.disabled=false;b.textContent='Enviar pedido à equipe AutoLink';}};
+}
 function accidentForm(){const ph=[];let pos=null;
   app.innerHTML=`<h2>🚑 Acidente com o ${esc(car.name)}</h2><p>Obrigado por ajudar! Tire fotos do carro e do local. A equipe AutoLink <b>avisa a família do dono</b> na hora.</p>
    <p style="background:#fee2e2;border:1px solid #ef4444;border-radius:12px;padding:10px 12px;font-size:14px">🚨 Se houver feridos, ligue <b>192 (SAMU)</b> ou <b>193 (Bombeiros)</b> antes de tudo.</p>

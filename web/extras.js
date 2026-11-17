@@ -53,6 +53,13 @@ function ProfileForm(opt = {}) {
    <input id="fn" placeholder="Nome do familiar" value="${esc(p.famName || '')}" required maxlength="80">
    <input id="fr" placeholder="Parentesco (ex: esposa, pai, filho)" value="${esc(p.famRel || '')}" maxlength="40">
    <input id="ft" placeholder="Telefone do familiar (com DDD)" inputmode="tel" value="${esc(p.famPhone || '')}" required maxlength="20">
+   <div class="card" style="margin:14px 0 8px;border-color:#ef444466"><b>🩺 Ficha médica de emergência (opcional)</b>
+    <p class="muted" style="margin:4px 0 8px">Nunca fica aberta para quem escaneia. Só a <b>equipe AutoLink</b> libera, por telefone, para <b>médico ou socorrista identificado</b> (nome, CPF e registro como CRM/COREN) em caso de acidente.</p>
+    <label style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><input type="checkbox" id="mOn" ${p.medOn ? 'checked' : ''} style="width:20px;height:20px;flex:none"> Autorizo o uso da minha ficha em emergência</label>
+    <select id="mBl"><option value="">Tipo sanguíneo</option><option ${p.blood==='A+'?'selected':''}>A+</option><option ${p.blood==='A−'?'selected':''}>A−</option><option ${p.blood==='B+'?'selected':''}>B+</option><option ${p.blood==='B−'?'selected':''}>B−</option><option ${p.blood==='AB+'?'selected':''}>AB+</option><option ${p.blood==='AB−'?'selected':''}>AB−</option><option ${p.blood==='O+'?'selected':''}>O+</option><option ${p.blood==='O−'?'selected':''}>O−</option><option ${p.blood==='Não sei'?'selected':''}>Não sei</option></select>
+    <input id="mAl" placeholder="Alergias (ex: dipirona, penicilina)" value="${esc(p.allergies || '')}" maxlength="120">
+    <input id="mCo" placeholder="Doenças ou condições (ex: diabetes, marca-passo)" value="${esc(p.conditions || '')}" maxlength="160">
+    <input id="mHp" placeholder="Plano de saúde (opcional)" value="${esc(p.healthPlan || '')}" maxlength="60"></div>
    <button class="btn" id="ps">${opt.first ? 'Concluir cadastro' : 'Salvar alterações'}</button>
   </form>${opt.first ? '' : '<p class="muted">Para mudar o e-mail da conta, fale com a Central de ajuda.</p>'}`;
   const cep = el('pc');
@@ -64,7 +71,7 @@ function ProfileForm(opt = {}) {
   el('pf').onsubmit = async e => {
     e.preventDefault(); const b = el('ps');
     const data = { phone: el('pt').value.trim(), cep: onlyDigits(cep.value), street: el('pa').value.trim(), num: el('pnum').value.trim(), comp: el('pcomp').value.trim(), district: el('pb').value.trim(),
-      city: el('pci').value.trim(), uf: el('puf').value.trim().toUpperCase(), famName: el('fn').value.trim(), famRel: el('fr').value.trim(), famPhone: el('ft').value.trim(), updatedAt: new Date() };
+      city: el('pci').value.trim(), uf: el('puf').value.trim().toUpperCase(), famName: el('fn').value.trim(), famRel: el('fr').value.trim(), famPhone: el('ft').value.trim(), medOn: el('mOn').checked, blood: el('mBl').value, allergies: el('mAl').value.trim(), conditions: el('mCo').value.trim(), healthPlan: el('mHp').value.trim(), updatedAt: new Date() };
     if (onlyDigits(data.phone).length < 10 || onlyDigits(data.famPhone).length < 10) return toast('Confira os telefones (com DDD)');
     b.disabled = true; b.textContent = 'Salvando...';
     try {
