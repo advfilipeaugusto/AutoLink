@@ -35,6 +35,13 @@ service cloud.firestore {
       allow update: if isAdmin() || (request.auth != null && resource.data.userId == me() && request.resource.data.status == 'recovered'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'recoveredAt']));
       allow delete: if isAdmin();
+      match /witnesses/{w} {
+        allow read: if isAdmin() || get(/databases/$(db)/documents/thefts/$(id)).data.userId == me();
+        allow create: if request.auth != null && get(/databases/$(db)/documents/thefts/$(id)).data.status == 'approved'
+          && request.resource.data.by == me() && request.resource.data.name is string && request.resource.data.name.size() < 81
+          && request.resource.data.phone is string && request.resource.data.phone.size() < 21;
+        allow delete: if isAdmin();
+      }
       match /sightings/{s} {
         function th() { return get(/databases/$(db)/documents/thefts/$(id)).data; }
         allow read: if th().status == 'approved' || th().status == 'recovered';

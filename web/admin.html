@@ -319,12 +319,12 @@ const SITEB=location.origin+location.pathname.replace('admin.html','');
 async function thefts(){const l=(await q('thefts')).filter(t=>!t.deleted).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));BD.roubo=l.filter(t=>t.status==='pending').length;badges();
   const ST={pending:'⏳ Aguardando análise',approved:'🔴 Publicado',rejected:'❌ Recusado',recovered:'✅ Recuperado'};
   if(!l.length){thl.innerHTML='Nenhum registro.';return;}
-  const cnt={};await Promise.all(l.filter(t=>t.status!=='pending').map(async t=>{try{cnt[t.id]=(await q('sightings','/thefts/'+t.id)).length;}catch(e){cnt[t.id]=0;}}));
+  const cnt={},wit={};await Promise.all(l.filter(t=>t.status!=='pending').map(async t=>{try{cnt[t.id]=(await q('sightings','/thefts/'+t.id)).length;}catch(e){cnt[t.id]=0;}try{wit[t.id]=await q('witnesses','/thefts/'+t.id);}catch(e){wit[t.id]=[];}}));
   thl.innerHTML=l.map(t=>`<div class="acd"><div>${thumbs({photo:t.photo,photo2:t.photo2,photo3:t.photo3})}<div class="muted">Documento e B.O.:</div>${thumbs({photo:t.docPhoto,photo2:t.boPhoto})}</div><div style="flex:1;min-width:220px">
     <b>${ST[t.status]||t.status}</b> · ${t.kind==='furto'?'Furto':'Roubo'}<div><b>${esc(t.carName)}</b> ${esc(t.year||'')} ${esc(t.color||'')} · placa ${esc(t.plate||'—')}</div>
     <div class="muted">${esc(t.when||'')} · ${esc(t.place||'')} ${esc(t.city||'')}</div><p style="white-space:pre-wrap;margin:6px 0">${esc(t.desc||'')}</p>
     <div class="muted">B.O.: ${esc(t.bo||'(foto)')} · ${esc(t.email||'')}</div>
-    ${t.status!=='pending'?`<div style="margin-top:6px">📍 ${cnt[t.id]||0} avistamento(s) · <a target="_blank" href="${SITEB}carro.html?id=${t.id}">página pública ›</a></div>`:''}
+    ${t.status!=='pending'?`<div style="margin-top:6px">📍 ${cnt[t.id]||0} avistamento(s) · <a target="_blank" href="${SITEB}carro.html?id=${t.id}">página pública ›</a></div>${(wit[t.id]||[]).map(w=>`<div style="background:#eef6ff;border-radius:8px;padding:6px 8px;margin-top:4px">🙋 <b>${esc(w.name)}</b> · <a href="tel:${esc(w.phone)}">${esc(w.phone)}</a>${w.note?' · '+esc(w.note):''}${w.lat?` · <a target="_blank" href="https://www.google.com/maps?q=${+w.lat},${+w.lng}">mapa</a>`:''}<div class="muted">${w.at?w.at.toLocaleString('pt-BR'):''}</div></div>`).join('')}`:''}
     <div style="margin-top:8px">${t.status==='pending'?`<button class="sm" data-ok="${t.id}">Aprovar e publicar</button> <button class="sm red" data-no="${t.id}">Recusar</button>`:''}
      ${t.status==='approved'?`<button class="sm gray" data-rc="${t.id}">Marcar recuperado</button>`:''} <button class="sm gray" data-tt="${t.id}">🗑 Lixeira</button></div></div></div>`).join('');
   bindThumbs(thl);
