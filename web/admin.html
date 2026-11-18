@@ -169,7 +169,7 @@ async function meds(){const box=document.getElementById('medL');const l=(await q
   if(!l.length){box.innerHTML='Nenhum pedido.';return;}
   const ST={pending:'⏳ Aguardando',released:'✅ Ficha passada por telefone',denied:'❌ Recusado'};
   box.innerHTML=l.map(a=>`<div class="acd"><div style="flex:1;min-width:220px"><b>${ST[a.status]||a.status}</b> · <span class="muted">${a.createdAt?a.createdAt.toLocaleString('pt-BR'):''} · carro ${esc(a.carName||'')}</span>
-    <p style="margin:6px 0"><b>${esc(a.name)}</b> · CPF ${esc(a.cpf)}<br>${esc(a.kind)} · <b>${esc(a.reg)}</b><br>📞 <a href="tel:${esc(a.phone)}">${esc(a.phone)}</a><br><span class="muted">${esc(a.where||'')}</span></p>
+    <p style="margin:6px 0"><b>${esc(a.name)}</b> · CPF ${esc(a.cpf)}<br>${esc(a.kind)} · <b>${esc(a.reg)}</b><br>📞 <a href="tel:${esc(a.phone)}">${esc(a.phone)}</a><br><span class="muted">${esc(a.where||'')}</span>${a.lat?`<br><a target="_blank" href="https://www.google.com/maps?q=${+a.lat},${+a.lng}">📍 Ver no mapa</a>`:''}</p>
     <div class="mf" id="mf${a.id}"></div>
     ${a.status==='pending'?`<button class="sm" data-mv="${a.id}">🔓 Ver ficha (após conferir)</button> <button class="sm" data-mr="${a.id}">Marcar: passei por telefone</button> <button class="sm red" data-md="${a.id}">Recusar</button>`:''} <button class="sm gray" data-mt="${a.id}">🗑 Lixeira</button></div></div>`).join('');
   const f=id=>l.find(x=>x.id===id),set=async(id,st)=>{await api('/medRequests/'+id+'?updateMask.fieldPaths=status&updateMask.fieldPaths=reviewedAt','PATCH',{fields:{status:enc(st),reviewedAt:enc(new Date())}});meds();};
