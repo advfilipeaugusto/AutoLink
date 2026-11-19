@@ -253,7 +253,7 @@ function Home(){
   <div id="awTimer"></div><div id="xtra"></div>
   <h2>🚨 Alertas na minha região <button class="link" id="raAll" style="display:inline;width:auto;margin:0 0 0 6px;font-size:14px">ver todos ›</button></h2><div id="rmap"></div>
   <div class="card fbox"><h2>🧩 Funcionalidades</h2><div class="grid">
-   ${[['alerta','siren','Criar|alerta','#ef4444'],['acid','img:ic-crash.png','Avisar|acidente'],['hist','clock','Meu|histórico'],['meucarro','car','Meu|carro'],['perdi','carsearch','Roubo|ou furto','#f59e0b'],['fam','img:ic-fam.png','Compartilhar|carro'],['park','pin','Onde|estacionei','#f59e0b'],['proc','eye','Veículos|procurados','#ef4444']]
+   ${[['alerta','siren','Criar|alerta','#ef4444'],['acid','img:ic-crash.png','Avisar|acidente'],['hist','clock','Meu|histórico'],['meucarro','car','Meu|carro'],['perdi','carsearch','Roubo|ou furto','#f59e0b'],['fam','img:ic-fam.png','Compartilhar|carro'],['park','pin','Onde|estacionei','#f59e0b']]
      .map(([k,i,l,c])=>`<button class="sc" data-k="${k}"><span class="ic">${i.startsWith('img:')?`<img src="${i.slice(4)}" alt="" style="width:34px;height:34px;object-fit:contain">`:ic(i,c||'#FF6B00')}</span><span class="scl">${l.replace('|','<br>')}</span></button>`).join('')}</div></div>
   <h2>🏢 Empresas e frotas</h2>
   <button class="card bx" id="bizC" style="--k:#FF6B00"><div class="bxg"><span>🚚<br>Adesivos para a frota</span><span>⭐<br>Como estou dirigindo?</span><span>📊<br>Avaliações dos motoristas</span><span>🧾<br>Planos e preços</span></div><div class="bxf">Entrar na área da empresa ›</div></button>
