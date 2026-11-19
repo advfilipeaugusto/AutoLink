@@ -93,7 +93,7 @@ async function main(){
   <div class="box" data-tab="points"><h3>Pontos cadastrados</h3><div id="pList" class="muted">Carregando...</div></div>
   <div class="box" data-tab="bin"><h3>🗑️ Lixeira</h3><div id="bin" class="muted">Carregando...</div></div>
   <div class="box" data-tab="lixo"><h3>🗂️ QRs desativados</h3><div id="trs" class="muted">Carregando...</div></div>
-  <div class="box" data-tab="roubo"><h3>🚔 Roubo / furto</h3><div id="thl" class="muted">Carregando...</div></div>
+  <div class="box" data-tab="roubo"><h3>🚔 Roubo / furto</h3><div id="thl" class="muted">Carregando...</div><div id="sgL"></div></div>
   <div class="box" data-tab="pedidos"><h3>🛒 Pedidos de adesivo</h3><div id="orl" class="muted">Carregando...</div></div>
   <div class="box" data-tab="medicos"><h3>🩺 Pedidos de ficha médica</h3><p class="muted">Confira a identidade (CPF e registro no conselho: CRM, COREN...) antes de passar qualquer dado. Ligue para o profissional; nunca envie a ficha por escrito.</p><div id="medL" class="muted">Carregando...</div></div>
   <div class="box" data-tab="acidentes"><h3>🚑 Acidentes</h3><div id="acc" class="muted">Carregando...</div></div>
@@ -155,20 +155,27 @@ async function accidents(){const l=(await q('accidents')).filter(a=>!a.deleted).
   const prof={};await Promise.all([...new Set(l.map(a=>a.ownerId||a.authorId))].map(async u=>{try{const r=await api('/profiles/'+u);prof[u]=pk(r.fields);}catch(e){}}));
   const ST={pending:'⏳ Aguardando análise',contacted:'✅ Família avisada',rejected:'❌ Recusado'};
   acc.innerHTML=`<p><b>${pend.length}</b> aguardando análise</p>`+l.map(a=>{const p=prof[a.ownerId||a.authorId]||{};const fam=(p.famPhone||'').replace(/\D/g,'');
-    const txt=encodeURIComponent(`Olá ${p.famName||''}, aqui é da equipe AutoLink. ${p.name||'Seu familiar'} registrou um acidente de carro${a.lat?` neste local: https://www.google.com/maps?q=${a.lat},${a.lng}`:''}. Ele(a) cadastrou você como contato de emergência.`);
+    const txt=encodeURIComponent(`Olá, ${p.famName||''}. Aqui é a equipe AutoLink.\n\nO carro do ${p.name||''} (${a.carName||''}) se envolveu em um acidente${a.desc?': '+a.desc:''}. ${a.reporter==='visitor'?'Uma pessoa que está prestando socorro nos avisou pelo adesivo AutoLink.':'O próprio motorista registrou pelo app.'}\n\n${a.lat?'Local: https://www.google.com/maps?q='+a.lat+','+a.lng+'\n\n':''}Se precisar de ajuda, responda esta mensagem.\nEquipe AutoLink`);
     return `<div class="acd"><div>${thumbs(a)}</div><div style="flex:1;min-width:220px"><b>${ST[a.status]||a.status}</b><div class="muted">${a.createdAt?a.createdAt.toLocaleString('pt-BR'):''} · ${a.reporter==='visitor'?'Enviado por quem viu o acidente'+(a.reporterName?' ('+esc(a.reporterName)+')':'')+(a.carName?' · carro '+esc(a.carName):''):'Enviado pelo próprio dono'}</div>
-     <p style="margin:6px 0"><b>${esc(p.name||'Sem perfil')}</b> · ${esc(p.phone||'')}<br>${esc(a.desc||'(sem descrição)')}</p>
+     ${a.needMed?'<div style="background:#fee2e2;color:#b91c1c;font-weight:800;border-radius:8px;padding:4px 8px;margin:6px 0;display:inline-block">🩺 PEDIU A FICHA MÉDICA</div>':''}
+     ${a.reporterCpf?`<div style="background:#f4f4f6;border-radius:8px;padding:6px 8px;margin:6px 0">Quem avisou: <b>${esc(a.reporterName||'')}</b> · CPF ${esc(a.reporterCpf)} · <a target="_blank" href="https://wa.me/55${esc(a.reporterWa||'')}">${esc(a.reporterWa||'')}</a></div>`:''}
+     <p style="margin:6px 0">Dono: <b>${esc(p.name||'Sem perfil')}</b> · ${esc(p.phone||'')}<br>${esc(a.desc||'(sem descrição)')}</p>
      ${a.lat?`<a target="_blank" href="https://www.google.com/maps?q=${+a.lat},${+a.lng}">📍 Ver no mapa</a><br>`:''}
      <div style="margin-top:6px">👨‍👩‍👧 <b>${esc(p.famName||'—')}</b> ${p.famRel?'('+esc(p.famRel)+')':''} · ${esc(p.famPhone||'sem telefone')}</div>
-     ${a.status==='pending'?`<a class="wa" target="_blank" href="https://wa.me/55${fam}?text=${txt}">💬 Avisar família no WhatsApp</a> <button class="sm" data-ok="${a.id}">Marcar família avisada</button> <button class="sm red" data-no="${a.id}">Recusar</button>`:''} <button class="sm gray" data-tr="${a.id}">🗑 Lixeira</button></div></div>`;}).join('');
+     ${a.status==='pending'?`<div style="margin-top:8px"><b>Mensagem para a família (pode editar)</b><textarea id="af${a.id}" style="width:100%;min-height:120px;box-sizing:border-box">${esc(decodeURIComponent(txt))}</textarea>
+      ${fam?`<button class="sm" style="background:#25d366" data-wf="${a.id}" data-n="${fam}">💬 Enviar no WhatsApp da família</button>`:'<span class="muted">Sem família cadastrada.</span>'} <button class="sm" data-ok="${a.id}">Marcar família avisada</button> <button class="sm red" data-no="${a.id}">Recusar</button></div>`:''}
+     ${a.expiresAt?`<div class="muted">🩺 Ficha liberada até ${a.expiresAt.toLocaleString('pt-BR')}</div>`:`<div style="margin-top:6px"><button class="sm" style="background:#ef4444" data-af="${a.id}">🩺 Liberar ficha médica (12h)</button></div>`}
+     <div id="mw${a.id}"></div> <button class="sm gray" data-tr="${a.id}">🗑 Lixeira</button></div></div>`;}).join('');
   const set=async(id,st)=>{await api('/accidents/'+id+'?updateMask.fieldPaths=status&updateMask.fieldPaths=reviewedAt','PATCH',{fields:{status:enc(st),reviewedAt:enc(new Date())}});accidents();};
   acc.querySelectorAll('[data-ok]').forEach(b=>b.onclick=()=>set(b.dataset.ok,'contacted'));bindThumbs(acc);
+  acc.querySelectorAll('[data-wf]').forEach(b=>b.onclick=()=>window.open('https://wa.me/55'+b.dataset.n+'?text='+encodeURIComponent(document.getElementById('af'+b.dataset.wf).value),'_blank'));
+  acc.querySelectorAll('[data-af]').forEach(b=>b.onclick=()=>{const a=l.find(x=>x.id===b.dataset.af);medRelease(Object.assign({},a,{name:a.reporterName||'',phone:a.reporterWa||'',where:a.desc||''}),false,'accidents');});
   acc.querySelectorAll('[data-tr]').forEach(b=>b.onclick=()=>toTrash('accidents',b.dataset.tr).then(accidents));
   acc.querySelectorAll('[data-no]').forEach(b=>b.onclick=()=>confirm('Recusar este registro?')&&set(b.dataset.no,'rejected'));}
 let ACC={};
 const MSG_FAM=(p,a,car,loc)=>`Olá, ${p.famName||''}. Aqui é a equipe AutoLink.\n\nO carro do ${p.name||''} (${car.name||''}, placa ${car.plate||''}) se envolveu em um acidente${a.where?': '+a.where:''}. Uma pessoa que está prestando socorro nos avisou pelo adesivo AutoLink.\n\n${loc?'Local: '+loc+'\n\n':''}A ficha médica dele foi liberada para a equipe de atendimento.\n\nSe precisar de ajuda, responda esta mensagem.\nEquipe AutoLink`;
 const MSG_REQ=(a,car,link)=>`Olá, ${(a.name||'').split(' ')[0]}. Aqui é a equipe AutoLink.\n\nSeu pedido foi aprovado. A ficha médica do motorista do ${car.name||''} ${car.plate||''} está liberada por 12 horas:\n\n${link}\n\nUse só para o atendimento. Não compartilhe este link.\nEquipe AutoLink`;
-async function medRelease(a,withFam){
+async function medRelease(a,withFam,col='medRequests'){
   let p={},car={};try{p=pk((await api('/profiles/'+a.ownerId)).fields);}catch(e){}try{car=pk((await api('/cars/'+a.carId)).fields);}catch(e){}
   if(!p.medOn&&!confirm('O dono NÃO autorizou a ficha médica (ou não preencheu). Liberar mesmo assim só com o contato da família?'))return;
   if(withFam&&!(p.famPhone||'').replace(/\D/g,''))return alert('Este dono não tem família cadastrada. Use "Só liberar".');
@@ -180,7 +187,8 @@ async function medRelease(a,withFam){
     await api('/medLinks?documentId='+tok,'POST',{fields:fl({...ficha,carId:a.carId,expiresAt:exp})});
     await api('/medOpen/'+a.carId,'PATCH',{fields:fl({...ficha,requestId:a.id,expiresAt:exp})});
     await api('/cars/'+a.carId+'?updateMask.fieldPaths=medUntil','PATCH',{fields:{medUntil:enc(exp)}});
-    await api('/medRequests/'+a.id+'?updateMask.fieldPaths=status&updateMask.fieldPaths=reviewedAt&updateMask.fieldPaths=expiresAt&updateMask.fieldPaths=token','PATCH',{fields:{status:enc('released'),reviewedAt:enc(now),expiresAt:enc(exp),token:enc(tok)}});
+    if(col==='medRequests')await api('/medRequests/'+a.id+'?updateMask.fieldPaths=status&updateMask.fieldPaths=reviewedAt&updateMask.fieldPaths=expiresAt&updateMask.fieldPaths=token','PATCH',{fields:{status:enc('released'),reviewedAt:enc(now),expiresAt:enc(exp),token:enc(tok)}});
+    else await api('/'+col+'/'+a.id+'?updateMask.fieldPaths=medReleasedAt&updateMask.fieldPaths=expiresAt&updateMask.fieldPaths=token','PATCH',{fields:{medReleasedAt:enc(now),expiresAt:enc(exp),token:enc(tok)}});
   }catch(e){return alert('Erro ao liberar: '+e.message);}
   const link=SITE+'ficha.html?t='+tok,loc=a.lat?`https://www.google.com/maps?q=${a.lat},${a.lng}`:'';
   const o=document.getElementById('mw'+a.id),fam=(p.famPhone||'').replace(/\D/g,''),req=(a.phone||'').replace(/\D/g,'');
@@ -349,18 +357,25 @@ async function pointsAdm(){const l=await q('points').catch(()=>[]);
     const f={name:enc(pN.value.trim()),address:enc(pA.value.trim()),hours:enc(pH.value.trim()),active:{booleanValue:true}};if(mm){f.lat=enc(mm[1]);f.lng=enc(mm[2]);}
     try{await api('/points','POST',{fields:f});pN.value=pA.value=pH.value=pM.value='';pointsAdm();if(!mm)alert('Ponto salvo, mas sem localização. Cole o link do Google Maps para calcular distância.');}catch(e){alert(e.message);}};}
 const SITEB=location.origin+location.pathname.replace('admin.html','');
+let PRIV={};
+async function sightList(l){const box=document.getElementById('sgL');if(!box)return;let r=[],pr=[];try{r=(await q('sightReports')).filter(x=>!x.deleted).sort((a,b)=>(b.at||0)-(a.at||0));}catch(e){}try{pr=(await q('plateReports')).sort((a,b)=>(b.at||0)-(a.at||0));}catch(e){}
+  const plates={};l.filter(t=>t.status==='approved').forEach(t=>{if(t.plate)plates[String(t.plate).toUpperCase().replace(/[^A-Z0-9]/g,'')]=t;});
+  box.innerHTML='<h3>🔎 "Achei um carro roubado"</h3>'+(r.length?r.map(x=>{const hit=plates[x.plate];return `<div class="acd" style="${hit?'border:2px solid #ef4444':''}"><div>${thumbs({photo:x.photo})}</div><div style="flex:1;min-width:200px">${hit?'<b style="color:#ef4444">🚨 PLACA CONFERE com roubo registrado: '+esc(hit.carName||'')+'</b><br>':''}<b style="font-family:monospace">${esc(x.plate||'')}</b> · ${esc(x.model||'')} ${esc(x.color||'')}<div class="muted">${x.at?x.at.toLocaleString('pt-BR'):''}</div>${x.note?'<div>'+esc(x.note)+'</div>':''}${x.lat?`<a target="_blank" href="https://www.google.com/maps?q=${+x.lat},${+x.lng}">📍 Ver no mapa</a>`:''}${x.name?`<div>🙋 ${esc(x.name)} · <a href="tel:${esc(x.wa||'')}">${esc(x.wa||'')}</a></div>`:'<div class="muted">Anônimo</div>'}</div></div>`;}).join(''):'<p class="muted">Nenhum aviso.</p>')
+   +'<h3>⚠️ "A placa não confere" (adesivo em outro carro?)</h3>'+(pr.length?`<table><tr><th>Adesivo</th><th>Placa vista</th><th>Quando</th></tr>${pr.map(x=>`<tr><td>${esc(x.sticker||x.carId||'')}</td><td><b style="font-family:monospace">${esc(x.seenPlate||'')}</b></td><td>${x.at?x.at.toLocaleString('pt-BR'):''}</td></tr>`).join('')}</table>`:'<p class="muted">Nenhum aviso.</p>');
+  bindThumbs(box);}
 async function thefts(){const l=(await q('thefts')).filter(t=>!t.deleted).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));BD.roubo=l.filter(t=>t.status==='pending').length;badges();
   const ST={pending:'⏳ Aguardando análise',approved:'🔴 Publicado',rejected:'❌ Recusado',recovered:'✅ Recuperado'};
   if(!l.length){thl.innerHTML='Nenhum registro.';return;}
-  const cnt={},wit={};await Promise.all(l.filter(t=>t.status!=='pending').map(async t=>{try{cnt[t.id]=(await q('sightings','/thefts/'+t.id)).length;}catch(e){cnt[t.id]=0;}try{wit[t.id]=await q('witnesses','/thefts/'+t.id);}catch(e){wit[t.id]=[];}}));
-  thl.innerHTML=l.map(t=>`<div class="acd"><div>${thumbs({photo:t.photo,photo2:t.photo2,photo3:t.photo3})}<div class="muted">Documento e B.O.:</div>${thumbs({photo:t.docPhoto,photo2:t.boPhoto})}</div><div style="flex:1;min-width:220px">
+  const cnt={},wit={};PRIV={};await Promise.all(l.map(async t=>{try{PRIV[t.id]=pk((await api('/thefts/'+t.id+'/private/docs')).fields);}catch(e){}}));await Promise.all(l.filter(t=>t.status!=='pending').map(async t=>{try{cnt[t.id]=(await q('sightings','/thefts/'+t.id)).length;}catch(e){cnt[t.id]=0;}try{wit[t.id]=await q('witnesses','/thefts/'+t.id);}catch(e){wit[t.id]=[];}}));
+  thl.innerHTML=l.map(t=>`<div class="acd"><div>${thumbs({photo:t.photo,photo2:t.photo2,photo3:t.photo3})}<div class="muted">CNH, documento e B.O. (só você vê):</div>${thumbs({photo:(PRIV[t.id]||{}).cnhPhoto,photo2:(PRIV[t.id]||{}).docPhoto||t.docPhoto,photo3:(PRIV[t.id]||{}).boPhoto||t.boPhoto})}</div><div style="flex:1;min-width:220px">
     <b>${ST[t.status]||t.status}</b> · ${t.kind==='furto'?'Furto':'Roubo'}<div><b>${esc(t.carName)}</b> ${esc(t.year||'')} ${esc(t.color||'')} · placa ${esc(t.plate||'—')}</div>
     <div class="muted">${esc(t.when||'')} · ${esc(t.place||'')} ${esc(t.city||'')}</div><p style="white-space:pre-wrap;margin:6px 0">${esc(t.desc||'')}</p>
-    <div class="muted">B.O.: ${esc(t.bo||'(foto)')} · ${esc(t.email||'')}</div>
+    <div class="muted">B.O.: ${esc(t.bo||'(foto)')} · ${esc((PRIV[t.id]||{}).email||t.email||'')}</div>${t.featured?'<div style="color:#b45309;font-weight:800">🚀 Em destaque</div>':''}
     ${t.status!=='pending'?`<div style="margin-top:6px">📍 ${cnt[t.id]||0} avistamento(s) · <a target="_blank" href="${SITEB}carro.html?id=${t.id}">página pública ›</a></div>${(wit[t.id]||[]).map(w=>`<div style="background:#eef6ff;border-radius:8px;padding:6px 8px;margin-top:4px">🙋 <b>${esc(w.name)}</b> · <a href="tel:${esc(w.phone)}">${esc(w.phone)}</a>${w.note?' · '+esc(w.note):''}${w.lat?` · <a target="_blank" href="https://www.google.com/maps?q=${+w.lat},${+w.lng}">mapa</a>`:''}<div class="muted">${w.at?w.at.toLocaleString('pt-BR'):''}</div></div>`).join('')}`:''}
     <div style="margin-top:8px">${t.status==='pending'?`<button class="sm" data-ok="${t.id}">Aprovar e publicar</button> <button class="sm red" data-no="${t.id}">Recusar</button>`:''}
-     ${t.status==='approved'?`<button class="sm gray" data-rc="${t.id}">Marcar recuperado</button>`:''} <button class="sm gray" data-tt="${t.id}">🗑 Lixeira</button></div></div></div>`).join('');
-  bindThumbs(thl);
+     ${t.status==='approved'?`<button class="sm gray" data-rc="${t.id}">Marcar recuperado</button> <button class="sm" data-ft="${t.id}" data-v="${t.featured?'':'1'}">${t.featured?'Tirar destaque':'🚀 Destacar'}</button>`:''} <button class="sm gray" data-tt="${t.id}">🗑 Lixeira</button></div></div></div>`).join('');
+  bindThumbs(thl);sightList(l);
+  thl.querySelectorAll('[data-ft]').forEach(b=>b.onclick=async()=>{await api('/thefts/'+b.dataset.ft+'?updateMask.fieldPaths=featured','PATCH',{fields:{featured:{booleanValue:!!b.dataset.v}}});thefts();});
   const setT=async(t,st)=>{await api('/thefts/'+t.id+'?updateMask.fieldPaths=status&updateMask.fieldPaths=reviewedAt','PATCH',{fields:{status:enc(st),reviewedAt:enc(new Date())}});
     if(t.carId){const on=st==='approved';await api('/cars/'+t.carId+'?updateMask.fieldPaths=stolen&updateMask.fieldPaths=theftId','PATCH',{fields:{stolen:{booleanValue:on},theftId:enc(on?t.id:'')}}).catch(e=>alert('Aviso: não foi possível marcar o carro ('+e.message+')'));}thefts();};
   const f=id=>l.find(t=>t.id===id);

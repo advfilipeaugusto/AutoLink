@@ -35,6 +35,11 @@ service cloud.firestore {
       allow update: if isAdmin() || (request.auth != null && resource.data.userId == me() && request.resource.data.status == 'recovered'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'recoveredAt']));
       allow delete: if isAdmin();
+      match /private/{d} {
+        allow read: if isAdmin() || (request.auth != null && get(/databases/$(db)/documents/thefts/$(id)).data.userId == me());
+        allow create: if request.auth != null && get(/databases/$(db)/documents/thefts/$(id)).data.userId == me() && request.resource.data.userId == me();
+        allow delete: if isAdmin();
+      }
       match /witnesses/{w} {
         allow read: if isAdmin() || get(/databases/$(db)/documents/thefts/$(id)).data.userId == me();
         allow create: if request.auth != null && get(/databases/$(db)/documents/thefts/$(id)).data.status == 'approved'
@@ -93,8 +98,17 @@ service cloud.firestore {
     match /accidents/{id} {
       allow get, list: if request.auth != null && (resource.data.authorId == me() || isAdmin());
       allow create: if request.auth != null && request.resource.data.authorId == me() && request.resource.data.status == 'pending'
-        && request.resource.data.photo is string && request.resource.data.photo.size() < 950000;
+        && (!('photo' in request.resource.data) || (request.resource.data.photo is string && request.resource.data.photo.size() < 950000));
       allow update, delete: if isAdmin();
+    }
+    match /plateReports/{id} {
+      allow create: if request.auth != null && request.resource.data.by == me() && request.resource.data.seenPlate is string && request.resource.data.seenPlate.size() < 12;
+      allow read, delete: if isAdmin();
+    }
+    match /sightReports/{id} {
+      allow create: if request.auth != null && request.resource.data.by == me() && request.resource.data.plate is string && request.resource.data.plate.size() < 12
+        && (!('photo' in request.resource.data) || request.resource.data.photo.size() < 950000);
+      allow read, update, delete: if isAdmin();
     }
     match /ratings/{id} {
       allow get, list: if request.auth != null && (resource.data.ownerId == me() || isAdmin());

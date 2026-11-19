@@ -840,15 +840,16 @@ function theftLink(id) { return SITE_BASE + 'carro.html?id=' + id; }
 async function Theft() {
   m.innerHTML = `<h2>🚨 Roubo / furto</h2>
    <div class="card"><b>Como funciona</b><p class="muted" style="margin:6px 0 0">1. Você registra o que aconteceu, com fotos e o boletim de ocorrência.<br>2. A equipe AutoLink confere e publica.<br>3. Quem escanear o adesivo do seu carro verá <b>"VEÍCULO ROUBADO"</b> e poderá enviar a localização, anonimamente.<br>4. Você recebe um <b>link</b> para acompanhar de qualquer celular, mesmo se levaram o seu.</p></div>
-   <div id="thMine"></div><button class="btn" id="thNew">+ Registrar roubo ou furto</button>
+   <div id="thMine"></div><button class="btn" id="thNew">+ Registrar roubo ou furto</button><a class="btn" href="achei.html" style="display:block;text-align:center;text-decoration:none;background:#ef4444;color:#fff;margin-top:8px">Achei um carro roubado</a><a class="link" href="procurados.html" style="display:block;text-align:center;margin-top:6px">Ver todos os veículos procurados ›</a>
    <h2>Veículos roubados na região</h2><div id="thPub"><p class="muted">Carregando...</p></div>`;
   el('thNew').onclick = () => go(TheftForm);
   try { const mine = (await find('thefts', [['userId', S.uid]])).filter(t => !t.deleted).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     const ST = { pending: '⏳ Em análise pela equipe', approved: '🔴 Publicado: as pessoas estão vendo', rejected: '❌ Não aprovado', recovered: '✅ Carro recuperado' };
     el('thMine').innerHTML = mine.length ? '<h2>Meus registros</h2>' + mine.map(t => `<div class="card"><b>${esc(t.carName || 'Carro')}</b> <span class="muted">${esc(t.plate || '')}</span><div style="margin:4px 0">${ST[t.status] || t.status}</div>
       ${t.status === 'approved' ? `<div class="muted">Link para acompanhar (guarde e envie para a família):</div><div class="code" style="font-size:13px;letter-spacing:0;word-break:break-all;text-align:left">${esc(theftLink(t.id))}</div>
-       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><a class="chip" style="text-decoration:none" href="${theftLink(t.id)}" target="_blank">Abrir</a><button class="chip" data-sh="${t.id}">Compartilhar</button><button class="chip" data-rec="${t.id}">Meu carro foi recuperado</button></div>` : ''}
+       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><a class="chip" style="text-decoration:none" href="${theftLink(t.id)}" target="_blank">Abrir</a><button class="chip" data-sh="${t.id}">Compartilhar</button><button class="chip" data-boost="1">🚀 Impulsionar (em breve)</button><button class="chip" data-rec="${t.id}">Meu carro foi recuperado</button></div>` : ''}
       <div class="muted" style="margin-top:6px">📧 Você também receberá as atualizações por e-mail (em breve).</div></div>`).join('') : '';
+    m.querySelectorAll('[data-boost]').forEach(b => b.onclick = () => toast('Em breve: destaque no topo, na sua região e nas redes da AutoLink.'));
     m.querySelectorAll('[data-sh]').forEach(b => b.onclick = () => { const u = theftLink(b.dataset.sh); if (navigator.share) navigator.share({ title: 'AutoLink · veículo roubado', url: u }).catch(() => {}); else { navigator.clipboard?.writeText(u); toast('Link copiado'); } });
     m.querySelectorAll('[data-rec]').forEach(b => b.onclick = async () => { if (!confirm('Seu carro foi recuperado? O alerta de roubo será retirado.')) return;
       try { const t = mine.find(x => x.id === b.dataset.rec); await update('thefts/' + b.dataset.rec, { status: 'recovered', recoveredAt: new Date() }); if (t && t.carId) await update('cars/' + t.carId, { stolen: false }).catch(() => {}); toast('Que ótimo! ✅'); go(Theft, null, false); } catch (e) { alert(e.message); } });
@@ -868,21 +869,23 @@ async function TheftForm() {
    <input id="tplace" placeholder="Onde aconteceu? (rua, bairro, ponto de referência)" maxlength="150">
    <textarea id="td" maxlength="600" placeholder="Conte o que aconteceu e detalhes que ajudem a reconhecer o carro (adesivos, amassados, rodas...)"></textarea>
    <input id="tbo" placeholder="Número do boletim de ocorrência" maxlength="40">
-   <div id="tph"></div><div id="tdoc"></div><div id="tbof"></div>
-   <label style="display:flex;gap:8px;align-items:flex-start;margin:6px 0 12px;font-size:14px"><input type="checkbox" id="tok" style="width:20px;height:20px;flex:none;margin:0"> Declaro que as informações são verdadeiras e autorizo a publicação das fotos e dados do veículo (sem meus dados pessoais).</label>
+   <div id="tph"></div><div class="muted" style="margin:10px 0 4px">Documentos para conferência (<b>só a equipe AutoLink vê</b>, nunca são publicados):</div><div id="tcnh"></div><div id="tdoc"></div><div id="tbof"></div>
+   <label style="display:flex;gap:8px;align-items:flex-start;margin:6px 0 12px;font-size:14px"><input type="checkbox" id="tok" style="width:20px;height:20px;flex:none;margin:0"> Declaro que as informações são verdadeiras e autorizo a publicação do modelo, cor, placa, local, data, fotos do carro e da minha mensagem (sem meus dados pessoais nem documentos).</label>
    <p class="muted">📧 Você receberá um e-mail com o link de acompanhamento quando o registro for aprovado (em breve).</p>
    <button class="btn" id="ts">Enviar para análise</button>`;
   if (PROFILE?.city) el('tcity').value = PROFILE.city;
-  const pc = photoPicker(el('tph'), 'Fotos do carro (até 3)', false), pd = photoPicker1(el('tdoc'), '📄 Foto do documento do carro (CRLV)'), pb = photoPicker1(el('tbof'), '🚓 Foto do boletim de ocorrência');
+  const pc = photoPicker(el('tph'), 'Fotos do carro (até 3)', false), pn = photoPicker1(el('tcnh'), '🪪 Foto da sua CNH'), pd = photoPicker1(el('tdoc'), '📄 Foto do documento do carro (CRLV)'), pb = photoPicker1(el('tbof'), '🚓 Foto do boletim de ocorrência');
   el('ts').onclick = async () => {
     const car = cars.find(c => c.id === el('tc').value); if (!car) return toast('Escolha o carro');
     if (!el('td').value.trim()) return toast('Conte o que aconteceu'); if (!pc.get().length) return toast('Envie pelo menos 1 foto do carro');
+    if (!pn.get()) return toast('Envie a foto da sua CNH'); if (!pd.get()) return toast('Envie a foto do documento do carro (CRLV)');
     if (!pb.get() && !el('tbo').value.trim()) return toast('Informe o número ou a foto do boletim de ocorrência'); if (!el('tok').checked) return toast('Marque a declaração');
     const b = el('ts'); b.disabled = true; b.textContent = 'Enviando...';
     const ph = pc.get(), wv = el('tw').value;
-    try { await add('thefts', Object.assign({ userId: S.uid, email: S.email || '', carId: car.id, carName: [car.brand, car.model].filter(Boolean).join(' ') || car.name, plate: car.plate || '', year: car.year || '', kind: el('tk').value,
+    try { const th = await add('thefts', Object.assign({ userId: S.uid, carId: car.id, carName: [car.brand, car.model].filter(Boolean).join(' ') || car.name, plate: car.plate || '', year: car.year || '', kind: el('tk').value,
         color: el('tcol').value.trim(), when: wv ? new Date(wv).toLocaleString('pt-BR') : '', city: el('tcity').value.trim(), uf: PROFILE?.uf || '', place: el('tplace').value.trim(), desc: el('td').value.trim(), bo: el('tbo').value.trim(), status: 'pending', createdAt: new Date() },
-        ph[0] ? { photo: ph[0] } : {}, ph[1] ? { photo2: ph[1] } : {}, ph[2] ? { photo3: ph[2] } : {}, pd.get() ? { docPhoto: pd.get() } : {}, pb.get() ? { boPhoto: pb.get() } : {}));
+        ph[0] ? { photo: ph[0] } : {}, ph[1] ? { photo2: ph[1] } : {}, ph[2] ? { photo3: ph[2] } : {}));
+      await api('/thefts/' + th.id + '/private?documentId=docs', 'POST', { fields: fields(Object.assign({ userId: S.uid, email: S.email || '', cnhPhoto: pn.get(), docPhoto: pd.get(), at: new Date() }, pb.get() ? { boPhoto: pb.get() } : {})) });
       alert('Registro enviado ✅\n\nA equipe AutoLink vai conferir. Quando for aprovado, o alerta aparece para quem escanear o seu carro e você recebe o link de acompanhamento em "Roubo / furto".'); go(Theft);
     } catch (e) { alert('Não foi possível enviar: ' + e.message + '\n\nDica: se as fotos forem muitas, tente enviar menos.'); b.disabled = false; b.textContent = 'Enviar para análise'; }
   };
