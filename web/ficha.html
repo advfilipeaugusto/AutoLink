@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Ficha médica · AutoLink</title>
+<style>
+body{margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:#f4f4f6;color:#111}
+main{max-width:480px;margin:0 auto;padding:20px 16px}
+.top{display:flex;align-items:center;gap:10px;background:#111;color:#fff;border-radius:16px;padding:12px 14px}
+.top img{height:28px}
+.f{background:#fee2e2;border-radius:16px;padding:16px;margin:14px 0;font-size:17px;line-height:1.75}
+.exp{color:#b45309;font-weight:700;font-size:14px;margin-top:12px}
+a.b{display:block;text-align:center;padding:15px;border-radius:12px;background:#111;color:#fff;text-decoration:none;font-weight:800}
+.m{color:#666;font-size:13px}
+</style>
+</head>
+<body>
+<main>
+<div class="top"><img src="logo-car-white.png" alt=""><b>AutoLink · Ficha médica</b></div>
+<div id="out"><p class="m">Carregando...</p></div>
+</main>
+<script>
+const KEY='AIzaSyBSGj1H273wiXM-VgpkytnC3kX6yQlt8_I',BASE='https://firestore.googleapis.com/v1/projects/autolink-1aa51/databases/(default)/documents';
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const dec=f=>'booleanValue' in f?f.booleanValue:'timestampValue' in f?new Date(f.timestampValue):f.stringValue;
+const out=document.getElementById('out'),tok=new URLSearchParams(location.search).get('t')||'';
+const closed=()=>{out.innerHTML='<div class="f" style="background:#f1f1f3">Este link expirou ou não é válido.<br><span class="m">A ficha fica liberada por 12 horas. Se ainda precisar, peça de novo pelo adesivo do carro.</span></div>';};
+(async()=>{
+  if(!/^[0-9a-f]{20,64}$/.test(tok))return closed();
+  try{
+    const r=await fetch(BASE+'/medLinks/'+tok+'?key='+KEY);if(!r.ok)return closed();
+    const f=Object.fromEntries(Object.entries((await r.json()).fields||{}).map(([k,v])=>[k,dec(v)]));
+    const tick=()=>{const left=f.expiresAt-new Date();if(left<=0)return closed();
+      const h=Math.floor(left/36e5),mi=Math.floor(left%36e5/6e4),fam=String(f.famPhone||'').replace(/\D/g,'');
+      out.innerHTML=`<div class="exp">Liberada pela equipe AutoLink · expira em ${h}h ${mi}min</div>
+       <div class="f">${f.medOn?`<b>${esc(f.name||'')}</b><br>Tipo sanguíneo: <b style="font-size:24px">${esc(f.blood||'não informado')}</b><br>Alergias: ${esc(f.allergies||'—')}<br>Condições: ${esc(f.conditions||'—')}<br>Plano de saúde: ${esc(f.healthPlan||'—')}`:'O dono não cadastrou ficha médica. Use o contato da família abaixo.'}</div>
+       ${fam?`<a class="b" href="tel:${fam}">📞 Ligar para a família${f.famName?' ('+esc(f.famName)+')':''}</a>`:''}
+       <p class="m">Dados protegidos pela LGPD. Use só para o atendimento e não compartilhe este link.</p>`;};
+    tick();setInterval(tick,30000);
+  }catch(e){closed();}
+})();
+</script>
+</body>
+</html>

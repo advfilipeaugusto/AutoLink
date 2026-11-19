@@ -165,18 +165,48 @@ async function accidents(){const l=(await q('accidents')).filter(a=>!a.deleted).
   acc.querySelectorAll('[data-ok]').forEach(b=>b.onclick=()=>set(b.dataset.ok,'contacted'));bindThumbs(acc);
   acc.querySelectorAll('[data-tr]').forEach(b=>b.onclick=()=>toTrash('accidents',b.dataset.tr).then(accidents));
   acc.querySelectorAll('[data-no]').forEach(b=>b.onclick=()=>confirm('Recusar este registro?')&&set(b.dataset.no,'rejected'));}
-async function meds(){const box=document.getElementById('medL');const l=(await q('medRequests')).filter(a=>!a.deleted).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));BD.medicos=l.filter(a=>a.status==='pending').length;badges();
+let ACC={};
+const MSG_FAM=(p,a,car,loc)=>`Olá, ${p.famName||''}. Aqui é a equipe AutoLink.\n\nO carro do ${p.name||''} (${car.name||''}, placa ${car.plate||''}) se envolveu em um acidente${a.where?': '+a.where:''}. Uma pessoa que está prestando socorro nos avisou pelo adesivo AutoLink.\n\n${loc?'Local: '+loc+'\n\n':''}A ficha médica dele foi liberada para a equipe de atendimento.\n\nSe precisar de ajuda, responda esta mensagem.\nEquipe AutoLink`;
+const MSG_REQ=(a,car,link)=>`Olá, ${(a.name||'').split(' ')[0]}. Aqui é a equipe AutoLink.\n\nSeu pedido foi aprovado. A ficha médica do motorista do ${car.name||''} ${car.plate||''} está liberada por 12 horas:\n\n${link}\n\nUse só para o atendimento. Não compartilhe este link.\nEquipe AutoLink`;
+async function medRelease(a,withFam){
+  let p={},car={};try{p=pk((await api('/profiles/'+a.ownerId)).fields);}catch(e){}try{car=pk((await api('/cars/'+a.carId)).fields);}catch(e){}
+  if(!p.medOn&&!confirm('O dono NÃO autorizou a ficha médica (ou não preencheu). Liberar mesmo assim só com o contato da família?'))return;
+  if(withFam&&!(p.famPhone||'').replace(/\D/g,''))return alert('Este dono não tem família cadastrada. Use "Só liberar".');
+  if(!confirm('Liberar a ficha por 12 horas para quem pediu e para socorristas que se identificarem?'))return;
+  const tok=[...crypto.getRandomValues(new Uint8Array(18))].map(x=>x.toString(16).padStart(2,'0')).join(''),now=new Date(),exp=new Date(now.getTime()+12*36e5);
+  const ficha={medOn:!!p.medOn,name:p.medOn?(p.name||''):'',blood:p.medOn?(p.blood||''):'',allergies:p.medOn?(p.allergies||''):'',conditions:p.medOn?(p.conditions||''):'',healthPlan:p.medOn?(p.healthPlan||''):'',famName:p.famName||'',famPhone:p.famPhone||''};
+  const fl=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,typeof v==='boolean'?{booleanValue:v}:enc(v)]));
+  try{
+    await api('/medLinks?documentId='+tok,'POST',{fields:fl({...ficha,carId:a.carId,expiresAt:exp})});
+    await api('/medOpen/'+a.carId,'PATCH',{fields:fl({...ficha,requestId:a.id,expiresAt:exp})});
+    await api('/cars/'+a.carId+'?updateMask.fieldPaths=medUntil','PATCH',{fields:{medUntil:enc(exp)}});
+    await api('/medRequests/'+a.id+'?updateMask.fieldPaths=status&updateMask.fieldPaths=reviewedAt&updateMask.fieldPaths=expiresAt&updateMask.fieldPaths=token','PATCH',{fields:{status:enc('released'),reviewedAt:enc(now),expiresAt:enc(exp),token:enc(tok)}});
+  }catch(e){return alert('Erro ao liberar: '+e.message);}
+  const link=SITE+'ficha.html?t='+tok,loc=a.lat?`https://www.google.com/maps?q=${a.lat},${a.lng}`:'';
+  const o=document.getElementById('mw'+a.id),fam=(p.famPhone||'').replace(/\D/g,''),req=(a.phone||'').replace(/\D/g,'');
+  const wa=n=>'https://wa.me/'+(n.length<=11?'55':'')+n+'?text=';
+  o.innerHTML=`<div style="background:#ecfdf3;border-radius:10px;padding:10px;margin:8px 0">✅ <b>Ficha liberada por 12 horas.</b> Edite as mensagens se quiser e envie:
+   ${withFam?`<div style="margin-top:8px"><b>1. Para a família (${esc(p.famName||'')})</b><textarea id="tf${a.id}" style="width:100%;min-height:150px;box-sizing:border-box">${esc(MSG_FAM(p,a,car,loc))}</textarea><button class="sm" style="background:#25d366" id="bf${a.id}">💬 Enviar no WhatsApp da família</button></div>`:''}
+   <div style="margin-top:8px"><b>${withFam?'2.':'1.'} Para quem pediu (${esc(a.name)})</b><textarea id="tr${a.id}" style="width:100%;min-height:130px;box-sizing:border-box">${esc(MSG_REQ(a,car,link))}</textarea><button class="sm" style="background:#25d366" id="br${a.id}">💬 Enviar no WhatsApp de quem pediu</button></div></div>`;
+  if(withFam)document.getElementById('bf'+a.id).onclick=()=>window.open(wa(fam)+encodeURIComponent(document.getElementById('tf'+a.id).value),'_blank');
+  document.getElementById('br'+a.id).onclick=()=>window.open(wa(req)+encodeURIComponent(document.getElementById('tr'+a.id).value),'_blank');
+}
+async function meds(){const box=document.getElementById('medL');ACC={};try{(await q('medAccess')).forEach(x=>{(ACC[x.carId]=ACC[x.carId]||[]).push(x);});}catch(e){}const l=(await q('medRequests')).filter(a=>!a.deleted).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));BD.medicos=l.filter(a=>a.status==='pending').length;badges();
   if(!l.length){box.innerHTML='Nenhum pedido.';return;}
-  const ST={pending:'⏳ Aguardando',released:'✅ Ficha passada por telefone',denied:'❌ Recusado'};
+  const ST={pending:'⏳ Aguardando',released:'✅ Ficha liberada',denied:'❌ Recusado'};
   box.innerHTML=l.map(a=>`<div class="acd"><div style="flex:1;min-width:220px"><b>${ST[a.status]||a.status}</b> · <span class="muted">${a.createdAt?a.createdAt.toLocaleString('pt-BR'):''} · carro ${esc(a.carName||'')}</span>
     <p style="margin:6px 0"><b>${esc(a.name)}</b> · CPF ${esc(a.cpf)}<br>${esc(a.kind)} · <b>${esc(a.reg)}</b><br>📞 <a href="tel:${esc(a.phone)}">${esc(a.phone)}</a><br><span class="muted">${esc(a.where||'')}</span>${a.lat?`<br><a target="_blank" href="https://www.google.com/maps?q=${+a.lat},${+a.lng}">📍 Ver no mapa</a>`:''}</p>
     <div class="mf" id="mf${a.id}"></div>
-    ${a.status==='pending'?`<button class="sm" data-mv="${a.id}">🔓 Ver ficha (após conferir)</button> <button class="sm" data-mr="${a.id}">Marcar: passei por telefone</button> <button class="sm red" data-md="${a.id}">Recusar</button>`:''} <button class="sm gray" data-mt="${a.id}">🗑 Lixeira</button></div></div>`).join('');
+    ${a.status==='pending'?`<button class="sm" data-mv="${a.id}">🔍 Ver ficha do dono</button> <button class="sm" style="background:#22c55e" data-rf="${a.id}">✅ Liberar e avisar a família</button> <button class="sm" data-ro="${a.id}">✅ Só liberar</button> <button class="sm red" data-md="${a.id}">Recusar</button>`:''}
+    ${a.status==='released'&&a.expiresAt?`<div class="muted">Liberada até ${a.expiresAt.toLocaleString('pt-BR')} ${a.expiresAt<new Date()?'(expirada)':''}</div>`:''}
+    ${(ACC[a.carId]||[]).length?`<div class="muted" style="margin-top:4px">👀 Viram a ficha: ${(ACC[a.carId]||[]).map(x=>esc(x.name)+' (CPF '+esc(x.cpf)+', '+esc(x.wa)+')').join(' · ')}</div>`:''}
+    <div id="mw${a.id}"></div> <button class="sm gray" data-mt="${a.id}">🗑 Lixeira</button></div></div>`).join('');
   const f=id=>l.find(x=>x.id===id),set=async(id,st)=>{await api('/medRequests/'+id+'?updateMask.fieldPaths=status&updateMask.fieldPaths=reviewedAt','PATCH',{fields:{status:enc(st),reviewedAt:enc(new Date())}});meds();};
   box.querySelectorAll('[data-mv]').forEach(b=>b.onclick=async()=>{const a=f(b.dataset.mv);if(!confirm('Você conferiu o CPF e o registro ('+a.reg+') deste profissional?'))return;const o=document.getElementById('mf'+a.id);
     try{const p=pk((await api('/profiles/'+a.ownerId)).fields);o.innerHTML=p.medOn?`<div style="background:#fee2e2;border-radius:10px;padding:10px;margin:6px 0">👤 <b>${esc(p.name||'')}</b><br>🩸 Tipo sanguíneo: <b>${esc(p.blood||'não informado')}</b><br>⚠️ Alergias: ${esc(p.allergies||'—')}<br>🩺 Condições: ${esc(p.conditions||'—')}<br>🏥 Plano: ${esc(p.healthPlan||'—')}<br>👨‍👩‍👧 ${esc(p.famName||'')} ${p.famRel?'('+esc(p.famRel)+')':''} · ${esc(p.famPhone||'')}</div>`:'<div style="background:#f3f4f6;border-radius:10px;padding:10px;margin:6px 0">O dono <b>não autorizou</b> a ficha médica. Você pode passar só o contato da família, se achar necessário.</div>';}
     catch(e){o.textContent='Não foi possível abrir o perfil: '+e.message;}});
-  box.querySelectorAll('[data-mr]').forEach(b=>b.onclick=()=>set(b.dataset.mr,'released'));
+  box.querySelectorAll('[data-rf]').forEach(b=>b.onclick=()=>medRelease(f(b.dataset.rf),true));
+  box.querySelectorAll('[data-ro]').forEach(b=>b.onclick=()=>medRelease(f(b.dataset.ro),false));
   box.querySelectorAll('[data-md]').forEach(b=>b.onclick=()=>confirm('Recusar este pedido?')&&set(b.dataset.md,'denied'));
   box.querySelectorAll('[data-mt]').forEach(b=>b.onclick=()=>toTrash('medRequests',b.dataset.mt).then(meds));}
 async function tickets(){const l=(await q('tickets')).filter(t=>!t.deleted).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));const open=l.filter(t=>t.status!=='closed');BD.ajuda=l.filter(t=>t.unreadTeam).length;badges();

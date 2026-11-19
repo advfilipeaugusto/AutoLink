@@ -111,10 +111,11 @@ function showChat(){
     <div class="nm"><label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="anon" checked style="width:20px;height:20px;flex:none"> Enviar como anônimo</label>
     <input id="vname" placeholder="Seu nome (opcional)" maxlength="40" style="display:none;width:100%;box-sizing:border-box;margin-top:8px"></div>`+
     (car.appDriver?quickApp:[]).concat(quick).map(q=>`<button class="q">${q}</button>`).join('')+`<p class="muted">Ou escreva:</p><p class="muted" style="margin-top:-6px">⏳ Você terá <b>20 minutos</b> para conversar a partir da primeira mensagem.</p><form id="f"><input id="t" maxlength="500"><button class="s">Enviar</button></form>`;
-  app.insertAdjacentHTML('beforeend','<button class="acc" id="accB">🚑 Este carro sofreu um acidente? Avise a família</button><button class="acc" id="medB" style="background:#fff;color:#b91c1c;border:2px solid #ef4444;margin-top:8px">🩺 Sou médico ou socorrista: pedir ficha médica</button>');
-  document.getElementById('medB').onclick=medForm;
+  app.insertAdjacentHTML('beforeend','<button class="acc" id="accB">🚑 Este carro sofreu um acidente?</button>');
+  if(car.medUntil&&new Date(car.medUntil)>new Date())app.insertAdjacentHTML('afterbegin','<div style="background:#fee2e2;border:2px solid #ef4444;border-radius:14px;padding:12px;margin-bottom:12px"><b style="color:#b91c1c">🩺 Ficha médica liberada para a equipe de atendimento</b><div style="font-size:14px;margin:4px 0 8px">Você está socorrendo o motorista? Identifique-se para ver a ficha. Fica registrado.</div><button class="s" id="medOpenB" style="width:100%;background:#ef4444;color:#fff;padding:12px">Sou da equipe: ver ficha</button></div>');
+  if(document.getElementById('medOpenB'))document.getElementById('medOpenB').onclick=medTeam;
   document.getElementById('anon').onchange=e=>{const n=document.getElementById('vname');n.style.display=e.target.checked?'none':'block';if(!e.target.checked)n.focus();};
-  document.getElementById('accB').onclick=accidentForm;
+  document.getElementById('accB').onclick=accidentChoice;
   app.querySelectorAll('.q').forEach(b=>b.onclick=()=>send(b.textContent)); form(); if(car.fleet)rateBox(); awayBanner();
 })();
 function stolenView(){
@@ -137,6 +138,33 @@ function stolenView(){
 }
 function vName(){const a=document.getElementById('anon'),n=document.getElementById('vname');return a&&!a.checked&&n?n.value.trim():'';}
 function shrink(file){return new Promise((ok,no)=>{const img=new Image();img.onload=()=>{const k=Math.min(1,760/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=img.width*k;c.height=img.height*k;c.getContext('2d').drawImage(img,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',.5));};img.onerror=no;img.src=URL.createObjectURL(file);});}
+function accidentChoice(){
+  app.innerHTML=`<h2>🚑 Acidente com o ${esc(car.name)}</h2>
+   <p style="background:#fee2e2;border:1px solid #ef4444;border-radius:12px;padding:10px 12px;font-size:14px">🚨 Se houver feridos, ligue <b>192 (SAMU)</b> ou <b>193 (Bombeiros)</b> antes de tudo.</p>
+   <p>Como você quer ajudar?</p>
+   <button class="s" id="chF" style="width:100%;text-align:left;padding:16px;background:#FF6B00;color:#fff;border-radius:16px"><b style="font-size:17px">👨‍👩‍👧 Avisar a família</b><div style="font-size:13px;font-weight:400;margin-top:3px">Mande fotos e o local. A equipe AutoLink confere e avisa a família.</div></button>
+   <button class="s" id="chM" style="width:100%;text-align:left;padding:16px;background:#fff;color:#b91c1c;border:2px solid #ef4444;border-radius:16px;margin-top:10px"><b style="font-size:17px">🩺 Ficha médica</b><div style="font-size:13px;font-weight:400;color:#444;margin-top:3px">Para quem está socorrendo. A equipe AutoLink confere seus dados e libera.</div></button>`;
+  document.getElementById('chF').onclick=accidentForm;document.getElementById('chM').onclick=medForm;
+}
+function medShow(f){
+  const left=Math.max(0,new Date(f.expiresAt)-new Date()),h=Math.floor(left/36e5),mi=Math.floor(left%36e5/6e4),fam=String(f.famPhone||'').replace(/\D/g,'');
+  app.innerHTML=`<h2>🩺 Ficha médica</h2><div style="font-size:13px;color:#b45309;font-weight:700">Liberada pela equipe AutoLink · expira em ${h}h ${mi}min</div>
+   <div style="background:#fee2e2;border-radius:14px;padding:14px;margin:10px 0;font-size:16px;line-height:1.7">${f.medOn?`<b>${esc(f.name||'')}</b><br>Tipo sanguíneo: <b style="font-size:22px">${esc(f.blood||'não informado')}</b><br>Alergias: ${esc(f.allergies||'—')}<br>Condições: ${esc(f.conditions||'—')}<br>Plano de saúde: ${esc(f.healthPlan||'—')}`:'O dono não cadastrou ficha médica. Use o contato da família abaixo.'}</div>
+   ${fam?`<a href="tel:${fam}" style="display:block;text-align:center;padding:14px;border-radius:12px;background:#111;color:#fff;text-decoration:none;font-weight:800">📞 Ligar para a família${f.famName?' ('+esc(f.famName)+')':''}</a>`:''}
+   <p style="font-size:12px;color:#777">Dados protegidos pela LGPD. Use só para o atendimento.</p>`;
+}
+function medTeam(){
+  const I='width:100%;box-sizing:border-box;padding:12px;border-radius:8px;border:1px solid #ddd;font:inherit;margin-bottom:8px';
+  app.innerHTML=`<h2>🩺 Ficha médica liberada</h2><p>Você está socorrendo o motorista? Identifique-se para ver a ficha. Fica registrado.</p>
+   <input id="tn" placeholder="Seu nome" maxlength="100" style="${I}"><input id="tc" placeholder="Seu CPF" inputmode="numeric" maxlength="14" style="${I}"><input id="tw" placeholder="Seu WhatsApp com DDD" inputmode="tel" maxlength="20" style="${I}">
+   <button class="s" id="tgo" style="width:100%;padding:14px;background:#ef4444;color:#fff">Sou da equipe: ver ficha</button>`;
+  document.getElementById('tgo').onclick=async e=>{const v=id=>document.getElementById(id).value.trim(),cpf=v('tc').replace(/\D/g,''),w=v('tw').replace(/\D/g,'');
+    if(v('tn').length<2)return alert('Digite seu nome.');if(cpf.length!==11)return alert('O CPF precisa ter 11 números.');if(w.length<10||w.length>13)return alert('Digite o WhatsApp com DDD.');
+    const b=e.target;b.disabled=true;b.textContent='Abrindo...';
+    try{await api('/medAccess?documentId='+car.id+'_'+S.uid,'POST',{fields:fields({carId:car.id,by:S.uid,name:v('tn'),cpf,wa:w,at:new Date()})}).catch(()=>{});
+      medShow(unpack(await api('/medOpen/'+car.id)));}
+    catch(err){alert('Não foi possível abrir a ficha. Ela pode ter expirado.');b.disabled=false;b.textContent='Sou da equipe: ver ficha';}};
+}
 function medForm(){
   const T=['Médico (CRM)','Enfermeiro (COREN)','Socorrista SAMU','Bombeiro','Policial','Outro profissional de saúde'];
   const I='width:100%;box-sizing:border-box;padding:12px;border-radius:8px;border:1px solid #ddd;font:inherit;margin-bottom:8px';
@@ -144,7 +172,7 @@ function medForm(){
    <p style="background:#fee2e2;border:1px solid #ef4444;border-radius:12px;padding:10px 12px;font-size:14px">🚨 Ligue <b>192 (SAMU)</b> ou <b>193 (Bombeiros)</b> antes de tudo. Os dados nunca aparecem nesta tela.</p>
    <input id="mn" placeholder="Seu nome completo" maxlength="100" style="${I}"><input id="mc" placeholder="Seu CPF" inputmode="numeric" maxlength="14" style="${I}">
    <select id="mt" style="${I}">${T.map(x=>`<option>${x}</option>`).join('')}</select>
-   <input id="mr" placeholder="Registro profissional, se tiver (ex: CRM 123456/SP)" maxlength="40" style="${I}"><input id="mp" placeholder="Seu telefone com DDD" inputmode="tel" maxlength="20" style="${I}">
+   <input id="mr" placeholder="Registro profissional, se tiver (ex: CRM 123456/SP)" maxlength="40" style="${I}"><input id="mp" placeholder="Seu WhatsApp com DDD (você recebe a ficha por ele)" inputmode="tel" maxlength="20" style="${I}">
    <textarea id="mw" maxlength="300" placeholder="Onde você está e o que aconteceu?" style="${I};min-height:70px"></textarea><button type="button" class="q" id="mloc" style="width:100%;margin-bottom:8px">📍 Incluir minha localização</button>
    <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;margin-bottom:10px"><input type="checkbox" id="mk" style="width:20px;height:20px;flex:none"> Declaro que as informações são verdadeiras e que usarei os dados só para o atendimento. Falsa identidade é crime.</label>
    <button class="s" id="ms" style="width:100%;padding:14px">Enviar pedido à equipe AutoLink</button>`;
@@ -157,7 +185,7 @@ function medForm(){
     if(!document.getElementById('mk').checked)return alert('Marque a declaração para continuar.');
     const b=e.target;b.disabled=true;b.textContent='Enviando...';
     try{await api('/medRequests','POST',{fields:fields({...(window._mpos?{lat:String(_mpos.latitude),lng:String(_mpos.longitude)}:{}),carId:car.id,carName:car.name||'',ownerId:car.ownerId||'',authorId:S.uid,name:v('mn'),cpf,kind:v('mt'),reg:v('mr'),phone:tel,where:v('mw'),status:'pending',createdAt:new Date()})});
-      app.innerHTML='<div class="okb">✅ <b>Pedido enviado!</b> A equipe AutoLink vai conferir sua identificação e ligar para o telefone informado. Continue o atendimento e, se precisar, ligue 192.</div>';}
+      app.innerHTML='<div class="okb">✅ <b>Pedido enviado!</b> A equipe AutoLink vai conferir seus dados. Quando a ficha for liberada, você recebe o link no seu WhatsApp. Continue o atendimento e, se precisar, ligue 192.</div>';}
     catch(err){alert('Não foi possível enviar: '+err.message);b.disabled=false;b.textContent='Enviar pedido à equipe AutoLink';}};
 }
 function accidentForm(){const ph=[];let pos=null;

@@ -67,6 +67,22 @@ service cloud.firestore {
       allow create: if request.auth != null && request.resource.data.userId == me() && request.resource.data.status == 'pending';
       allow update, delete: if isAdmin();
     }
+    match /medLinks/{t} {
+      allow get: if resource.data.expiresAt > request.time;
+      allow create, update, delete: if isAdmin();
+    }
+    match /medOpen/{carId} {
+      allow get: if isAdmin() || (request.auth != null && resource.data.expiresAt > request.time
+        && exists(/databases/$(db)/documents/medAccess/$(carId + '_' + request.auth.uid)));
+      allow create, update, delete: if isAdmin();
+    }
+    match /medAccess/{aid} {
+      allow create: if request.auth != null && aid == request.resource.data.carId + '_' + request.auth.uid
+        && request.resource.data.by == me() && request.resource.data.cpf is string && request.resource.data.cpf.size() == 11
+        && request.resource.data.name is string && request.resource.data.name.size() < 101
+        && get(/databases/$(db)/documents/medOpen/$(request.resource.data.carId)).data.expiresAt > request.time;
+      allow read, delete: if isAdmin();
+    }
     match /medRequests/{id} {
       allow create: if request.auth != null && request.resource.data.authorId == me() && request.resource.data.status == 'pending'
         && request.resource.data.cpf is string && request.resource.data.cpf.size() == 11
