@@ -145,6 +145,7 @@ header img.fi{height:24px;width:auto;border-radius:0;display:block}
 .bx{border-color:color-mix(in srgb,var(--k) 45%,transparent)!important;text-align:left}.bxg{display:grid;grid-template-columns:1fr 1fr;gap:8px}.bxg span{background:var(--card2);border-radius:12px;padding:10px;font-size:13px;font-weight:700;line-height:1.5}.bxf{margin-top:10px;font-weight:800;color:var(--k);text-align:right}
 .fbox{padding:12px;border-color:#FF6B0055;background:linear-gradient(160deg,#ff6b0014,transparent 60%),var(--card)}.fbox h2{margin:0 0 10px}
 #newsH.card{padding:12px;border-color:#3b82f655}#newsH h2{margin:0 0 10px}.ngr{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ngr .news{flex-direction:column;align-items:flex-start;gap:6px;margin:0;background:var(--card2);padding:10px}.ngr .news .ni{width:auto;height:auto;background:none;font-size:18px;justify-content:flex-start}.ngr .news img{width:100%;height:70px}
+#m p{text-align:justify;hyphens:auto;-webkit-hyphens:auto}#m p.muted,#m .card p.muted{text-align:left}
 </style></head><body>
 <header><button id="menu" aria-label="Menu" style="padding:4px 6px 4px 0;position:relative"><span class="rdot" id="menuDot" hidden style="position:absolute;top:0;right:2px"></span><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><button id="back" hidden aria-label="Voltar" style="font-size:34px;line-height:1;padding:0 8px 4px 2px;font-weight:400">‹</button><div class="brand"><div class="t">Auto<span>Link</span></div><img class="lc lcw" src="logo-car-white.png" alt=""><img class="lc lcb" src="logo-car.png" alt=""></div><span style="flex:1"></span><button id="famI" hidden aria-label="Família" style="padding:4px 6px;position:relative"><img class="fi lcw" src="fam-white.png" alt=""><img class="fi lcb" src="fam-black.png" alt=""></button><button id="srch" hidden aria-label="Buscar" style="color:var(--tx);padding:4px"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button><button id="bell" hidden aria-label="Notificações" style="position:relative;color:var(--tx);padding:4px"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4zM10 21h4"/></svg><span class="nb" id="bellN"></span></button><button id="out" hidden>Sair</button></header>
 <main id="m"></main>
@@ -283,10 +284,12 @@ function Home(){
     const c=cars[idx],on=c.stickerCode&&c.active,un=UNREAD[c.id]||0;
     const other=cars.map((x,i)=>[x,i]).filter(([x,i])=>i!==idx&&UNREAD[x.id]);
     h.innerHTML=other.map(([x,i])=>`<button class="otherc" data-i="${i}">🔔 Nova mensagem no ${esc(x.name)} (${UNREAD[x.id]}) · toque para ver</button>`).join('')
+     +(cars.some(x=>!x.shared&&(!x.color||!x.year||!x.brand||!x.model))?`<button class="card" id="cmpl" style="border-color:var(--or);text-align:left;margin-bottom:10px"><b>⚠️ Complete os dados do seu carro</b><div class="muted">Marca, modelo, ano e cor agora são obrigatórios.</div></button>`:'')
      +`<button class="hero card ${un?'alertc':''}" style="--acc:${c.shared?'#3b82f6':HCOL[cars.slice(0,idx).filter(x=>!x.shared).length%3]};color:var(--tx)" id="hc"><div class="lbl">${c.shared?'👥 Compartilhado com você':'🚗 Meu carro'}${cars.length>1?' · '+(idx+1)+' de '+cars.length:''}</div><div class="nm">${esc(c.name)}<span class="cb ${un?'on':''}">🔔 ${un}</span></div>
       <div class="pl">${esc(c.plate||'Sem placa')}</div><span class="hqr" id="hqr" role="button" aria-label="Meu QR code">${ic('qr','#111',2.2)}</span>
       <div class="st ${on?'on':'off'}"><i></i>${on?'Online':c.stickerCode?'QR pausado':'Sem adesivo'}</div>${c.photo?`<img src="${c.photo}" alt="" style="position:absolute;right:14px;bottom:14px;width:118px;height:78px;object-fit:cover;border-radius:12px;border:2px solid var(--acc,#FF6B00)">`:carSvg}</button>
       ${cars.length>1?`<div class="hnav"><button id="hp">‹ Anterior</button><div class="dots" style="margin:0">${cars.map((_,i)=>`<i class="${i===idx?'a':''}"></i>`).join('')}</div><button id="hn">Próximo ›</button></div>`:''}`;
+    if(h.querySelector('#cmpl'))h.querySelector('#cmpl').onclick=()=>go(Car,cars.find(x=>!x.shared&&(!x.color||!x.year||!x.brand||!x.model)));
     const hc=h.querySelector('#hc');hc.onclick=e=>{if(e.target.closest('#hqr'))return go(MyQR);go(Car,c);};
     h.querySelectorAll('.otherc').forEach(b=>b.onclick=()=>{idx=+b.dataset.i;drawHero();});
     if(cars.length>1){h.querySelector('#hp').onclick=()=>{idx=(idx+cars.length-1)%cars.length;drawHero();};h.querySelector('#hn').onclick=()=>{idx=(idx+1)%cars.length;drawHero();};}
@@ -308,11 +311,12 @@ function Home(){
 
 function Garage(){
   m.innerHTML=`<h2>Minha garagem</h2><div id="cars"><p class="muted">Carregando...</p></div>
-  <h2>Adicionar carro</h2><form id="f"><input id="n" placeholder="Nome (ex: Onix prata)" required maxlength="40">
-  <input id="pl" placeholder="Placa (opcional) ex: ABC1D23" maxlength="7" autocapitalize="characters" autocorrect="off" spellcheck="false" autocomplete="off">
-  <div style="display:flex;gap:8px"><input id="mb" placeholder="Marca (ex: Nissan)" maxlength="30"><input id="mm" placeholder="Modelo (ex: March)" maxlength="40"></div>
-  <input id="my" placeholder="Ano (ex: 2018)" inputmode="numeric" maxlength="4">
-  <p class="muted" style="margin:-4px 0 10px">Marca, modelo e ano ajudam a achar peças compatíveis no Mercado.</p>
+  <h2>Adicionar carro</h2><form id="f">
+  <input id="pl" placeholder="Placa (ex: ABC1D23)" required maxlength="7" autocapitalize="characters" autocorrect="off" spellcheck="false" autocomplete="off">
+  <div style="display:flex;gap:8px"><input id="mb" placeholder="Marca (ex: Nissan)" required maxlength="30"><input id="mm" placeholder="Modelo (ex: March)" required maxlength="40"></div>
+  <div style="display:flex;gap:8px"><input id="my" placeholder="Ano (ex: 2018)" required inputmode="numeric" maxlength="4"><input id="mcor" placeholder="Cor (ex: prata)" required maxlength="30"></div>
+  <input id="n" placeholder="Apelido (opcional, ex: Carro da esposa)" maxlength="40">
+  <p class="muted" style="margin:-4px 0 10px">Placa, marca, modelo, ano e cor são obrigatórios: ajudam em caso de roubo e a achar peças no Mercado.</p>
   <button class="btn">Adicionar</button></form>`;
   const pl=$('#pl');pl.oninput=()=>pl.value=pl.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
   const list=async()=>{const cars=await allCars();await refreshUnread(cars);const box=$('#cars');if(!box)return;
@@ -322,7 +326,9 @@ function Garage(){
       b.onclick=()=>go(Car,c);box.appendChild(b);}};
   poll(()=>list().catch(()=>{}),10000);
   $('#f').onsubmit=async e=>{e.preventDefault();const bt=$('#f .btn');if(bt.disabled)return;bt.disabled=true;bt.textContent='Adicionando...';
-    try{const c=await add('cars',{ownerId:S.uid,name:$('#n').value.trim(),plate:pl.value,brand:$('#mb').value.trim(),model:$('#mm').value.trim(),year:$('#my').value.replace(/\D/g,''),active:true,createdAt:new Date()});go(Car,c);}
+    if(!/^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/.test(pl.value)){bt.disabled=false;bt.textContent='Adicionar';return alert('Digite a placa completa (ex: ABC1D23).');}
+    const yr=$('#my').value.replace(/\D/g,'');if(yr.length!==4){bt.disabled=false;bt.textContent='Adicionar';return alert('Digite o ano com 4 números (ex: 2018).');}
+    try{const br=$('#mb').value.trim(),mo=$('#mm').value.trim();const c=await add('cars',{ownerId:S.uid,name:$('#n').value.trim()||(br+' '+mo),plate:pl.value,brand:br,model:mo,year:yr,color:$('#mcor').value.trim(),active:true,createdAt:new Date()});go(Car,c);}
     catch(err){alert('Erro: '+err.message);bt.disabled=false;bt.textContent='Adicionar';}};
 }
 
@@ -342,10 +348,18 @@ function History(){
   draw();}
 function Car(car){
   m.innerHTML=`<h2>${esc(car.name)}</h2>${car.ownerId===S.uid?`<div class="card" style="display:flex;gap:12px;align-items:center">${car.photo?`<img src="${car.photo}" alt="" style="width:84px;height:64px;object-fit:cover;border-radius:10px">`:'<div style="width:84px;height:64px;border-radius:10px;background:var(--card2);display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:12px">sem foto</div>'}<div style="flex:1"><b>Foto do carro</b><div class="muted">Opcional. Aparece no cartão do carro e ajuda em caso de roubo.</div><label class="chip" style="display:inline-block;margin-top:6px">${car.photo?'Trocar foto':'Adicionar foto'}<input type="file" accept="image/*" id="cph" hidden></label>${car.photo?' <button class="chip" id="cphx">Remover</button>':''}</div></div>`:''}<div id="st"></div>
+  ${car.ownerId===S.uid?`<details class="card" ${car.color&&car.year&&car.brand&&car.model?'':'open'}><summary><b>Dados do carro</b> <span class="muted">${esc([car.brand,car.model,car.year,car.color].filter(Boolean).join(' · ')||'incompleto')}</span></summary>
+   <div style="display:flex;gap:8px;margin-top:8px"><input id="eb" placeholder="Marca" value="${esc(car.brand||'')}" maxlength="30"><input id="em" placeholder="Modelo" value="${esc(car.model||'')}" maxlength="40"></div>
+   <div style="display:flex;gap:8px"><input id="ey" placeholder="Ano" inputmode="numeric" maxlength="4" value="${esc(car.year||'')}"><input id="ec" placeholder="Cor" value="${esc(car.color||'')}" maxlength="30"></div>
+   <input id="en" placeholder="Apelido (opcional)" value="${esc(car.name||'')}" maxlength="40"><div class="muted">Placa: <b>${esc(car.plate||'—')}</b> (a placa fica vinculada ao adesivo)</div>
+   <button class="btn" id="esv" style="margin-top:8px">Salvar dados</button></details>`:''}
   <div class="row" ${car.stickerCode?'':'hidden'}><span>QR ativo (recebendo mensagens)</span><label class="sw"><input type="checkbox" id="act" ${car.active?'checked':''}><span></span></label></div>
   <div id="fam"></div><div id="fleet"></div>
   <div ${car.stickerCode?'':'hidden'}><h2>Conversas</h2><div id="chats"><p class="muted">Carregando...</p></div></div>
   <button class="link" id="del" style="color:#d32f2f;margin-top:30px">Apagar este carro</button>`;
+  if($('#esv'))$('#esv').onclick=async()=>{const d={brand:$('#eb').value.trim(),model:$('#em').value.trim(),year:$('#ey').value.replace(/\D/g,''),color:$('#ec').value.trim()};
+    if(!d.brand||!d.model||d.year.length!==4||!d.color)return alert('Preencha marca, modelo, ano (4 números) e cor.');d.name=$('#en').value.trim()||(d.brand+' '+d.model);
+    try{await update('cars/'+car.id,d);Object.assign(car,d);toast('Dados salvos');go(Car,car,false);}catch(e){alert(e.message);}};
   if($('#cph'))$('#cph').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const ph=await shrinkImage(f,800,.6);await update('cars/'+car.id,{photo:ph});car.photo=ph;toast('Foto salva');go(Car,car,false);}catch(x){alert('Não foi possível salvar a foto: '+x.message);}};
   if($('#cphx'))$('#cphx').onclick=async()=>{try{await api('/cars/'+car.id+'?updateMask.fieldPaths=photo','PATCH',{fields:{}});delete car.photo;go(Car,car,false);}catch(x){alert(x.message);}};
   $('#del').onclick=async()=>{
@@ -476,7 +490,7 @@ function openMenu(){const d=document.getElementById('drawer');d.hidden=false;loc
   document.getElementById('dItems').innerHTML=I('home','home','Início')+I('myqr','qr','Meu QR code')
    +I('buy','tag','Comprar adesivo')+I('plan','shield','Meu plano','<span class="pill">Grátis</span>')
    +I('ads','mega','Quero anunciar no AutoLink')+I('sell','store','Quero vender no AutoLink')+I('share','users','Indicar o AutoLink')
-   +I('manual','doc','Manual e tutorial')+I('help','msg','Central de ajuda',HELP_UNREAD?'<span class="rdot"></span>':'')+I('terms','doc','Termos e privacidade')
+   +I('profile','users','Meus dados')+I('manual','doc','Manual e tutorial')+I('help','msg','Central de ajuda',HELP_UNREAD?'<span class="rdot"></span>':'')+I('terms','doc','Termos e privacidade')
    +I('acc','users','Acessibilidade','<span class="pill" style="background:#3a3a40;color:var(--mut)">Em breve</span>')+I('config','wrench','Configurações')
    +`<div class="dacc">${S?`<div class="muted">Conectado como</div><b>${esc(S.email||'')}</b><button class="chip" id="dOut" style="margin-top:10px">Sair da conta</button>`:''}</div>`;
   d.querySelectorAll('.di').forEach(b=>b.onclick=()=>{const k=b.dataset.k;

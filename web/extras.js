@@ -34,7 +34,7 @@ async function gateProfile() {
 }
 function ProfileForm(opt = {}) {
   const p = PROFILE || {}, locked = !!PROFILE;
-  m.innerHTML = `<h2>${opt.first ? 'Complete seu cadastro' : 'Meu perfil'}</h2>
+  m.innerHTML = `<h2>${opt.first ? 'Complete seu cadastro' : 'Meus dados'}</h2>
   ${opt.first ? '<p class="muted">Para a segurança de todos, precisamos de alguns dados. Eles <b>nunca</b> são mostrados para quem escaneia seu adesivo.</p>' : ''}
   <form id="pf">
    <div class="muted" style="margin:8px 0 4px">Dados pessoais ${locked ? '🔒 (não podem ser alterados)' : ''}</div>
@@ -56,7 +56,7 @@ function ProfileForm(opt = {}) {
    <div class="card" style="margin:14px 0 8px;border-color:#ef444466"><b>🩺 Ficha médica de emergência (opcional)</b>
     <p class="muted" style="margin:4px 0 8px">Nunca fica aberta para quem escaneia. Só a <b>equipe AutoLink</b> libera, por telefone, para <b>médico ou socorrista identificado</b> (nome, CPF e registro como CRM/COREN) em caso de acidente.</p>
     <label style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><input type="checkbox" id="mOn" ${p.medOn ? 'checked' : ''} style="width:20px;height:20px;flex:none"> Autorizo o uso da minha ficha em emergência</label>
-    <select id="mBl"><option value="">Tipo sanguíneo</option><option ${p.blood==='A+'?'selected':''}>A+</option><option ${p.blood==='A−'?'selected':''}>A−</option><option ${p.blood==='B+'?'selected':''}>B+</option><option ${p.blood==='B−'?'selected':''}>B−</option><option ${p.blood==='AB+'?'selected':''}>AB+</option><option ${p.blood==='AB−'?'selected':''}>AB−</option><option ${p.blood==='O+'?'selected':''}>O+</option><option ${p.blood==='O−'?'selected':''}>O−</option><option ${p.blood==='Não sei'?'selected':''}>Não sei</option></select>
+    <select id="mBl" class="sel"><option value="">Tipo sanguíneo</option><option ${p.blood==='A+'?'selected':''}>A+</option><option ${p.blood==='A−'?'selected':''}>A−</option><option ${p.blood==='B+'?'selected':''}>B+</option><option ${p.blood==='B−'?'selected':''}>B−</option><option ${p.blood==='AB+'?'selected':''}>AB+</option><option ${p.blood==='AB−'?'selected':''}>AB−</option><option ${p.blood==='O+'?'selected':''}>O+</option><option ${p.blood==='O−'?'selected':''}>O−</option><option ${p.blood==='Não sei'?'selected':''}>Não sei</option></select>
     <input id="mAl" placeholder="Alergias (ex: dipirona, penicilina)" value="${esc(p.allergies || '')}" maxlength="120">
     <input id="mCo" placeholder="Doenças ou condições (ex: diabetes, marca-passo)" value="${esc(p.conditions || '')}" maxlength="160">
     <input id="mHp" placeholder="Plano de saúde (opcional)" value="${esc(p.healthPlan || '')}" maxlength="60"></div>
@@ -201,35 +201,50 @@ function Accident() {
 
 // ---------- Manutenção ----------
 const MKINDS = ['Troca de óleo', 'Revisão', 'Pneus', 'Freios', 'Bateria', 'Alinhamento e balanceamento', 'Filtros', 'IPVA', 'Licenciamento', 'Seguro', 'Outro'];
+const fmtBRL = v => { const t = String(v || '').replace(/[^\d,\.]/g, '').replace(/\./g, '').replace(',', '.'); if (!t) return ''; const n = parseFloat(t); return isNaN(n) ? '' : 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
 async function Maint() {
   m.innerHTML = `<h2>🔧 Manutenção</h2><p class="muted">Registre o que foi feito e receba lembretes na tela inicial.</p>
-  <button class="card" id="goCal" style="display:flex;gap:12px;align-items:center;border-color:var(--or)"><span style="font-size:26px">📅</span><div><b>Calendário do carro</b><div class="muted">Rodízio, IPVA e licenciamento pela placa</div></div></button>
-  <div class="card"><b>Novo registro</b>
-   <select id="mc" class="sel"></select><select id="mk" class="sel">${MKINDS.map(k => `<option>${k}</option>`).join('')}</select>
+  <div class="card"><b id="mtit">Novo registro</b>
+   <select id="mc" class="sel"></select>
+   <div class="muted" style="margin:6px 0 4px">O que foi feito?</div>
+   <div class="mkinds" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${MKINDS.map(k => `<button type="button" class="chip" data-k="${esc(k)}">${esc(k)}</button>`).join('')}</div>
+   <input id="mko" placeholder="Qual? (escreva o serviço)" maxlength="60" style="display:none">
    <div style="display:flex;gap:8px"><input id="md" type="date" title="Data"><input id="mkm" inputmode="numeric" placeholder="Km"></div>
-   <input id="mv" inputmode="decimal" placeholder="Valor (R$)">
+   <input id="mv" inputmode="decimal" placeholder="Valor (ex: 100)">
    <input id="mn" placeholder="Observação (ex: oficina, peça)" maxlength="150">
    <div class="muted" style="margin:2px 0 4px">⏰ Lembrar em (opcional)</div><input id="mr" type="date">
-   <button class="btn" id="ms">Salvar</button></div>
+   <button class="btn" id="ms">Salvar</button><button class="link" id="mcan" style="display:none">Cancelar edição</button></div>
   <h2>Histórico</h2><div id="ml"><p class="muted">Carregando...</p></div>`;
-  el('goCal').onclick = () => go(Calendar);
+  let kind = '', editId = null;
+  const pick = k => { kind = k; m.querySelectorAll('.mkinds .chip').forEach(b => b.classList.toggle('on', b.dataset.k === k)); m.querySelectorAll('.mkinds .chip').forEach(b => b.style.background = b.dataset.k === k ? 'var(--or)' : ''); el('mko').style.display = k === 'Outro' ? 'block' : 'none'; };
+  m.querySelectorAll('.mkinds .chip').forEach(b => b.onclick = () => pick(b.dataset.k));
+  el('mv').onblur = () => { el('mv').value = fmtBRL(el('mv').value); };
   el('md').valueAsDate = new Date();
   const cars = await find('cars', [['ownerId', S.uid]]);
   el('mc').innerHTML = cars.length ? cars.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('') : '<option value="">Cadastre um carro primeiro</option>';
+  const reset = () => { editId = null; el('mtit').textContent = 'Novo registro'; el('ms').textContent = 'Salvar'; el('mcan').style.display = 'none'; pick(''); el('mko').value = el('mkm').value = el('mv').value = el('mn').value = el('mr').value = ''; el('md').valueAsDate = new Date(); };
+  el('mcan').onclick = reset;
   const list = async () => { const l = (await find('maint', [], null, '/owners/' + S.uid)).sort((a, b) => (b.done || 0) - (a.done || 0)); const box = el('ml'); if (!box) return;
     box.innerHTML = l.length ? '' : '<p class="muted">Nenhum registro ainda.</p>';
     for (const r of l) { const car = cars.find(c => c.id === r.carId); const d = document.createElement('div'); d.className = 'card';
+      const val = r.value ? (String(r.value).startsWith('R$') ? r.value : fmtBRL(r.value)) : '';
       d.innerHTML = `<div style="display:flex;gap:8px;align-items:start"><div style="flex:1"><b>${esc(r.kind)}</b> <span class="muted">· ${esc(car ? car.name : '')}</span>
-      <div class="muted">${r.done ? r.done.toLocaleDateString('pt-BR') : ''}${r.km ? ' · ' + esc(r.km) + ' km' : ''}${r.value ? ' · R$ ' + esc(r.value) : ''}</div>
-      ${r.note ? `<div class="muted">${esc(r.note)}</div>` : ''}${r.remind ? `<div class="muted">⏰ Lembrete: ${r.remind.toLocaleDateString('pt-BR')}</div>` : ''}</div><button class="chip" aria-label="Apagar">🗑</button></div>`;
-      d.querySelector('button').onclick = async () => { if (!confirm('Apagar este registro?')) return; await api('/owners/' + S.uid + '/maint/' + r.id, 'DELETE'); list(); };
+      <div class="muted">${r.done ? r.done.toLocaleDateString('pt-BR') : ''}${r.km ? ' · ' + esc(r.km) + ' km' : ''}${val ? ' · ' + esc(val) : ''}</div>
+      ${r.note ? `<div class="muted">${esc(r.note)}</div>` : ''}${r.remind ? `<div class="muted">⏰ Lembrete: ${r.remind.toLocaleDateString('pt-BR')}</div>` : ''}</div><button class="chip" data-e="1">Editar</button><button class="chip" aria-label="Apagar" data-d="1">🗑</button></div>`;
+      d.querySelector('[data-d]').onclick = async () => { if (!confirm('Apagar este registro?')) return; await api('/owners/' + S.uid + '/maint/' + r.id, 'DELETE'); list(); };
+      d.querySelector('[data-e]').onclick = () => { editId = r.id; el('mtit').textContent = 'Editar registro'; el('ms').textContent = 'Salvar alterações'; el('mcan').style.display = 'block';
+        el('mc').value = r.carId; if (MKINDS.includes(r.kind)) pick(r.kind); else { pick('Outro'); el('mko').value = r.kind || ''; }
+        el('mkm').value = r.km || ''; el('mv').value = val; el('mn').value = r.note || ''; if (r.done) el('md').valueAsDate = r.done; el('mr').value = r.remind ? r.remind.toISOString().slice(0, 10) : ''; m.scrollTo?.(0, 0); window.scrollTo(0, 0); };
       box.appendChild(d); } };
   list();
   el('ms').onclick = async () => {
     if (!el('mc').value) return toast('Cadastre um carro primeiro');
-    const data = { carId: el('mc').value, kind: el('mk').value, km: onlyDigits(el('mkm').value), value: el('mv').value.trim(), note: el('mn').value.trim(), createdAt: new Date() };
+    if (!kind) return toast('Escolha o que foi feito');
+    const k = kind === 'Outro' ? el('mko').value.trim() : kind; if (!k) return toast('Escreva qual foi o serviço');
+    const data = { carId: el('mc').value, kind: k, km: onlyDigits(el('mkm').value), value: fmtBRL(el('mv').value), note: el('mn').value.trim() };
     if (el('md').value) data.done = new Date(el('md').value + 'T12:00:00'); if (el('mr').value) data.remind = new Date(el('mr').value + 'T09:00:00');
-    try { await add('owners/' + S.uid + '/maint', data); toast('Registro salvo ✅'); el('mkm').value = el('mv').value = el('mn').value = el('mr').value = ''; list(); } catch (e) { alert('Erro: ' + e.message); }
+    try { if (editId) { await update('owners/' + S.uid + '/maint/' + editId, data); toast('Registro atualizado ✅'); } else { data.createdAt = new Date(); await add('owners/' + S.uid + '/maint', data); toast('Registro salvo ✅'); }
+      reset(); list(); } catch (e) { alert('Erro: ' + e.message); }
   };
 }
 
@@ -402,7 +417,6 @@ function Settings() {
   const SW = (id, on) => `<label class="sw"><input type="checkbox" id="${id}" ${on ? 'checked' : ''}><span></span></label>`;
   m.innerHTML = `<h2>⚙️ Configurações</h2>
    <div class="muted" style="margin:6px 0">Conta</div>
-   <button class="card" id="cProf" style="display:flex;gap:12px;align-items:center"><span style="font-size:24px">👤</span><div><b style="font-size:15px">Meu perfil</b><div class="muted">Telefone, endereço e contato de emergência</div></div></button>
    <button class="card" id="cRep" style="display:flex;gap:12px;align-items:center"><span style="font-size:24px">🔁</span><div><b style="font-size:15px">Danifiquei ou perdi meu QR</b><div class="muted">Pedir um adesivo novo</div></div></button>
    <button class="card" id="cBlk" style="display:flex;gap:12px;align-items:center"><span style="font-size:24px">🚫</span><div><b style="font-size:15px">Pessoas bloqueadas</b><div class="muted">Ver e desbloquear</div></div></button>
    <div class="muted" style="margin:14px 0 6px">Aparência</div>
@@ -414,7 +428,6 @@ function Settings() {
    <button class="card" id="cTr" style="display:flex;gap:12px;align-items:center"><span style="font-size:24px">📄</span><b style="font-size:15px">Termos e privacidade</b></button>
    <button class="card" id="cDel" style="display:flex;gap:12px;align-items:center;border-color:#ef444455"><span style="font-size:24px">🗑️</span><div><b style="font-size:15px;color:var(--red)">Apagar minha conta</b><div class="muted">Remove seus dados, carros e documentos</div></div></button>
    <p class="muted" style="text-align:center;margin-top:20px">AutoLink · versão 1.0 beta</p>`;
-  el('cProf').onclick = () => loadProfile().then(() => go(ProfileForm, {}));
   el('cRep').onclick = () => go(Replace);
   el('cBlk').onclick = () => go(Blocked);
   m.querySelectorAll('.t').forEach(x => x.onclick = () => { theme(x.dataset.t); go(Settings, null, false); });
@@ -455,7 +468,8 @@ async function Replace() {
   <div class="warn" id="rw" style="display:none;margin:0 0 10px">🛡️ Por segurança, o QR deste carro será <b>pausado agora</b>. Ninguém consegue usar o adesivo antigo. Quando o novo chegar e for ativado, o QR volta a funcionar.</div>
   <div class="card"><b style="font-size:15px">📦 Endereço de entrega</b><div class="muted" id="ra">Carregando...</div><button class="chip" id="rae" style="margin-top:8px">Alterar endereço</button></div>
   <textarea id="rn" maxlength="200" placeholder="Observação (opcional)"></textarea>
-  <button class="btn" id="rs">Pedir adesivo novo</button>
+  <div class="card" style="border-color:var(--or)"><b>Taxa de reposição: R$ 4,99</b><div class="muted">Inclui o adesivo novo e o envio. O pagamento será combinado pela equipe AutoLink.</div></div>
+  <button class="btn" id="rs">Pedir adesivo novo (R$ 4,99)</button>
   <h2>Meus pedidos</h2><div id="rl"><p class="muted">Carregando...</p></div>`;
   let reason = null;
   const cars = (await find('cars', [['ownerId', S.uid]])).filter(c => c.stickerCode);
@@ -463,14 +477,14 @@ async function Replace() {
   m.querySelectorAll('[data-r]').forEach(b => b.onclick = () => { reason = b.dataset.r; m.querySelectorAll('[data-r]').forEach(x => x.classList.toggle('on', x === b)); el('rw').style.display = reason === 'lost' || reason === 'stolen' ? 'block' : 'none'; });
   if (!PROFILE) await loadProfile();
   const p = PROFILE || {}, addr = [p.street, p.num, p.comp, p.district, p.city && p.city + '/' + p.uf, p.cep].filter(Boolean).join(', ');
-  el('ra').textContent = addr || 'Complete seu endereço em Meu perfil';
+  el('ra').textContent = addr || 'Complete seu endereço em Meus dados';
   el('rae').onclick = () => go(ProfileForm, {});
   el('rs').onclick = async () => {
-    const car = cars.find(c => c.id === el('rc').value); if (!car) return toast('Escolha o carro'); if (!reason) return toast('Diga o que aconteceu'); if (!addr) return toast('Complete seu endereço em Meu perfil');
+    const car = cars.find(c => c.id === el('rc').value); if (!car) return toast('Escolha o carro'); if (!reason) return toast('Diga o que aconteceu'); if (!addr) return toast('Complete seu endereço em Meus dados');
     const b = el('rs'); b.disabled = true; b.textContent = 'Enviando...';
     try {
       if (reason === 'lost' || reason === 'stolen') await update('cars/' + car.id, { active: false });
-      await add('replacements', { userId: S.uid, email: S.email || '', name: p.name || '', phone: p.phone || '', carId: car.id, carName: car.name, oldCode: car.stickerCode, reason, address: addr, note: el('rn').value.trim(), status: 'pending', createdAt: new Date() });
+      await add('replacements', { userId: S.uid, email: S.email || '', name: p.name || '', phone: p.phone || '', carId: car.id, carName: car.name, oldCode: car.stickerCode, reason, address: addr, note: el('rn').value.trim(), fee: 'R$ 4,99', paid: false, status: 'pending', createdAt: new Date() });
       alert('Pedido enviado ✅\n\nA equipe AutoLink vai preparar seu adesivo novo e enviar para o endereço informado.' + (reason === 'lost' || reason === 'stolen' ? '\n\nO QR antigo foi pausado por segurança.' : ''));
       go(Replace, null, false);
     } catch (e) { alert('Erro: ' + e.message); b.disabled = false; b.textContent = 'Pedir adesivo novo'; }
@@ -670,7 +684,7 @@ const SEARCH_ITEMS = [['🏠', 'Início', () => go(Home)], ['🚗', 'Garagem / m
   ['🚑', 'Acidente', () => go(Accident)], ['⏳', 'Mensagem de ausência', () => go(Away)], ['💬', 'Histórico de contatos', () => go(History)], ['🔧', 'Manutenção', () => go(Maint)],
   ['📅', 'Calendário: rodízio, IPVA, licenciamento', () => go(Calendar)], ['📄', 'Documentos (CNH, CRLV, seguro)', () => go(Docs)], ['🏢', 'Empresa / frota', () => go(Company)],
   ['🔁', 'Danifiquei ou perdi meu QR', () => go(Replace)], ['🛒', 'Mercado', () => go(Soon, 'mercado')], ['👥', 'Comunidade', () => go(Soon, 'comunidade')], ['🔔', 'Notificações', () => go(Notifs)],
-  ['⭐', 'Meu plano / preços', () => go(Plan)], ['⚙️', 'Configurações', () => go(Settings)], ['👤', 'Meu perfil', () => loadProfile().then(() => go(ProfileForm, {}))],
+  ['⭐', 'Meu plano / preços', () => go(Plan)], ['⚙️', 'Configurações', () => go(Settings)], ['👤', 'Meus dados', () => loadProfile().then(() => go(ProfileForm, {}))],
   ['🆘', 'Central de ajuda', () => go(Help)], ['📘', 'Manual do AutoLink', () => location.href = 'manual.html'], ['📣', 'Quero anunciar', () => go(Advertise)], ['🛍️', 'Quero vender', () => go(Advertise, 'sell')],
   ['👨‍👩‍👧', 'Carro da família', () => go(Garage)], ['📄', 'Termos e privacidade', () => location.href = 'termos.html']];
 const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -800,7 +814,7 @@ async function Sos() {
    <div class="warn">🚨 Em perigo real, ligue <b>190 (Polícia)</b>, <b>192 (SAMU)</b> ou <b>193 (Bombeiros)</b>.</div>
    <button class="link" id="sosE">Alterar contato de emergência</button>`;
   el('sosE').onclick = () => go(ProfileForm, {});
-  el('sosB').onclick = () => { if (ph.length < 10) return alert('Cadastre o telefone do seu contato de emergência em Meu perfil.');
+  el('sosB').onclick = () => { if (ph.length < 10) return alert('Cadastre o telefone do seu contato de emergência em Meus dados.');
     el('sosB').textContent = 'Obtendo localização...';
     gps().then(g => { const msg = `🆘 ${p.name ? p.name.split(' ')[0] : 'Seu familiar'} precisa de ajuda! Localização agora: https://www.google.com/maps?q=${g.lat},${g.lng} (enviado pelo AutoLink)`;
       location.href = 'https://wa.me/55' + ph.replace(/^55/, '') + '?text=' + encodeURIComponent(msg); })

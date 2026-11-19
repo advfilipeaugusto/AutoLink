@@ -49,6 +49,9 @@ button.x{position:absolute;top:10px;right:10px;width:36px;height:36px;padding:0;
 @media print{header,#hub,.box{display:none!important}main{padding:0;max-width:none}body{background:#fff}@page{size:A4;margin:8mm}}
 .kb{background:#FF6B00;color:#fff;border:0;border-radius:10px;padding:9px 14px;font-weight:800;text-decoration:none;font-size:14px;cursor:pointer}
 @media print{.gr{display:none!important}}
+@media screen{#sheet{display:none}}
+.kp{background:#fff;border:1px solid #e5e5e5;border-radius:14px;padding:14px;margin:12px 0}.kh{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.kbs{display:flex;gap:8px;flex-wrap:wrap}.kb.k2{background:#f4f4f6!important;color:#111!important;border:1px solid #ddd!important}
 </style></head><body>
 <header><button id="hb" hidden onclick="home()" aria-label="Voltar">‹</button><div class="lg"><small>Adm</small><div>Auto<span>Link</span></div><img src="logo-car-white.png" alt="" class="lgc"></div><button id="lo" onclick="if(confirm('Sair do app ADM?')){sessionStorage.clear();location.reload();}" aria-label="Sair">Sair</button><button id="bell" onclick="pend()" aria-label="Pendências"><span style="font-size:24px">🔔</span><span class="bd" id="bellN"></span></button></header><div id="hub" hidden></div><main id="m">Carregando...</main>
 <script>
@@ -78,7 +81,7 @@ async function main(){
   if(!S)return loginView();
   if(!await isAdmin()){m.innerHTML=`<div class="box"><h3>Quase lá</h3><p>Sua conta ainda não é administradora. No Firebase, em <b>Firestore</b>, crie a coleção <code>admins</code> com um documento cujo ID é:</p><p><code style="font-size:18px">${S.uid}</code></p><p class="muted">(pode deixar sem campos, ou adicione nome: string). Depois recarregue esta página.</p><button onclick="sessionStorage.clear();location.reload()">Sair</button></div>`;return;}
   m.innerHTML=`<div class="box" data-tab="adesivos"><h3>Gerar lote de adesivos</h3><p class="muted">Cada adesivo recebe um código único. O cliente ativa no app depois de colar no carro.</p>
-  <input id="n" type="number" value="12" min="1" max="200"><input id="lote" placeholder="Nome do lote (ex: Lote 1 - Nov/2026)">
+  <input id="n" type="number" placeholder="Quantidade" min="1" max="200"><input id="lote" placeholder="Nome do lote (ex: Lote 1 - Nov/2026)">
   <button id="gen">Gerar adesivos</button><button onclick="print()">Imprimir / PDF</button><div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"><input id="fq" placeholder="🔎 Buscar por placa ou código do QR" style="flex:1;min-width:200px" autocapitalize="characters"><button class="gray" id="fqB">Buscar</button></div><div id="fqR"></div>
   <p id="info" class="muted"></p></div>
   <div class="box" data-tab="alertas"><h3>🚨 Alertas regionais</h3><div id="alr" class="muted">Carregando...</div></div>
@@ -102,7 +105,7 @@ async function main(){
   <div class="box" data-tab="anuncios"><h3>📣 Pedidos de anunciantes</h3><div id="ads" class="muted">Carregando...</div></div>
   <div class="box" data-tab="numeros"><h3>📊 Números do AutoLink</h3><div id="kpi" class="muted">Carregando...</div></div>
   <div class="box" data-tab="adesivos"><h3>Histórico de lotes</h3><div id="hist" class="muted">Carregando...</div></div>
-  <div class="box" data-tab="adesivos" id="detBox" style="display:none;position:relative"><button class="x" onclick="closeBatch()" title="Fechar" aria-label="Fechar">✕</button><h3 id="detT" style="padding-right:40px"></h3><div id="det"></div></div><div class="sheet" id="sheet"></div>`;
+  <div class="box" data-tab="adesivos" id="detBox" style="display:none;position:relative"><button class="x" onclick="closeBatch()" title="Fechar" aria-label="Fechar">✕</button><h3 id="detT" style="padding-right:40px"></h3><div id="det"></div></div><div id="kitP"></div><div class="sheet" id="sheet"></div>`;
   gen.onclick=generate;history();home();refreshAll();setInterval(refreshAll,30000);}
 let TAB=null;const TABS=[['numeros','📊','Números','Usuários, adesivos e conversas'],['adesivos','🏷️','Adesivos','Gerar, imprimir e acompanhar lotes'],['alertas','🚨','Alertas','Aprovar alertas regionais'],['roubo','🚔','Roubo / furto','Aprovar e acompanhar'],['pedidos','🛒','Pedidos de adesivo','Gerar kit para a gráfica'],['acidentes','🚑','Acidentes','Analisar e avisar a família'],['medicos','🩺','Fichas médicas','Pedidos de médicos e socorristas'],['ajuda','💬','Central de ajuda','Responder clientes'],['mod','🛡️','Moderação','Mensagens bloqueadas e conversas'],['repo','🔁','Reposição de adesivo','Danificados e perdidos'],['news','📰','Notícias','Publicar notícias no app'],['points','🏪','Pontos de venda','Locais de retirada do adesivo'],['lixo','🗂️','QRs desativados','Desfazer ou apagar de vez'],['bin','🗑️','Lixeira','Resgatar itens apagados'],['anuncios','📣','Anunciantes e vendedores','Pedidos para anunciar ou vender']];
 function home(){TAB=null;hb.hidden=true;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.add('hide'));sheet.style.display='none';
@@ -118,26 +121,58 @@ function pend(){TAB=null;hb.hidden=false;document.querySelectorAll('[data-tab]')
 function refreshAll(){thefts().catch(()=>{});orders().catch(()=>{});repos().catch(()=>{});accidents().catch(()=>{});meds().catch(()=>{});alerts().catch(()=>{});tickets().catch(()=>{});adsList().catch(()=>{});}
 const pk=f=>Object.fromEntries(Object.entries(f||{}).map(([k,v])=>[k,'timestampValue' in v?new Date(v.timestampValue):'booleanValue' in v?v.booleanValue:v.stringValue]));
 const q=async(col,parent='',order)=>(await api(parent+':runQuery','POST',{structuredQuery:Object.assign({from:[{collectionId:col}]},order?{orderBy:[{field:{fieldPath:order},direction:'ASCENDING'}]}:{})})).filter(x=>x.document).map(x=>({id:x.document.name.split('/').pop(),...pk(x.document.fields)}));
+let NUM={};
+const NCOL={cars:'cars',st:'stickers',act:'stickers',chats:'chats',c7:'chats',c30:'chats',cb:'chats',al:'alerts',ala:'alerts',tk:'tickets',ads:'adRequests'};
+async function numDetail(k){const o=document.getElementById('nkd');const now=Date.now(),d7=now-7*864e5,d30=now-30*864e5;
+  const STK={};NUM.st.forEach(x=>{if(x.carId)STK[x.carId]=x;});const CM={};NUM.cars.forEach(c=>CM[c.id]=c);
+  let rows=[],head=[];const dt=d=>d?d.toLocaleString('pt-BR'):'';
+  for(const c of NUM.cars)await prof(c.ownerId);
+  if(k==='owners'){const g={};NUM.cars.forEach(c=>{(g[c.ownerId]=g[c.ownerId]||[]).push(c);});head=['Primeiro carro','Dono','Carros'];
+    rows=Object.entries(g).map(([u,cs])=>({d:cs.reduce((a,c)=>!a||c.createdAt<a?c.createdAt:a,null),c:[who(PROF[u]),cs.map(c=>esc([c.brand,c.model,c.color].filter(Boolean).join(' ')||c.name)+' · '+esc(c.plate||'')+(STK[c.id]?' · '+esc(STK[c.id].id)+' ('+esc(STK[c.id].batch||'')+')':'')).join('<br>')]}));}
+  else if(k==='cars'){head=['Cadastrado','Carro','Dono','Adesivo / lote'];rows=NUM.cars.map(c=>({id:c.id,d:c.createdAt,c:[esc([c.brand,c.model,c.year,c.color].filter(Boolean).join(' ')||c.name)+' · <b>'+esc(c.plate||'')+'</b>',who(PROF[c.ownerId]),STK[c.id]?esc(STK[c.id].id)+' · '+esc(STK[c.id].batch||''):'—']}));}
+  else if(k==='st'||k==='act'){head=['Gerado','Código','Lote','Ativado em','Carro'];rows=NUM.st.filter(x=>k==='st'||x.carId).map(x=>({id:x.id,d:x.createdAt,c:[esc(x.id),esc(x.batch||''),dt(x.activatedAt),x.carId&&CM[x.carId]?esc(CM[x.carId].plate||CM[x.carId].name):'']}));}
+  else if(['chats','c7','c30','cb'].includes(k)){head=['Última msg','Carro','Dono','Situação'];rows=NUM.chats.filter(c=>k==='chats'||(k==='c7'&&c.updatedAt>d7)||(k==='c30'&&c.updatedAt>d30)||(k==='cb'&&c.blocked)).map(c=>({id:c.id,d:c.updatedAt,c:[esc((CM[c.carId]||{}).plate||(CM[c.carId]||{}).name||''),who(PROF[c.ownerId]),c.blocked?'🚫 bloqueada':'']}));}
+  else if(k==='al'||k==='ala'){head=['Data','Alerta','Situação'];rows=NUM.al.filter(a=>k==='al'||a.status==='approved'||a.status==='removed').map(a=>({id:a.id,d:a.createdAt,c:[esc(a.type||a.title||a.text||''),esc(a.status||'')]}));}
+  else if(k==='tk'){head=['Data','Cliente','Situação'];rows=NUM.tk.filter(t=>t.status!=='closed').map(t=>({id:t.id,d:t.updatedAt,c:[esc(t.email||''),esc(t.status||'')]}));}
+  else if(k==='ads'){head=['Data','Quem','Pedido'];rows=NUM.ads.map(a=>({id:a.id,d:a.createdAt,c:[esc(a.name||''),esc(a.text||'')]}));}
+  rows.sort((a,b)=>(b.d||0)-(a.d||0));const col=NCOL[k];
+  o.innerHTML=`<div class="kp"><b>${rows.length} registro(s)</b> <input id="nks" placeholder="🔎 Filtrar" style="margin-left:8px"><table id="nkt"><tr><th>${head.join('</th><th>')}</th>${col?'<th></th>':''}</tr>${rows.map(r=>`<tr><td>${dt(r.d)}</td><td>${r.c.join('</td><td>')}</td>${col&&r.id?`<td><button class="sm gray" data-nx="${esc(r.id)}">🗑</button></td>`:''}</tr>`).join('')}</table></div>`;
+  nks.oninput=()=>{const v=nks.value.toLowerCase();nkt.querySelectorAll('tr').forEach((tr,i)=>{if(i)tr.hidden=!tr.textContent.toLowerCase().includes(v);});};
+  o.querySelectorAll('[data-nx]').forEach(b=>b.onclick=async()=>{if(!confirm('Apagar este registro? Não tem volta.'))return;if(!await askPass('Apagar registro'))return;
+    try{await api('/'+col+'/'+b.dataset.nx,'DELETE');if(col==='stickers')await api('/stickerSecrets/'+b.dataset.nx,'DELETE').catch(()=>{});b.closest('tr').remove();}catch(e){alert('Erro: '+e.message);}});
+  o.scrollIntoView({behavior:'smooth'});}
+async function resetTest(){if(prompt('Isso apaga TODOS os dados de teste (carros, adesivos, conversas, alertas, pedidos...).\\nAs contas e o seu acesso de ADM continuam.\\n\\nPara confirmar, digite ZERAR:')!=='ZERAR')return;
+  if(!await askPass('Zerar dados de teste'))return;kpi.innerHTML='Apagando... não feche a página.';
+  const del=n=>fetch('https://firestore.googleapis.com/v1/'+n,{method:'DELETE',headers:{Authorization:'Bearer '+S.token}}).catch(()=>{});
+  const list=async(c,parent='')=>{try{return (await api(parent+':runQuery','POST',{structuredQuery:{from:[{collectionId:c}]}})).filter(y=>y.document).map(y=>y.document.name);}catch(e){return [];}};
+  const sub={chats:['messages'],thefts:['sightings','witnesses','private'],tickets:['messages']};
+  const cols=['chats','stickerSecrets','stickers','cars','alerts','accidents','thefts','tickets','adRequests','replacements','orders','blockedMsgs','medRequests','medLinks','medOpen','medAccess','plateReports','sightReports','ratings','invites','accessLogs'];
+  for(const c of cols){for(const n of await list(c)){for(const sc of (sub[c]||[]))for(const k of await list(sc,'/'+c+'/'+n.split('/').pop()))await del(k);await del(n);}}
+  alert('Pronto. Os dados de teste foram apagados.');numbers();}
 async function numbers(){kpi.innerHTML='Carregando...';
   const safe=async c=>{try{return await q(c)}catch(e){return null}};
   const [st,cars,chats,al,tk,ads]=await Promise.all(['stickers','cars','chats','alerts','tickets','adRequests'].map(safe));
   const now=Date.now(),d7=now-7*864e5,d30=now-30*864e5,n=v=>v==null?'—':v.toLocaleString('pt-BR');
   const owners=cars?new Set(cars.map(c=>c.ownerId)).size:null,act=st?st.filter(x=>x.carId).length:null;
-  const K=[['👤','Donos com carro cadastrado',n(owners)],['🚗','Carros cadastrados',n(cars?.length)],['🏷️','Adesivos gerados',n(st?.length)],
-   ['✅','Adesivos ativados',n(act)+(st&&st.length?` <small>(${Math.round(act/st.length*100)}%)</small>`:'')],
-   ['💬','Conversas (total)',n(chats?.length)],['📅','Conversas nos últimos 7 dias',n(chats?.filter(c=>c.updatedAt&&c.updatedAt>d7).length)],
-   ['🗓️','Conversas nos últimos 30 dias',n(chats?.filter(c=>c.updatedAt&&c.updatedAt>d30).length)],['🚫','Conversas bloqueadas',n(chats?.filter(c=>c.blocked).length)],
-   ['🚨','Alertas enviados',n(al?.length)],['🟢','Alertas aprovados',n(al?.filter(a=>a.status==='approved'||a.status==='removed').length)],
-   ['🆘','Chamados de ajuda abertos',n(tk?.filter(t=>t.status!=='closed').length)],['📣','Pedidos de anúncio/venda',n(ads?.length)]];
-  kpi.innerHTML=`<div class="kg">${K.map(([e,l,v])=>`<div class="kc"><div class="e">${e}</div><div class="v">${v}</div><div class="muted">${l}</div></div>`).join('')}</div>
+  NUM={st:st||[],cars:cars||[],chats:chats||[],al:al||[],tk:tk||[],ads:ads||[]};
+  const K=[['👤','Donos com carro cadastrado',n(owners),'owners'],['🚗','Carros cadastrados',n(cars?.length),'cars'],['🏷️','Adesivos gerados',n(st?.length),'st'],
+   ['✅','Adesivos ativados',n(act)+(st&&st.length?` <small>(${Math.round(act/st.length*100)}%)</small>`:''),'act'],
+   ['💬','Conversas (total)',n(chats?.length),'chats'],['📅','Conversas nos últimos 7 dias',n(chats?.filter(c=>c.updatedAt&&c.updatedAt>d7).length),'c7'],
+   ['🗓️','Conversas nos últimos 30 dias',n(chats?.filter(c=>c.updatedAt&&c.updatedAt>d30).length),'c30'],['🚫','Conversas bloqueadas',n(chats?.filter(c=>c.blocked).length),'cb'],
+   ['🚨','Alertas enviados',n(al?.length),'al'],['🟢','Alertas aprovados',n(al?.filter(a=>a.status==='approved'||a.status==='removed').length),'ala'],
+   ['🆘','Chamados de ajuda abertos',n(tk?.filter(t=>t.status!=='closed').length),'tk'],['📣','Pedidos de anúncio/venda',n(ads?.length),'ads']];
+  setTimeout(()=>{kpi.querySelectorAll('[data-nk]').forEach(b=>b.onclick=()=>numDetail(b.dataset.nk));if(document.getElementById('zerar'))zerar.onclick=resetTest;},0);
+  kpi.innerHTML=`<div class="kg">${K.map(([e,l,v,k])=>`<button class="kc" data-nk="${k}" style="text-align:left;cursor:pointer;font:inherit"><div class="e">${e}</div><div class="v">${v}</div><div class="muted">${l} ›</div></button>`).join('')}</div><div id="nkd"></div>
+   <div style="margin-top:24px;border-top:1px solid #eee;padding-top:12px"><button class="red" id="zerar">🧹 Zerar dados de teste</button><div class="muted" style="font-size:12px">Apaga carros, adesivos, conversas, alertas, pedidos, acidentes, roubos e avisos. Mantém as contas e o seu acesso de ADM. Não tem volta.</div></div>
    <p class="muted" style="margin-top:12px">Atualizado em ${new Date().toLocaleString('pt-BR')}. ${cars===null||chats===null?'⚠️ Alguns números precisam das regras novas do Firebase.':''}</p><button class="sm" onclick="numbers()">Atualizar</button>`;}
 const RR={damaged:'🩹 Danificado',faded:'🌫️ Desbotado',lost:'❓ Perdido',stolen:'🚨 Roubado',newcar:'🚗 Trocou o vidro'};
 async function repos(){const l=(await q('replacements')).filter(r=>!r.deleted).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));BD.repo=l.filter(r=>r.status==='pending').length;badges();
   const ST={pending:'⏳ Aguardando',sent:'📦 Enviado',done:'✅ Concluído',rejected:'❌ Cancelado'};
   rps.innerHTML=l.length?`<p><b>${BD.repo}</b> aguardando</p><table><tr><th>Cliente</th><th>Pedido</th><th>Entrega</th><th></th></tr>${l.map(r=>`<tr><td><b>${esc(r.name||'—')}</b><div class="muted">${esc(r.phone||'')}<br>${esc(r.email||'')}</div></td>
-   <td>${ST[r.status]||r.status}<div>${RR[r.reason]||r.reason} · ${esc(r.carName)}</div><div class="muted">Antigo: ${esc(r.oldCode)}${r.newCode?' → Novo: <b>'+esc(r.newCode)+'</b>':''}<br>${r.createdAt?r.createdAt.toLocaleString('pt-BR'):''}${r.note?'<br>'+esc(r.note):''}</div></td>
-   <td class="muted">${esc(r.address)}</td><td class="trb">${r.status==='pending'?`<button class="sm" data-g="${r.id}">Gerar adesivo novo</button><button class="sm red" data-c="${r.id}">Cancelar</button>`:r.status==='sent'?`<button class="sm" data-p="${r.id}">Imprimir de novo</button><button class="sm gray" data-d="${r.id}">Concluído</button>`:''}<button class="sm gray" data-tp="${r.id}">🗑 Lixeira</button></td></tr>`).join('')}</table>`:'Nenhum pedido de reposição.';
+   <td>${ST[r.status]||r.status}<div>${RR[r.reason]||r.reason} · ${esc(r.carName)}</div>${r.fee?`<div style="font-weight:800;color:${r.paid?'#1a7f37':'#b45309'}">${esc(r.fee)} · ${r.paid?'pago':'a receber'}</div>`:''}<div class="muted">Antigo: ${esc(r.oldCode)}${r.newCode?' → Novo: <b>'+esc(r.newCode)+'</b>':''}<br>${r.createdAt?r.createdAt.toLocaleString('pt-BR'):''}${r.note?'<br>'+esc(r.note):''}</div></td>
+   <td class="muted">${esc(r.address)}</td><td class="trb">${r.status==='pending'?`<button class="sm" data-g="${r.id}">Gerar adesivo novo</button><button class="sm red" data-c="${r.id}">Cancelar</button>`:r.status==='sent'?`<button class="sm" data-p="${r.id}">Imprimir de novo</button><button class="sm gray" data-d="${r.id}">Concluído</button>`:''}${r.fee&&!r.paid?`<button class="sm" data-pg="${r.id}">Marcar pago</button>`:''}<button class="sm gray" data-tp="${r.id}">🗑 Lixeira</button></td></tr>`).join('')}</table>`:'Nenhum pedido de reposição.';
   const f=id=>l.find(r=>r.id===id);
+  rps.querySelectorAll('[data-pg]').forEach(b=>b.onclick=async()=>{await api('/replacements/'+b.dataset.pg+'?updateMask.fieldPaths=paid','PATCH',{fields:{paid:{booleanValue:true}}});repos();});
   const setSt=async(id,st,extra={})=>{const flds=Object.assign({status:enc(st)},extra);await api('/replacements/'+id+'?'+Object.keys(flds).map(k=>'updateMask.fieldPaths='+k).join('&'),'PATCH',{fields:flds});repos();};
   rps.querySelectorAll('[data-g]').forEach(b=>b.onclick=async()=>{const r=f(b.dataset.g);if(!confirm(`Gerar adesivo novo para ${r.name||'o cliente'}?\n\nO adesivo antigo ${r.oldCode} será desativado.`))return;
     try{const c=code(),pin=String(100000+crypto.getRandomValues(new Uint32Array(1))[0]%900000),now=new Date();
@@ -252,15 +287,27 @@ async function history(){
   hist.querySelectorAll('button[data-i]').forEach(bt=>bt.onclick=()=>showBatch(rows[+bt.dataset.i]));}
 function findQR(){const v=(document.getElementById('fq').value||'').toUpperCase().replace(/[^A-Z0-9]/g,''),o=document.getElementById('fqR');if(!v){o.innerHTML='';return;}
   const r=ALL.filter(x=>(x.plate||'').includes(v)||x.code.replace(/[^A-Z0-9]/g,'').includes(v)).slice(0,30);
-  o.innerHTML=r.length?`<table><tr><th>Código</th><th>Placa</th><th>Situação</th><th>Lote</th></tr>${r.map(x=>`<tr><td><b>${esc(x.code)}</b></td><td><b style="font-family:monospace">${esc(x.plate||'—')}</b></td><td>${x.disabled?'⛔ Desativado':x.active?'● Ativado':'○ Disponível'}</td><td>${esc(x.batch)}</td></tr>`).join('')}</table>`:'<p class="muted">Nada encontrado.</p>';}
+  o.innerHTML=r.length?`<table><tr><th>Código</th><th>Placa</th><th>Situação</th><th>Lote</th><th></th></tr>${r.map(x=>`<tr><td><b>${esc(x.code)}</b></td><td><b style="font-family:monospace">${esc(x.plate||'—')}</b></td><td>${x.disabled?'⛔ Desativado':x.active?'● Ativado':'○ Disponível'}</td><td>${esc(x.batch)}</td><td>${x.carId?`<button class="sm" onclick="qrChats('${esc(x.carId)}','${esc(x.code)}')">💬 Conversas</button>`:''}</td></tr>`).join('')}</table>`:'<p class="muted">Nada encontrado.</p>';}
+let CARMAP=null;
+async function qrChats(carId,code){const o=document.getElementById('fqR');const box=document.createElement('div');box.className='kp';box.innerHTML='Carregando...';o.appendChild(box);
+  let l=[];try{l=(await q('chats')).filter(c=>c.carId===carId).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));}catch(e){}
+  const cnt={};await Promise.all(l.map(async c=>{try{cnt[c.id]=(await q('messages','/chats/'+c.id)).length;}catch(e){cnt[c.id]='?';}}));
+  box.innerHTML=`<b>💬 Conversas do QR ${esc(code)}</b> <span class="muted">(${l.length})</span>`+(l.length?`<table><tr><th>Data</th><th>Mensagens</th><th>Situação</th><th></th></tr>${l.map(c=>`<tr><td>${c.createdAt?c.createdAt.toLocaleString('pt-BR'):''}</td><td>${cnt[c.id]}</td><td>${c.blocked?'🚫 Bloqueada':c.repliedAt?'✅ Respondida':'Sem resposta'}${c.visitorName?'<div class="muted">'+esc(c.visitorName)+'</div>':''}</td><td><button class="sm gray" data-rd="${c.id}">Ver texto</button></td></tr><tr><td colspan="4" id="ct${c.id}"></td></tr>`).join('')}</table>`:'<p class="muted">Nenhuma conversa.</p>');
+  box.querySelectorAll('[data-rd]').forEach(b=>b.onclick=async()=>{const r=prompt('Motivo do acesso (fica registrado):\n1 = Denúncia\n2 = Investigação\n3 = Suporte');const M={'1':'denúncia','2':'investigação','3':'suporte'}[String(r||'').trim()];if(!M)return;
+    try{await api('/accessLogs','POST',{fields:{chatId:enc(b.dataset.rd),carId:enc(carId),reason:enc(M),at:enc(new Date())}});}catch(e){return alert('Não foi possível registrar o acesso: '+e.message);}
+    const ms=await q('messages','/chats/'+b.dataset.rd,'at');document.getElementById('ct'+b.dataset.rd).innerHTML=ms.map(x=>`<div class="msg ${x.from==='owner'?'tm':'us'}"><b>${x.from==='owner'?'Dono':'Visitante'}:</b> ${esc(x.text)}<div class="muted">${x.at?x.at.toLocaleString('pt-BR'):''}</div></div>`).join('')||'<span class="muted">Sem mensagens.</span>';});}
 async function showBatch(b){
-  detBox.style.display='';detT.textContent='Lote: '+b.name;
-  det.innerHTML=`<table><tr><th>Código</th><th>Situação</th><th>Placa</th><th>Ativado em</th><th></th></tr>${b.list.sort((x,y)=>x.code.localeCompare(y.code)).map(x=>`<tr><td><b>${x.code}</b></td><td>${x.active?'<span style="color:#1a7f37">● Ativado</span>':'<span style="color:#999">○ Disponível</span>'}</td><td>${x.plate?`<b style="font-family:monospace;letter-spacing:1px">${esc(x.plate)}</b>`:(x.active?'<span class="muted">—</span>':'')}</td><td>${x.activated?x.activated.toLocaleString('pt-BR'):''}</td><td><button class="sm red" data-del="${x.code}" title="Apagar este QR">⛔ Desativar</button></td></tr>`).join('')}</table><button onclick="print()">Imprimir este lote</button><button class="gray" id="renB">Renomear</button><button class="red" id="delB">Apagar lote</button>`;
+  detBox.style.display='';detT.textContent='Lote: '+b.name;det.innerHTML='<p class="muted">Carregando...</p>';
+  if(!CARMAP){CARMAP={};try{(await q('cars')).forEach(c=>CARMAP[c.id]=c);}catch(e){}}
+  const pins={};await Promise.all(b.list.map(async x=>{try{pins[x.code]=(await api('/stickerSecrets/'+x.code)).fields.pin.stringValue}catch(e){}}));
+  det.innerHTML=`<table><tr><th>Código</th><th>PIN</th><th>Situação</th><th>Placa</th><th>Carro</th><th>Ativado em</th><th></th></tr>${b.list.sort((x,y)=>x.code.localeCompare(y.code)).map(x=>{const c=CARMAP[x.carId]||{};return `<tr><td><b>${x.code}</b></td><td style="font-family:monospace">${esc(pins[x.code]||'—')}</td><td>${x.active?'<span style="color:#1a7f37">● Ativado</span>':'<span style="color:#999">○ Disponível</span>'}</td><td>${x.plate?`<b style="font-family:monospace;letter-spacing:1px">${esc(x.plate)}</b>`:(x.active?'<span class="muted">—</span>':'')}</td><td class="muted">${esc([c.brand,c.model,c.year,c.color].filter(Boolean).join(' '))}</td><td>${x.activated?x.activated.toLocaleString('pt-BR'):''}</td><td><button class="sm red" data-del="${x.code}" title="Desativar este QR">⛔ Desativar</button></td></tr>`;}).join('')}</table><button class="gray" id="renB">Renomear lote</button><button class="red" id="delB">Apagar lote</button>`;
   delB.onclick=()=>deleteBatch(b);renB.onclick=()=>renameBatch(b);
   det.querySelectorAll('[data-del]').forEach(bt=>bt.onclick=()=>deleteOne(b,b.list.find(x=>x.code===bt.dataset.del)));
-  const pins={};await Promise.all(b.list.map(async x=>{try{pins[x.code]=(await api('/stickerSecrets/'+x.code)).fields.pin.stringValue}catch(e){}}));
   render(b.list.map(x=>x.code),pins);detBox.scrollIntoView({behavior:'smooth'});}
-function closeBatch(){detBox.style.display='none';sheet.innerHTML='';scrollTo({top:0,behavior:'smooth'});}
+function printStickers(){const w=window.open('','_blank');if(!w)return alert('Permita abrir janelas para imprimir.');
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><base href="'+location.href+'"><title>Adesivos AutoLink</title><style>'+[...document.querySelectorAll('style')].map(x=>x.textContent).join('\n')+'\n#sheet{display:flex!important}@page{size:A4;margin:8mm}body{background:#fff;margin:0}</style></head><body></body></html>');
+  w.document.close();w.document.body.appendChild(w.document.importNode(sheet,true));setTimeout(()=>w.print(),700);}
+function closeBatch(){detBox.style.display='none';sheet.innerHTML='';kitP.innerHTML='';scrollTo({top:0,behavior:'smooth'});}
 async function renameBatch(b){
   const n=(prompt('Novo nome do lote:',b.name)||'').trim();if(!n||n===b.name)return;
   try{for(let i=0;i<b.list.length;i+=400){const part=b.list.slice(i,i+400);
@@ -402,10 +449,12 @@ async function moderation(){
   const RS={telefone:'📞 Telefone',contato:'🔗 Contato/link',palavra:'🤬 Palavra ofensiva'};
   const bl=(await q('blockedMsgs').catch(()=>[])).sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,100);
   for(const x of bl){await prof(x.by);await prof(x.ownerId);}
-  mblk.innerHTML=bl.length?`<p class="muted">${bl.length} tentativa(s) bloqueada(s).</p><table><tr><th>Quem enviou</th><th>Para</th><th>Mensagem</th></tr>${bl.map(x=>`<tr>
+  mblk.innerHTML=bl.length?`<p class="muted">${bl.length} tentativa(s) bloqueada(s).</p><button class="sm red" id="bdAll">🗑 Apagar todas</button><table><tr><th>Quem enviou</th><th>Para</th><th>Mensagem</th><th></th></tr>${bl.map(x=>`<tr>
     <td>${x.from==='owner'?'Dono do carro: '+who(PROF[x.by]):PROF[x.by]&&PROF[x.by].name?who(PROF[x.by])+' <span class="muted">(identificado)</span>':'Visitante anônimo<div class="muted">id '+esc(String(x.by).slice(0,8))+'</div>'}</td>
     <td>${x.from==='owner'?'Visitante do '+esc(x.carName||''):who(PROF[x.ownerId])+'<div class="muted">'+esc(x.carName||'')+'</div>'}</td>
-    <td>"${esc(x.text)}"<div class="muted">${RS[x.reason]||x.reason} · ${x.at?x.at.toLocaleString('pt-BR'):''}</div></td></tr>`).join('')}</table>`:'Nenhuma mensagem bloqueada até agora. ✅';
+    <td>"${esc(x.text)}"<div class="muted">${RS[x.reason]||x.reason} · ${x.at?x.at.toLocaleString('pt-BR'):''}</div></td><td><button class="sm gray" data-bd="${x.id}">🗑</button></td></tr>`).join('')}</table>`:'Nenhuma mensagem bloqueada até agora. ✅';
+  mblk.querySelectorAll('[data-bd]').forEach(b=>b.onclick=async()=>{if(!confirm('Apagar esta mensagem bloqueada?'))return;await api('/blockedMsgs/'+b.dataset.bd,'DELETE');moderation();});
+  if(document.getElementById('bdAll'))bdAll.onclick=async()=>{if(!confirm('Apagar TODAS as '+bl.length+' mensagens bloqueadas?'))return;if(!await askPass('Apagar mensagens bloqueadas'))return;for(const x of bl)await api('/blockedMsgs/'+x.id,'DELETE').catch(()=>{});moderation();};
   const ch=(await q('chats').catch(()=>[])).filter(c=>c.updatedAt).sort((a,b)=>b.updatedAt-a.updatedAt).slice(0,50);
   for(const c of ch){await prof(c.ownerId);if(c.visitorVerified)await prof(c.visitorId);}
   mchat.innerHTML=ch.length?`<table><tr><th>Dono (recebeu)</th><th>Quem escaneou</th><th>Última mensagem</th><th></th></tr>${ch.map(c=>`<tr><td>${who(PROF[c.ownerId])}</td>
@@ -435,7 +484,10 @@ async function generate(){const n=Math.min(200,Math.max(1,+document.getElementBy
   info.textContent=`${n} adesivos gerados no lote "${b}". Clique em Imprimir.`;render(codes,pins);history();}
 function render(codes,pins={}){
   const kitUrl='../kit/livreto.html#'+encodeURIComponent(codes.map(c=>c+':'+(pins[c]||'')).join(','));
-  sheet.innerHTML=`<div class="gr" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><b>O que imprimir?</b><a class="kb" href="${kitUrl}" target="_blank" rel="noopener">📘 Kit completo (livreto com adesivos e PIN)</a><a class="kb" href="${kitUrl.replace('livreto.html#','livreto.html?a4=1#')}" target="_blank" rel="noopener" style="background:#2563eb">🖨️ Teste em A4 (impressora de casa)</a><button class="kb" onclick="print()">🏷️ Só os adesivos QR + folheto do PIN</button></div><div class="gr pins"><b>🔑 PINs gerados</b><br>${codes.map(c=>`${c}: <b style="font-family:monospace;font-size:15px">${pins[c]||'—'}</b>`).join(' · ')}</div>`+'<div class="gr"><b>📐 Para a gráfica</b> · Adesivo principal: <b>8 × 13 cm</b> · Adesivo menor: <b>4,5 × 6,5 cm</b> · Folheto do PIN: <b>8 × 13 cm</b><br>Adesivos: vinil branco com <b>laminação UV</b> e recorte no formato · Folheto: papel couchê 250–300 g · Imprimir em <b>100% (sem ajustar à página)</b>.</div>';
+  kitP.innerHTML=`<div class="kp"><div class="kh"><b>Imprimir ${codes.length} adesivo(s)</b><span class="muted">${codes.length<=6?codes.map(c=>c+' · PIN <b>'+(pins[c]||'—')+'</b>').join('  |  '):''}</span></div>
+   <div class="kbs"><a class="kb" href="${kitUrl}" target="_blank" rel="noopener">📘 Kit completo (livreto)</a><a class="kb k2" href="${kitUrl.replace('livreto.html#','livreto.html?a4=1#')}" target="_blank" rel="noopener">🖨️ Teste em A4</a><button class="kb k2" onclick="printStickers()">🏷️ Só adesivos + folheto do PIN</button></div>
+   <div class="muted" style="font-size:12px;margin-top:8px">Para a gráfica: adesivo 8×13 cm e 4,5×6,5 cm em vinil branco com laminação UV e recorte · livreto 10×15 cm · imprimir em 100%.</div></div>`;
+  sheet.innerHTML='';const _unused=`<div class="gr" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><b>O que imprimir?</b><a class="kb" href="${kitUrl}" target="_blank" rel="noopener">📘 Kit completo (livreto com adesivos e PIN)</a><a class="kb" href="${kitUrl.replace('livreto.html#','livreto.html?a4=1#')}" target="_blank" rel="noopener" style="background:#2563eb">🖨️ Teste em A4 (impressora de casa)</a><button class="kb" onclick="print()">🏷️ Só os adesivos QR + folheto do PIN</button></div><div class="gr pins"><b>🔑 PINs gerados</b><br>${codes.map(c=>`${c}: <b style="font-family:monospace;font-size:15px">${pins[c]||'—'}</b>`).join(' · ')}</div>`+'<div class="gr"><b>📐 Para a gráfica</b> · Adesivo principal: <b>8 × 13 cm</b> · Adesivo menor: <b>4,5 × 6,5 cm</b> · Folheto do PIN: <b>8 × 13 cm</b><br>Adesivos: vinil branco com <b>laminação UV</b> e recorte no formato · Folheto: papel couchê 250–300 g · Imprimir em <b>100% (sem ajustar à página)</b>.</div>';
   const face=(c,cls)=>{const d=document.createElement('div');d.className='st2 '+cls;
     d.innerHTML=`<div class="b">Auto<span>Link</span></div><div class="t">Precisa falar com o<br><b>dono deste carro?</b></div><div class="q"></div><div class="c"><b>Aponte a câmera do celular</b><br>Não precisa baixar aplicativo</div><img src="logo-car-white.png" alt="" class="lg2">`;
     sheet.appendChild(d);new QRCode(d.querySelector('.q'),{text:SITE+'?s='+c,width:400,height:400,colorDark:'#111',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});};

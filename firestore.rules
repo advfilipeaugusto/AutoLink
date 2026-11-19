@@ -118,6 +118,8 @@ service cloud.firestore {
         && get(/databases/$(db)/documents/cars/$(request.resource.data.carId)).data.get('fleet', false) == true;
     }
     match /reports/{r} { allow create: if request.resource.data.ownerId == me(); }
+    match /accessLogs/{id} { allow read, create: if isAdmin(); }
+    match /{path=**} { allow delete: if isAdmin(); }
     function isAdmin() { return request.auth != null && exists(/databases/$(db)/documents/admins/$(me())); }
     match /admins/{uid} { allow get: if me() == uid; }
     match /stickerSecrets/{code} { allow read, write: if isAdmin(); }
