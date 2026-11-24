@@ -287,7 +287,7 @@ function Home(){
      +(cars.some(x=>!x.shared&&(!x.color||!x.year||!x.brand||!x.model))?`<button class="card" id="cmpl" style="border-color:var(--or);text-align:left;margin-bottom:10px"><b>⚠️ Complete os dados do seu carro</b><div class="muted">Marca, modelo, ano e cor agora são obrigatórios.</div></button>`:'')
      +`<button class="hero card ${un?'alertc':''}" style="--acc:${c.shared?'#3b82f6':HCOL[cars.slice(0,idx).filter(x=>!x.shared).length%3]};color:var(--tx)" id="hc"><div class="lbl">${c.shared?'👥 Compartilhado com você':'🚗 Meu carro'}${cars.length>1?' · '+(idx+1)+' de '+cars.length:''}</div><div class="nm">${esc(c.name)}<span class="cb ${un?'on':''}">🔔 ${un}</span></div>
       <div class="pl">${esc(c.plate||'Sem placa')}</div><span class="hqr" id="hqr" role="button" aria-label="Meu QR code">${ic('qr','#111',2.2)}</span>
-      <div class="st ${on?'on':'off'}"><i></i>${on?'Online':c.stickerCode?'QR pausado':'Sem adesivo'}</div>${c.photo?`<img src="${c.photo}" alt="" style="position:absolute;right:14px;bottom:14px;width:118px;height:78px;object-fit:cover;border-radius:12px;border:2px solid var(--acc,#FF6B00)">`:carSvg}</button>
+      <div class="st ${on?'on':'off'}"><i></i>${on?'Online':c.stickerCode?'QR pausado':'Sem adesivo'}</div>${carSvg}</button>
       ${cars.length>1?`<div class="hnav"><button id="hp">‹ Anterior</button><div class="dots" style="margin:0">${cars.map((_,i)=>`<i class="${i===idx?'a':''}"></i>`).join('')}</div><button id="hn">Próximo ›</button></div>`:''}`;
     if(h.querySelector('#cmpl'))h.querySelector('#cmpl').onclick=()=>go(Car,cars.find(x=>!x.shared&&(!x.color||!x.year||!x.brand||!x.model)));
     const hc=h.querySelector('#hc');hc.onclick=e=>{if(e.target.closest('#hqr'))return go(MyQR);go(Car,c);};
@@ -347,7 +347,7 @@ function History(){
       box.appendChild(r);}};
   draw();}
 function Car(car){
-  m.innerHTML=`<h2>${esc(car.name)}</h2>${car.ownerId===S.uid?`<div class="card" style="display:flex;gap:12px;align-items:center">${car.photo?`<img src="${car.photo}" alt="" style="width:84px;height:64px;object-fit:cover;border-radius:10px">`:'<div style="width:84px;height:64px;border-radius:10px;background:var(--card2);display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:12px">sem foto</div>'}<div style="flex:1"><b>Foto do carro</b><div class="muted">Opcional. Aparece no cartão do carro e ajuda em caso de roubo.</div><label class="chip" style="display:inline-block;margin-top:6px">${car.photo?'Trocar foto':'Adicionar foto'}<input type="file" accept="image/*" id="cph" hidden></label>${car.photo?' <button class="chip" id="cphx">Remover</button>':''}</div></div>`:''}<div id="st"></div>
+  m.innerHTML=`<h2>${esc(car.name)}</h2><div id="st"></div>
   ${car.ownerId===S.uid?`<details class="card" ${car.color&&car.year&&car.brand&&car.model?'':'open'}><summary><b>Dados do carro</b> <span class="muted">${esc([car.brand,car.model,car.year,car.color].filter(Boolean).join(' · ')||'incompleto')}</span></summary>
    <div style="display:flex;gap:8px;margin-top:8px"><input id="eb" placeholder="Marca" value="${esc(car.brand||'')}" maxlength="30"><input id="em" placeholder="Modelo" value="${esc(car.model||'')}" maxlength="40"></div>
    <div style="display:flex;gap:8px"><input id="ey" placeholder="Ano" inputmode="numeric" maxlength="4" value="${esc(car.year||'')}"><input id="ec" placeholder="Cor" value="${esc(car.color||'')}" maxlength="30"></div>
@@ -360,8 +360,6 @@ function Car(car){
   if($('#esv'))$('#esv').onclick=async()=>{const d={brand:$('#eb').value.trim(),model:$('#em').value.trim(),year:$('#ey').value.replace(/\D/g,''),color:$('#ec').value.trim()};
     if(!d.brand||!d.model||d.year.length!==4||!d.color)return alert('Preencha marca, modelo, ano (4 números) e cor.');d.name=$('#en').value.trim()||(d.brand+' '+d.model);
     try{await update('cars/'+car.id,d);Object.assign(car,d);toast('Dados salvos');go(Car,car,false);}catch(e){alert(e.message);}};
-  if($('#cph'))$('#cph').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const ph=await shrinkImage(f,800,.6);await update('cars/'+car.id,{photo:ph});car.photo=ph;toast('Foto salva');go(Car,car,false);}catch(x){alert('Não foi possível salvar a foto: '+x.message);}};
-  if($('#cphx'))$('#cphx').onclick=async()=>{try{await api('/cars/'+car.id+'?updateMask.fieldPaths=photo','PATCH',{fields:{}});delete car.photo;go(Car,car,false);}catch(x){alert(x.message);}};
   $('#del').onclick=async()=>{
     if(!confirm(`Apagar o carro "${car.name}"?`+(car.stickerCode?`\n\nO adesivo ${car.stickerCode} será desvinculado e poderá ser ativado de novo (com o PIN) em outro carro.`:'')+'\n\nNão dá para desfazer.'))return;
     try{
