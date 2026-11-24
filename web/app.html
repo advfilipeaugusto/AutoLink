@@ -256,10 +256,8 @@ function Home(){
   <div class="card fbox"><h2>🧩 Funcionalidades</h2><div class="grid">
    ${[['alerta','siren','Criar|alerta','#ef4444'],['acid','img:ic-crash.png','Avisar|acidente'],['hist','clock','Meu|histórico'],['meucarro','car','Meu|carro'],['perdi','carsearch','Roubo|ou furto','#f59e0b'],['fam','img:ic-fam.png','Compartilhar|carro'],['park','pin','Onde|estacionei','#f59e0b']]
      .map(([k,i,l,c])=>`<button class="sc" data-k="${k}"><span class="ic">${i.startsWith('img:')?`<img src="${i.slice(4)}" alt="" style="width:34px;height:34px;object-fit:contain">`:ic(i,c||'#FF6B00')}</span><span class="scl">${l.replace('|','<br>')}</span></button>`).join('')}</div></div>
-  <h2>🏢 Empresas e frotas</h2>
-  <button class="card bx" id="bizC" style="--k:#FF6B00"><div class="bxg"><span>🚚<br>Adesivos para a frota</span><span>⭐<br>Como estou dirigindo?</span><span>📊<br>Avaliações dos motoristas</span><span>🧾<br>Planos e preços</span></div><div class="bxf">Entrar na área da empresa ›</div></button>
-  <h2>🛍️ Lojistas e vendedores</h2>
-  <button class="card bx" id="selC" style="--k:#22c55e"><div class="bxg"><span>🏪<br>Sua loja no Mercado</span><span>📦<br>Cadastre produtos</span><span>🚗<br>Venda seu carro ou peças</span><span>🧾<br>Planos e preços</span></div><div class="bxf">Entrar na área do lojista ›</div></button>
+  <button class="card bx" id="bizC" style="--k:#FF6B00;margin-top:16px"><h2 style="margin:0 0 10px;text-align:left">🏢 Empresas e frotas</h2><div class="bxg"><span>🚚<br>Adesivos para a frota</span><span>⭐<br>Como estou dirigindo?</span><span>📊<br>Avaliações dos motoristas</span><span>🧾<br>Planos e preços</span></div><div class="bxf">Entrar na área da empresa ›</div></button>
+  <button class="card bx" id="selC" style="--k:#22c55e"><h2 style="margin:0 0 10px;text-align:left">🛍️ Lojistas e vendedores</h2><div class="bxg"><span>🏪<br>Sua loja no Mercado</span><span>📦<br>Cadastre produtos</span><span>🚗<br>Venda seu carro ou peças</span><span>🧾<br>Planos e preços</span></div><div class="bxf">Entrar na área do lojista ›</div></button>
   <div id="newsH"></div>
   ${installTip()}`;
   let cars=[],idx=0;
